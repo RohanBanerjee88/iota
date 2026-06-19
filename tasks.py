@@ -93,9 +93,21 @@ def report() -> int:
     return 0 if ok else 1
 
 
+def train() -> int:
+    """Train the Phase 5 milestone config (dense transformer -> near-100%)."""
+    import yaml
+
+    from iota.train import train as run_train
+
+    cfg = yaml.safe_load(open("configs/milestone_transformer.yaml"))
+    out = run_train(cfg)
+    print(f"\nMILESTONE final exact-answer acc = {out['final_acc']:.4f}")
+    return 0 if out["final_acc"] >= 0.95 else 1
+
+
 def _not_built(name: str):
     def _fn() -> int:
-        print(f"[{name}] is a later phase — the first session stops after Phase 2.")
+        print(f"[{name}] is a later phase (Phase 6+). Stopping at the Phase 5 milestone.")
         return 0
 
     return _fn
@@ -105,7 +117,7 @@ TARGETS = {
     "smoke": smoke,
     "test": test,
     "report": report,
-    "train": _not_built("train"),
+    "train": train,
     "eval": _not_built("eval"),
     "profile": _not_built("profile"),
     "plot": _not_built("plot"),

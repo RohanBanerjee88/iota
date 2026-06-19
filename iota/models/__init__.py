@@ -1,4 +1,5 @@
-"""Model implementations behind one architecture-agnostic SeqModel interface.
+"""Model implementations behind one architecture-agnostic SeqModel interface."""
 
-STUBS until Phase 4 — the first session stops after the Phase 2 data gate.
-"""
+from .base import SeqModel, build_model
+
+__all__ = ["SeqModel", "build_model"]

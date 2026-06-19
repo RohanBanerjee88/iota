@@ -4,6 +4,7 @@ numpy
 pyyaml
 matplotlib
 tqdm
+safetensors
 # flash-linear-attention is OPTIONAL and isolated behind try/except.
 # Install separately if you want the GLA reference check; never a hard dep.
 # flash-linear-attention

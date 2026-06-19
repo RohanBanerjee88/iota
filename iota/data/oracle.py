@@ -124,3 +124,38 @@ def solve(prompt: str) -> str:
     if answer is None:
         raise ValueError("prompt contained no GET/ANSWER query")
     return str(answer % MOD)
+
+
+def solve_all(prompt: str) -> List[str]:
+    """Return the ordered list of answers for EVERY GET/ANSWER query in the prompt.
+
+    Used to verifier-check multi-query examples (single-query returns a 1-list).
+    The oracle is identifier-agnostic, so it handles both integer keys (from the
+    generator) and named variables (from the adversarial tests).
+    """
+    env: Dict[str, int] = {}
+    answers: List[str] = []
+    for raw in prompt.strip().splitlines():
+        toks = raw.split()
+        if not toks:
+            continue
+        head = toks[0]
+        if head == "DISTRACTOR":
+            continue
+        if head in ("START", "SET"):
+            if len(toks) < 4 or toks[2] != "=":
+                raise ValueError(f"bad {head} line: {raw!r}")
+            env[toks[1]] = _eval(toks[3:], env)
+        elif head == "GET":
+            if len(toks) != 2 or toks[1] not in env:
+                raise ValueError(f"bad GET line: {raw!r}")
+            answers.append(str(env[toks[1]] % MOD))
+        elif head == "ANSWER":
+            answers.append(str(_eval(toks[1:], env) % MOD))
+        elif len(toks) >= 3 and toks[1] == "=":
+            env[toks[0]] = _eval(toks[2:], env)
+        else:
+            raise ValueError(f"cannot parse line: {raw!r}")
+    if not answers:
+        raise ValueError("prompt contained no GET/ANSWER query")
+    return answers

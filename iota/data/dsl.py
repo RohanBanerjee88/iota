@@ -38,8 +38,10 @@ MOD = 97                      # modular arithmetic base; values live in [0, MOD)
 MODES = ("state_track", "assoc_recall")
 
 ACC = "x"                     # the single accumulator name used by Mode A
-MAX_BINDINGS = 64             # Mode B variable pool size
-VAR_NAMES = [f"v{i}" for i in range(MAX_BINDINGS)]
+MAX_BINDINGS = 128            # capacity sweep evaluates up to 128 bindings
+# Legacy atomic variable names (kept in the tokenizer vocab for backward compat
+# and the oracle's generality); the generator now uses INTEGER keys instead.
+VAR_NAMES = [f"v{i}" for i in range(64)]
 NOISE_TOKENS = ["qx", "lk", "mn", "zz", "rr", "pp", "tt", "ww", "gg", "hh"]
 KEYWORDS = ["START", "SET", "GET", "ANSWER", "DISTRACTOR", "mod"]
 OPERATORS = ["=", "(", ")", "+", "-", "*"]
@@ -155,7 +157,12 @@ def _gen_state_track(
     out.extend(buckets[n_gaps])
     out.append(answer_line)
 
-    meta = {"query": {"type": "state_track", "var": ACC}, "n_ops": n_ops}
+    meta = {
+        "query": {"type": "state_track", "var": ACC},
+        "n_ops": n_ops,
+        "answers": [val % MOD],
+        "n_queries": 1,
+    }
     return out, target, meta
 
 
@@ -169,6 +176,7 @@ def _gen_assoc_recall(
     seq_len: int,
     query_type=None,
     query_pos: str = "early",
+    n_queries: int = 1,
 ) -> Tuple[List[List[str]], str, Dict]:
     n = int(n_bindings)
     if n < 2:
@@ -177,52 +185,48 @@ def _gen_assoc_recall(
         raise ValueError(
             f"assoc_recall supports at most {MAX_BINDINGS} bindings (got {n_bindings})"
         )
+    if query_type == "op":
+        raise ValueError("the arithmetic-op variant is unsupported with integer keys")
 
-    names = VAR_NAMES[:n]
+    # INTEGER keys (0..n-1). Keys are digit-encoded, so eval beyond the training
+    # ceiling (e.g. 128 bindings) is composed of digits the model already trained
+    # on -- the capacity curve then measures architectural capacity, not novel
+    # untrained key tokens. (Atomic key tokens would make every model fail at
+    # high n_bindings for a tokenisation reason, not a capacity reason.)
+    keys = [str(i) for i in range(n)]
     values = [rng.randint(0, MOD - 1) for _ in range(n)]
-    set_lines = [["SET", names[i], "=", str(values[i])] for i in range(n)]
+    set_lines = [["SET", keys[i], "=", str(values[i])] for i in range(n)]
 
-    # Which bindings may be queried. Default "early" (first half) guarantees the
-    # query genuinely spans distance. "uniform" draws from ALL bindings.
-    #
-    # CARRY-FORWARD for Phase 6: the eval harness must query keys *uniformly*
-    # across all n_bindings (query_pos="uniform"), not just the early half, so
-    # accuracy-vs-recall-load isn't biased by query position. It must also
-    # support a MULTI-QUERY variant (several GETs in one prompt, each verified).
-    # Multi-query generation + oracle support is TODO for Phase 6; the single
-    # "uniform" hook below is already functional and used by eval.
-    hi = n if query_pos == "uniform" else max(1, n // 2)
-
-    # Choose op-vs-get: None => random mix (default, preserves the Phase 2 gate's
-    # exact RNG stream); "get"/"op" force a single kind for controlled configs.
-    if query_type is None:
-        use_op = rng.random() < 0.5
+    nq = max(1, int(n_queries))
+    if nq > 1:
+        # Multi-query (canonical MQAR stressor): K distinct keys drawn UNIFORMLY
+        # across all bindings; the state must hold all of them at once. The
+        # answers are appended by the dataset (queries-then-answers layout).
+        nq = min(nq, n)
+        chosen = rng.sample(range(n), nq)
+        query_lines = [["GET", keys[i]] for i in chosen]
+        answers = [values[i] % MOD for i in chosen]
+        target = " ".join(f"{a:02d}" for a in answers)
+        query = {"type": "multi_get", "keys": [keys[i] for i in chosen], "n_queries": nq}
     else:
-        use_op = query_type == "op"
-    if use_op:
+        # Single query. query_pos: "early" (first half, guarantees distance) or
+        # "uniform" (any key, used by the capacity sweep so position isn't a bias).
+        hi = n if query_pos == "uniform" else max(1, n // 2)
         i = rng.randint(0, hi - 1)
-        j = rng.randint(0, hi - 1)
-        op = rng.choice(["+", "-"])
-        tval = (values[i] + values[j]) % MOD if op == "+" else (values[i] - values[j]) % MOD
-        query_line = ["ANSWER", "(", names[i], op, names[j], ")", "mod", str(MOD)]
-        target = str(tval)
-        query = {"type": "op", "op": op, "vars": [names[i], names[j]]}
-    else:
-        i = rng.randint(0, hi - 1)
-        query_line = ["GET", names[i]]
+        query_lines = [["GET", keys[i]]]
+        answers = [values[i] % MOD]
         target = str(values[i] % MOD)
-        query = {"type": "get", "var": names[i]}
+        query = {"type": "get", "key": keys[i], "n_queries": 1}
 
-    struct_len = sum(len(s) for s in set_lines) + len(query_line)
+    struct_len = sum(len(s) for s in set_lines) + sum(len(q) for q in query_lines)
     budget = _distractor_budget(struct_len, density, seq_len)
     dlines = _emit_distractor_lines(rng, budget)
 
-    # SETs first (early), then the distractor block, then the query: this
-    # guarantees the queried binding is defined early and recalled across
-    # distance — otherwise the recall test would be fake.
-    out: List[List[str]] = list(set_lines) + dlines + [query_line]
+    # SETs first (early), then the distractor block, then the queries: the
+    # queried bindings are defined early and recalled across distance.
+    out: List[List[str]] = list(set_lines) + dlines + list(query_lines)
 
-    meta = {"query": query, "n_bindings": n}
+    meta = {"query": query, "n_bindings": n, "answers": answers, "n_queries": nq}
     return out, target, meta
 
 
@@ -238,15 +242,16 @@ def gen(
     *,
     query_type=None,
     query_pos: str = "early",
+    n_queries: int = 1,
 ) -> Tuple[str, str, Dict]:
     """Generate one example.
 
     Returns (prompt_str, target_str, meta). Deterministic per (args, seed).
 
-    `query_type` (assoc_recall): None => random get/op mix (default), or force
-    "get"/"op". `query_pos`: "early" (default) or "uniform" across all bindings
-    (Phase 6 eval). With defaults the output is byte-identical to the Phase 2
-    gated generator. Both are ignored for state_track.
+    assoc_recall uses INTEGER keys. `query_pos`: "early" (default) or "uniform"
+    (capacity sweep). `n_queries`>1 produces the multi-query MQAR stressor.
+    `query_type` is GET-only ("get"/None); "op" is unsupported with integer keys.
+    All ignored for state_track. `meta["answers"]` is the ordered int answer list.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -256,7 +261,8 @@ def gen(
         lines, target, extra = _gen_state_track(rng, n_bindings, distractor_density, seq_len)
     else:
         lines, target, extra = _gen_assoc_recall(
-            rng, n_bindings, distractor_density, seq_len, query_type=query_type, query_pos=query_pos
+            rng, n_bindings, distractor_density, seq_len,
+            query_type=query_type, query_pos=query_pos, n_queries=n_queries,
         )
 
     prompt = "\n".join(" ".join(line) for line in lines)

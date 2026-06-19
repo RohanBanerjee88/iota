@@ -42,19 +42,19 @@ def test_assoc_recall_query_defined_early():
         prompt, _, meta = dsl.gen("assoc_recall", 16, 0.3, 256, seed=seed)
         lines = prompt.splitlines()
         q = meta["query"]
-        qvars = q["vars"] if q["type"] == "op" else [q["var"]]
-        # the query line is last; every queried var must be SET before it
+        qkeys = [q["key"]]  # single GET uses integer key
+        # the query line is last; every queried key must be SET before it
         last_set_idx = {}
         query_idx = len(lines) - 1
         for idx, line in enumerate(lines):
             toks = line.split()
             if toks and toks[0] == "SET":
                 last_set_idx[toks[1]] = idx
-        for v in qvars:
-            assert v in last_set_idx, f"{v} never SET"
-            assert last_set_idx[v] < query_idx
+        for k in qkeys:
+            assert k in last_set_idx, f"{k} never SET"
+            assert last_set_idx[k] < query_idx
             # "early": the queried binding lives in the first half of the pool
-            assert int(v[1:]) < max(1, meta["n_bindings"] // 2)
+            assert int(k) < max(1, meta["n_bindings"] // 2)
 
 
 def test_assoc_recall_rejects_too_many_bindings():
@@ -65,3 +65,23 @@ def test_assoc_recall_rejects_too_many_bindings():
 def test_unknown_mode_raises():
     with pytest.raises(ValueError):
         dsl.gen("not_a_mode", 4, 0.0, 64, seed=0)
+
+
+def test_integer_keys_and_capacity_to_128():
+    prompt, _, meta = dsl.gen("assoc_recall", 128, 0.0, 600, seed=0, query_pos="uniform")
+    assert meta["n_bindings"] == 128
+    # keys are integers, digit-encoded (no atomic v-tokens)
+    assert any(line.startswith("SET 100 =") for line in prompt.splitlines())
+
+
+def test_multi_query_answers_match_oracle():
+    from iota.data import oracle
+
+    for seed in range(30):
+        prompt, _, meta = dsl.gen("assoc_recall", 16, 0.1, 256, seed=seed,
+                                  n_queries=5, query_pos="uniform")
+        assert meta["n_queries"] == 5
+        assert len(meta["answers"]) == 5
+        # oracle.solve_all reproduces every queried answer, in order
+        got = [int(a) for a in oracle.solve_all(prompt)]
+        assert got == meta["answers"]

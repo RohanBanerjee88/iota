@@ -84,11 +84,18 @@ class GatedLinearAttention(nn.Module):
             logP = torch.cumsum(lg, dim=-1)         # (B,H,c) cumulative decay
             P = torch.exp(logP)                     # (B,H,c) in (0,1]
 
-            # intra-chunk decay matrix D[i,m] = exp(logP_i - logP_m), causal i>=m
-            diff = logP.unsqueeze(-1) - logP.unsqueeze(-2)   # (B,H,c,c)
+            # intra-chunk decay matrix D[i,m] = exp(logP_i - logP_m), causal i>=m.
+            # CRITICAL: mask the acausal (upper-triangle) entries to -inf BEFORE the
+            # exp. There diff = logP_i - logP_m > 0, so exp(diff) would overflow to
+            # +inf; torch.where would hide it in the forward (selecting 0), but in
+            # backward autograd evaluates d/dx exp = exp = inf and multiplies it by
+            # the zero mask -> 0*inf = NaN, poisoning every gradient. masked_fill
+            # before exp keeps exp(-inf)=0 with a clean zero gradient.
             c = end - start
             causal = torch.tril(torch.ones(c, c, device=x.device, dtype=torch.bool))
-            D = torch.where(causal, torch.exp(diff), torch.zeros_like(diff))
+            diff = logP.unsqueeze(-1) - logP.unsqueeze(-2)   # (B,H,c,c)
+            diff = diff.masked_fill(~causal, float("-inf"))
+            D = torch.exp(diff)
 
             A = torch.matmul(qc, kc.transpose(-1, -2)) * D   # (B,H,c,c)
             intra_v = torch.matmul(A, vc)                    # (B,H,c,Dh)

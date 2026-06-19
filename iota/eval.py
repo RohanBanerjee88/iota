@@ -102,5 +102,9 @@ def load_checkpoint(run_name: str, results_dir: str = "experiments/results", dev
     else:
         state = torch.load(wpath, map_location=device)
     model.load_state_dict(state)
+    # Re-tie explicitly: the checkpoint stores embed.weight and head.weight as two
+    # separate (cloned) tensors; after loading we collapse them back to one shared
+    # parameter so the tie can't silently drift.
+    model.backbone.tie_weights()
     model.eval()
     return model, cfg

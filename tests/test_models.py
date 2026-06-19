@@ -55,6 +55,24 @@ def test_chunked_matches_recurrent_various_chunk_sizes():
         assert torch.allclose(fast, ref, atol=1e-4, rtol=1e-4), f"chunk={cs}: {(fast-ref).abs().max()}"
 
 
+def test_gla_backward_is_finite_under_large_activations():
+    # Regression: the acausal entries of the intra-chunk decay matrix must be
+    # masked BEFORE exp. Otherwise exp(+diff) overflows to inf and, although the
+    # forward hides it via masking, backward computes 0*inf = NaN. This guards
+    # the exact bug that made gated_linear fail to train.
+    torch.manual_seed(0)
+    layer = GatedLinearAttention(64, 4, chunk_size=16).train()
+    for scale in (1.0, 10.0, 30.0):
+        x = (torch.randn(4, 40, 64) * scale).requires_grad_(True)
+        out = layer(x)
+        assert torch.isfinite(out).all()
+        layer.zero_grad()
+        out.pow(2).mean().backward()
+        for name, p in layer.named_parameters():
+            if p.grad is not None:
+                assert torch.isfinite(p.grad).all(), f"non-finite grad in {name} at scale {scale}"
+
+
 def test_from_config_round_trips_arch():
     for path in CONFIGS:
         cfg = _load(path)

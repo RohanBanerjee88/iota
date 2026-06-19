@@ -106,8 +106,18 @@ class LMBackbone(nn.Module):
         self.blocks = nn.ModuleList(blocks)
         self.norm = RMSNorm(d_model)
         self.head = nn.Linear(d_model, vocab_size, bias=False)
-        self.head.weight = self.embed.weight  # weight tying
         self.apply(self._init)
+        self.tie_weights()  # head shares the embedding matrix
+
+    def tie_weights(self):
+        """Explicitly tie the LM head to the embedding matrix.
+
+        Called at construction and again after loading a checkpoint, so the tie
+        is never left to "two cloned copies happened to match" — a future
+        refactor that untied them would fail loudly here, not silently.
+        """
+        self.head.weight = self.embed.weight
+        assert self.head.weight.data_ptr() == self.embed.weight.data_ptr()
 
     @staticmethod
     def _init(m: nn.Module):

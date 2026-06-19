@@ -2,11 +2,11 @@
 arch: hybrid
 vocab_size: 99
 d_model: 256
-n_layers: 8
+n_layers: 5
 n_heads: 4
 d_ff: 512
 feature_map: elu1
 chunk_size: 64
-full_attention_layers: [3, 7]   # which layers are dense attention
+full_attention_layers: [2, 4]
 max_seq_len: 512
 dropout: 0.0

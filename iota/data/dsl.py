@@ -163,7 +163,12 @@ def _gen_state_track(
 # Mode B — assoc_recall
 # ----------------------------------------------------------------------------
 def _gen_assoc_recall(
-    rng: random.Random, n_bindings: int, density: float, seq_len: int
+    rng: random.Random,
+    n_bindings: int,
+    density: float,
+    seq_len: int,
+    query_type=None,
+    query_pos: str = "early",
 ) -> Tuple[List[List[str]], str, Dict]:
     n = int(n_bindings)
     if n < 2:
@@ -177,20 +182,33 @@ def _gen_assoc_recall(
     values = [rng.randint(0, MOD - 1) for _ in range(n)]
     set_lines = [["SET", names[i], "=", str(values[i])] for i in range(n)]
 
-    # Query a binding from the *early* region so retrieval genuinely spans
-    # distance (all distractors and later bindings sit between def and query).
-    early = max(1, n // 2)
-    use_op = rng.random() < 0.5
+    # Which bindings may be queried. Default "early" (first half) guarantees the
+    # query genuinely spans distance. "uniform" draws from ALL bindings.
+    #
+    # CARRY-FORWARD for Phase 6: the eval harness must query keys *uniformly*
+    # across all n_bindings (query_pos="uniform"), not just the early half, so
+    # accuracy-vs-recall-load isn't biased by query position. It must also
+    # support a MULTI-QUERY variant (several GETs in one prompt, each verified).
+    # Multi-query generation + oracle support is TODO for Phase 6; the single
+    # "uniform" hook below is already functional and used by eval.
+    hi = n if query_pos == "uniform" else max(1, n // 2)
+
+    # Choose op-vs-get: None => random mix (default, preserves the Phase 2 gate's
+    # exact RNG stream); "get"/"op" force a single kind for controlled configs.
+    if query_type is None:
+        use_op = rng.random() < 0.5
+    else:
+        use_op = query_type == "op"
     if use_op:
-        i = rng.randint(0, early - 1)
-        j = rng.randint(0, early - 1)
+        i = rng.randint(0, hi - 1)
+        j = rng.randint(0, hi - 1)
         op = rng.choice(["+", "-"])
         tval = (values[i] + values[j]) % MOD if op == "+" else (values[i] - values[j]) % MOD
         query_line = ["ANSWER", "(", names[i], op, names[j], ")", "mod", str(MOD)]
         target = str(tval)
         query = {"type": "op", "op": op, "vars": [names[i], names[j]]}
     else:
-        i = rng.randint(0, early - 1)
+        i = rng.randint(0, hi - 1)
         query_line = ["GET", names[i]]
         target = str(values[i] % MOD)
         query = {"type": "get", "var": names[i]}
@@ -217,10 +235,18 @@ def gen(
     distractor_density: float = 0.0,
     seq_len: int = 256,
     seed: int = 0,
+    *,
+    query_type=None,
+    query_pos: str = "early",
 ) -> Tuple[str, str, Dict]:
     """Generate one example.
 
     Returns (prompt_str, target_str, meta). Deterministic per (args, seed).
+
+    `query_type` (assoc_recall): None => random get/op mix (default), or force
+    "get"/"op". `query_pos`: "early" (default) or "uniform" across all bindings
+    (Phase 6 eval). With defaults the output is byte-identical to the Phase 2
+    gated generator. Both are ignored for state_track.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -229,7 +255,9 @@ def gen(
     if mode == "state_track":
         lines, target, extra = _gen_state_track(rng, n_bindings, distractor_density, seq_len)
     else:
-        lines, target, extra = _gen_assoc_recall(rng, n_bindings, distractor_density, seq_len)
+        lines, target, extra = _gen_assoc_recall(
+            rng, n_bindings, distractor_density, seq_len, query_type=query_type, query_pos=query_pos
+        )
 
     prompt = "\n".join(" ".join(line) for line in lines)
     n_tokens = sum(len(line) for line in lines)

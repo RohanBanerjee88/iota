@@ -93,9 +93,43 @@ def report() -> int:
     return 0 if ok else 1
 
 
+def train() -> int:
+    """Train the Phase 5 milestone config (dense transformer -> near-100%)."""
+    import yaml
+
+    from iota.train import train as run_train
+
+    cfg = yaml.safe_load(open("configs/milestone_transformer.yaml"))
+    out = run_train(cfg)
+    print(f"\nMILESTONE final exact-answer acc = {out['final_acc']:.4f}")
+    return 0 if out["final_acc"] >= 0.95 else 1
+
+
+def gate() -> int:
+    """Phase 6 §0 pre-sweep gate: train all three on the SAME easy slice + budget.
+
+    Pass = all three clearly solve easy recall (not stuck at the marginal floor).
+    A few points of spread is fine; the gate fails only if one cannot learn.
+    """
+    import yaml
+
+    from iota.train import train as run_train
+
+    res = {}
+    for arch in ("transformer", "gated_linear", "hybrid"):
+        cfg = yaml.safe_load(open(f"configs/milestone_{arch}.yaml"))
+        out = run_train(cfg)
+        res[arch] = out["final_acc"]
+        print(f"  {arch:13s} final exact-answer acc = {out['final_acc']:.4f}")
+    floor = 0.5  # well above the ~0.03 marginal-prediction floor
+    ok = all(v >= floor for v in res.values())
+    print(f"\nGATE: {'PASS' if ok else 'FAIL'}  {res}")
+    return 0 if ok else 1
+
+
 def _not_built(name: str):
     def _fn() -> int:
-        print(f"[{name}] is a later phase — the first session stops after Phase 2.")
+        print(f"[{name}] is a later phase (Phase 6+). Stopping at the Phase 5/§0 milestone.")
         return 0
 
     return _fn
@@ -105,7 +139,8 @@ TARGETS = {
     "smoke": smoke,
     "test": test,
     "report": report,
-    "train": _not_built("train"),
+    "train": train,
+    "gate": gate,
     "eval": _not_built("eval"),
     "profile": _not_built("profile"),
     "plot": _not_built("plot"),

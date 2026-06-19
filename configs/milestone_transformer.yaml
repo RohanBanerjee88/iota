@@ -1,0 +1,29 @@
+# Phase 6 §0 gate (fast easy slice): identical slice + budget; pure linear.
+arch: transformer
+vocab_size: 99
+d_model: 256
+n_layers: 4
+n_heads: 4
+d_ff: 512
+dropout: 0.0
+data:
+  mode: assoc_recall
+  n_bindings:
+  - 2
+  - 4
+  distractor_density: 0.1
+  seq_len: 64
+  query_type: get
+  query_pos: early
+train:
+  steps: 3000
+  batch_size: 64
+  lr: 0.004
+  weight_decay: 0.01
+  warmup: 200
+  eval_every: 500
+  eval_n: 128
+  target_acc: 0.97
+  final_eval_n: 1000
+  seed: 0
+  run_name: transformer_milestone

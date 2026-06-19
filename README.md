@@ -9,9 +9,8 @@ phase order.
 
 ## Status
 
-**Phases 0–5 complete** — pipeline validated end to end (data → tokenizer → model
-→ train → verifier-eval). Stopped at the Phase 5 milestone; the full
-length/recall sweep (Phase 6) is next.
+**Phases 0–5 complete + Phase 6 §0 pre-sweep gate PASSED.** Stopped before the
+length/recall sweep (awaiting greenlight to size the GPU run).
 
 - **Phase 0 — scaffold**: repo tree, `seed_everything`, `tasks.py` runner.
 - **Phase 1 — `iota/data/dsl.py`**: deterministic task generator, two modes
@@ -39,6 +38,30 @@ length/recall sweep (Phase 6) is next.
 > Milestone scope: in-distribution = short sequences, low recall load, pure-recall
 > (`GET`) queries — the cleanest pipeline validation. Arithmetic-op queries,
 > `state_track`, and the length/recall sweep are Phase 6.
+
+### Phase 6 §0 pre-sweep gate (all three architectures must learn easy recall)
+
+Before spending GPU on the sweep, all three contenders are trained on an
+**identical easy slice** (`assoc_recall`, `n_bindings ∈ {2,4}`, `seq_len 64`,
+`GET`) with an **identical budget** (same optimizer/steps/seed; only the
+architecture differs). Pass = none is stuck at the ~3% marginal-prediction floor.
+
+| model | exact-answer acc (n=500) | notes |
+|---|---|---|
+| transformer | ~0.95 | converges in ~500 steps |
+| gated_linear (pure) | ~0.94 | **groks recall at ~step 1000–2000** (slower learner) |
+| hybrid | ~1.00 | full-attention layers make recall trivial |
+
+This gate caught two real bugs that would have produced a meaningless sweep:
+1. **GLA backward NaN** — the acausal entries of the intra-chunk decay matrix
+   overflowed (`exp(+Δ)=inf`), and `torch.where`-after-`exp` turned the masked
+   `0*inf` into `NaN` in backward, poisoning every gradient. Fixed by masking to
+   `-inf` *before* the `exp`.
+2. **Decay-gate over-forgetting** — initialising the gate at γ=0.88 forgets an
+   early binding (`γ^96 ≈ 1e-6`) before the query; init high (γ=0.9975) so memory
+   persists. The pure-linear model then learns recall with no conv needed.
+
+Reproduce: `python tasks.py gate` (~30–40 min CPU).
 
 ## Quickstart
 

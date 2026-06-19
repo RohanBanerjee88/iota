@@ -1,6 +1,5 @@
-# Phase 6 §0 pre-sweep gate: SAME easy slice + SAME budget as the
-# transformer milestone; only the architecture differs. Fairness is
-# non-negotiable (same steps/optimizer/schedule/data seed).
+# Phase 6 §0 gate: identical easy slice + identical training budget
+# across all three architectures; only `arch` (and arch-only knobs) differ.
 arch: gated_linear
 vocab_size: 99
 d_model: 256
@@ -20,14 +19,17 @@ data:
   query_type: get
   query_pos: early
 train:
-  steps: 4000
+  steps: 6000
   batch_size: 64
-  lr: 0.0006
+  lr: 0.002
   weight_decay: 0.01
   warmup: 200
-  eval_every: 250
-  eval_n: 256
-  target_acc: 0.98
+  eval_every: 750
+  eval_n: 200
+  target_acc: 0.97
+  final_eval_n: 1000
   seed: 0
   run_name: gated_linear_milestone
 chunk_size: 64
+decay_bias_init: 6.0
+short_conv: 0

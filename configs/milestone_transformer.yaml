@@ -1,34 +1,32 @@
-# Phase 5 milestone: validate the full pipeline (data -> tokenizer -> model ->
-# train -> verifier-eval) by training the dense transformer to near-100%
-# exact-answer accuracy on an in-distribution slice.
-#
-# In-distribution = short sequences, low recall load, pure-recall (GET) queries:
-# the cleanest pipeline validation. Arithmetic-op queries and the full
-# length/recall sweep are Phase 6.
+# Phase 6 §0 gate: identical easy slice + identical training budget
+# across all three architectures; only `arch` (and arch-only knobs) differ.
 arch: transformer
-vocab_size: 99          # overwritten from the tokenizer at runtime
+vocab_size: 99
 d_model: 256
 n_layers: 4
 n_heads: 4
 d_ff: 512
 dropout: 0.0
-
 data:
   mode: assoc_recall
-  n_bindings: [2, 4, 6, 8]
+  n_bindings:
+  - 2
+  - 4
+  - 6
+  - 8
   distractor_density: 0.1
   seq_len: 96
-  query_type: get        # pure recall for the milestone
+  query_type: get
   query_pos: early
-
 train:
-  steps: 4000
+  steps: 6000
   batch_size: 64
-  lr: 0.0006
+  lr: 0.002
   weight_decay: 0.01
   warmup: 200
-  eval_every: 250
-  eval_n: 256
-  target_acc: 0.98
+  eval_every: 750
+  eval_n: 200
+  target_acc: 0.97
+  final_eval_n: 1000
   seed: 0
   run_name: transformer_milestone

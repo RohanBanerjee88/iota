@@ -24,6 +24,7 @@ class HybridLM(SeqModel):
         full_attention_layers=(),
         chunk_size=64,
         dropout=0.0,
+        decay_bias_init=6.0,
         **_,
     ):
         super().__init__()
@@ -34,7 +35,7 @@ class HybridLM(SeqModel):
             if i in full:
                 mixer = CausalSelfAttention(d_model, n_heads, dropout)
             else:
-                mixer = GatedLinearAttention(d_model, n_heads, chunk_size, dropout)
+                mixer = GatedLinearAttention(d_model, n_heads, chunk_size, dropout, decay_bias_init)
             blocks.append(Block(d_model, mixer, d_ff, dropout))
         self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout)
 
@@ -52,4 +53,5 @@ class HybridLM(SeqModel):
             full_attention_layers=cfg.get("full_attention_layers", []),
             chunk_size=cfg.get("chunk_size", 64),
             dropout=cfg.get("dropout", 0.0),
+            decay_bias_init=cfg.get("decay_bias_init", 6.0),
         )

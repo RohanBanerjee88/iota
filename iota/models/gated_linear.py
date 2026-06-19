@@ -34,23 +34,51 @@ def _phi(x: torch.Tensor) -> torch.Tensor:
 
 
 class GatedLinearAttention(nn.Module):
-    def __init__(self, d_model: int, n_heads: int, chunk_size: int = 64, dropout: float = 0.0):
+    def __init__(self, d_model: int, n_heads: int, chunk_size: int = 64, dropout: float = 0.0,
+                 decay_bias_init: float = 6.0, short_conv: int = 0):
         super().__init__()
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
         self.n_heads = n_heads
         self.head_dim = d_model // n_heads
         self.chunk_size = chunk_size
+        # OPTIONAL short causal depthwise conv on the input (OFF by default:
+        # short_conv=0). It supplies local token mixing, the standard ingredient
+        # in linear-attention recall models (Based / Mamba / Zoology). We verified
+        # on CPU that the PURE linear model (no conv) already learns associative
+        # recall once the decay gate is initialised high (see below), so we keep
+        # the architecture pure linear by default and leave the conv as an
+        # ablation knob.
+        self.short_conv = short_conv
+        if short_conv and short_conv > 1:
+            self.conv = nn.Conv1d(d_model, d_model, short_conv, groups=d_model, bias=True)
+        else:
+            self.conv = None
         self.q_proj = nn.Linear(d_model, d_model)
         self.k_proj = nn.Linear(d_model, d_model)
         self.v_proj = nn.Linear(d_model, d_model)
         self.g_proj = nn.Linear(d_model, n_heads)  # per-head scalar decay logit
         self.out = nn.Linear(d_model, d_model)
         self.drop = nn.Dropout(dropout)
-        # bias decay toward ~1 at init so memory persists early in training
-        nn.init.constant_(self.g_proj.bias, 2.0)
+        # Bias the decay gate toward gamma ~= 1 so memory persists across the
+        # whole sequence at init. This is CRITICAL for associative recall:
+        # bindings are written early and queried at the end, so a low-gamma init
+        # (e.g. sigmoid(2)=0.88 -> gamma^100 ~ 1e-6) forgets the answer before
+        # readout and the model never learns to recall. sigmoid(6)=0.9975.
+        nn.init.constant_(self.g_proj.bias, decay_bias_init)
+        nn.init.zeros_(self.g_proj.weight)
 
     # -- shared projections --------------------------------------------------
+    def _causal_conv(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B,T,D) -> depthwise causal conv (left-pad by kernel-1) -> (B,T,D)
+        if self.conv is None:
+            return x
+        xt = x.transpose(1, 2)  # (B,D,T)
+        xt = F.pad(xt, (self.short_conv - 1, 0))
+        xt = self.conv(xt)
+        return xt.transpose(1, 2)
+
     def _project(self, x: torch.Tensor):
+        x = self._causal_conv(x)
         B, T, D = x.shape
         H, Dh = self.n_heads, self.head_dim
         q = _phi(self.q_proj(x)).view(B, T, H, Dh).transpose(1, 2)  # (B,H,T,Dh)
@@ -139,10 +167,13 @@ class GatedLinearAttention(nn.Module):
 
 
 class GatedLinearLM(SeqModel):
-    def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, chunk_size=64, dropout=0.0, **_):
+    def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, chunk_size=64, dropout=0.0,
+                 decay_bias_init=6.0, short_conv=0, **_):
         super().__init__()
         blocks = [
-            Block(d_model, GatedLinearAttention(d_model, n_heads, chunk_size, dropout), d_ff, dropout)
+            Block(d_model,
+                  GatedLinearAttention(d_model, n_heads, chunk_size, dropout, decay_bias_init, short_conv),
+                  d_ff, dropout)
             for _ in range(n_layers)
         ]
         self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout)
@@ -160,4 +191,6 @@ class GatedLinearLM(SeqModel):
             d_ff=cfg["d_ff"],
             chunk_size=cfg.get("chunk_size", 64),
             dropout=cfg.get("dropout", 0.0),
+            decay_bias_init=cfg.get("decay_bias_init", 6.0),
+            short_conv=cfg.get("short_conv", 0),
         )

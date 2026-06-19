@@ -81,8 +81,8 @@ def train(cfg: Dict, smoke: bool = False) -> Dict:
     opt = torch.optim.AdamW(model.parameters(), lr=base_lr, weight_decay=wd, betas=(0.9, 0.95))
 
     print(f"model={cfg['arch']} params={model.num_params()/1e6:.2f}M vocab={tok.vocab_size} "
-          f"device={device} steps={steps} bs={batch_size}")
-    print(f"data={dcfg}")
+          f"device={device} steps={steps} bs={batch_size}", flush=True)
+    print(f"data={dcfg}", flush=True)
 
     history = {"step": [], "loss": [], "eval_acc": []}
     cursor = 0
@@ -120,21 +120,21 @@ def train(cfg: Dict, smoke: bool = False) -> Dict:
             best_acc = max(best_acc, acc)
             dt = time.time() - t0
             print(f"step {step+1:5d}/{steps}  loss {loss.item():.4f}  eval_acc {acc:.3f}  "
-                  f"({dt:.0f}s, {(step+1)/dt:.1f} it/s)")
+                  f"({dt:.0f}s, {(step+1)/dt:.1f} it/s)", flush=True)
             if acc >= target_acc and not smoke:
-                print(f"  reached target_acc {target_acc} -> early stop")
+                print(f"  reached target_acc {target_acc} -> early stop", flush=True)
                 break
 
     # robust final eval on a larger held-out set for the reported milestone number
     final_n = 32 if smoke else int(tcfg.get("final_eval_n", 1000))
     final_acc, failures = exact_answer_accuracy(model, sampler, n=final_n, device=device, tok=tok)
     history["final_eval"] = {"n": final_n, "acc": final_acc, "failures": failures}
-    print(f"final eval (n={final_n}): exact-answer acc = {final_acc:.4f}")
+    print(f"final eval (n={final_n}): exact-answer acc = {final_acc:.4f}", flush=True)
 
     run_name = tcfg.get("run_name", f"{cfg['arch']}_milestone")
     if not smoke:
         weights = _save(model, cfg, history, run_name)
-        print(f"saved -> {RESULTS_DIR}/{run_name}.json ({weights})")
+        print(f"saved -> {RESULTS_DIR}/{run_name}.json ({weights})", flush=True)
     return {"final_acc": final_acc, "best_acc": max(best_acc, final_acc), "history": history}
 
 

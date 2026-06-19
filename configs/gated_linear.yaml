@@ -1,0 +1,11 @@
+# Gated linear attention contender. See BUILD_PLAN.md §5.
+arch: gated_linear
+vocab_size: 99
+d_model: 256
+n_layers: 6
+n_heads: 4
+d_ff: 512
+feature_map: elu1   # phi(x) = elu(x) + 1
+chunk_size: 64      # chunk-parallel for fair wall-clock latency
+max_seq_len: 512
+dropout: 0.0

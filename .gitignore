@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.safetensors
+experiments/results/*.json
+experiments/results/*.csv
+experiments/plots/*.png
+.ipynb_checkpoints/

@@ -181,6 +181,7 @@ def _cell_examples(tok, cell: Dict, n: int, seed_base: int) -> List[SweepExample
             seed=seed_base + idx,
             n_queries=cell.get("n_queries", 1),
             query_pos=cell.get("query_pos", "uniform"),
+            ops_kinds=cell.get("ops_kinds"),
         ))
     return exs
 
@@ -199,10 +200,10 @@ def cells_for_pass(pass_id: int) -> List[Dict]:
              "n_queries": 8, "query_pos": "uniform", "sweep": sl}
             for sl in (128, 256, 512, 1024, 2048, 4096, 8192)
         ]
-    if pass_id == 3:  # control: state_track, swept length
+    if pass_id == 3:  # control: additive state_track (learnable home turf), swept length
         return [
             {"mode": "state_track", "seq_len": sl, "n_bindings": 8,
-             "n_queries": 1, "sweep": sl}
+             "n_queries": 1, "ops_kinds": ["add", "sub"], "sweep": sl}
             for sl in (128, 256, 512, 1024, 2048, 4096, 8192)
         ]
     raise ValueError(f"unknown pass {pass_id}")

@@ -107,6 +107,10 @@ class SweepExample:
     meta: Dict
 
 
+def _encode_value(tok: Tokenizer, value: int) -> List[int]:
+    return [tok.stoi[ch] for ch in f"{value % MOD:0{ANSWER_WIDTH}d}"]
+
+
 def make_sweep_example(
     tok: Tokenizer,
     mode: str,
@@ -116,28 +120,49 @@ def make_sweep_example(
     seed: int,
     n_queries: int = 1,
     query_pos: str = "uniform",
+    ops_kinds=None,
 ) -> SweepExample:
     prompt, _, meta = gen(
         mode, n_bindings, distractor_density, seq_len, seed,
-        n_queries=n_queries, query_pos=query_pos,
+        n_queries=n_queries, query_pos=query_pos, ops_kinds=ops_kinds,
     )
-    p_ids = tok.encode(prompt)
-    a_ids: List[int] = []
     spans: List[tuple] = []
-    for a in meta["answers"]:
-        s = len(p_ids) + len(a_ids)
-        for ch in f"{a % MOD:0{ANSWER_WIDTH}d}":
-            a_ids.append(tok.stoi[ch])
+    if mode == "assoc_recall":
+        # INTERLEAVED MQAR layout: "<context> GET k = <val> GET k2 = <val2> ...".
+        # Each answer immediately follows its query (canonical, learnable) instead
+        # of batching all answers at the end (which forces hard query<->answer
+        # alignment and does not train in budget).
+        context = "\n".join(l for l in prompt.splitlines() if not l.startswith("GET"))
+        tokens = tok.encode(context)
+        true_len = len(tokens)
+        for key, ans in zip(meta["query_keys"], meta["answers"]):
+            tokens += tok.encode(f"GET {key} =")
+            s = len(tokens)
+            tokens += _encode_value(tok, ans)
+            spans.append((s, s + ANSWER_WIDTH))
+        tokens.append(tok.eos_id)
+    else:
+        # state_track: single answer appended after the prompt.
+        tokens = tok.encode(prompt)
+        true_len = len(tokens)
+        s = len(tokens)
+        tokens += _encode_value(tok, meta["answers"][0])
         spans.append((s, s + ANSWER_WIDTH))
-    a_ids.append(tok.eos_id)
-    tokens = p_ids + a_ids
-    return SweepExample(tokens, spans, len(p_ids), prompt, meta)
+        tokens.append(tok.eos_id)
+    return SweepExample(tokens, spans, true_len, prompt, meta)
 
 
-def _draw(r: random.Random, spec):
-    """Sample a scalar from an int, a list of choices, or {min,max}."""
+def _draw(r: random.Random, spec, difficulty: float = 1.0):
+    """Sample a scalar from an int, a list of choices, or {min,max}.
+
+    `difficulty` in [0,1] shrinks the upper bound of a {min,max} range so a
+    curriculum can ramp easy->hard: at difficulty 0 only `min` is drawn, at 1 the
+    full range. (Explicit lists/ints ignore difficulty.)
+    """
     if isinstance(spec, dict):
-        return r.randint(int(spec["min"]), int(spec["max"]))
+        lo, hi = int(spec["min"]), int(spec["max"])
+        hi_eff = lo + round(max(0.0, min(1.0, difficulty)) * (hi - lo))
+        return r.randint(lo, hi_eff)
     if isinstance(spec, (list, tuple)):
         return r.choice(list(spec))
     return int(spec)
@@ -157,24 +182,24 @@ class CurriculumSampler:
         self.components = curriculum
         self.weights = [float(c.get("weight", 1.0)) for c in curriculum]
 
-    def example(self, index: int, offset: int) -> SweepExample:
+    def example(self, index: int, offset: int, difficulty: float = 1.0) -> SweepExample:
         r = random.Random(offset + index)
         comp = r.choices(self.components, weights=self.weights, k=1)[0]
         mode = comp["mode"]
-        nb = _draw(r, comp.get("n_bindings", 8))
-        seq_len = _draw(r, comp.get("seq_len", 256))
+        nb = _draw(r, comp.get("n_bindings", 8), difficulty)
+        seq_len = _draw(r, comp.get("seq_len", 256), difficulty)
         density = float(comp.get("distractor_density", 0.0))
         query_pos = comp.get("query_pos", "uniform")
-        nq = _draw(r, comp.get("n_queries", 1)) if mode == "assoc_recall" else 1
+        nq = _draw(r, comp.get("n_queries", 1), difficulty) if mode == "assoc_recall" else 1
         nq = max(1, min(int(nq), int(nb)))
         content_seed = r.randrange(1 << 30)
         return make_sweep_example(
             self.tok, mode, nb, density, seq_len, content_seed,
-            n_queries=nq, query_pos=query_pos,
+            n_queries=nq, query_pos=query_pos, ops_kinds=comp.get("ops_kinds"),
         )
 
-    def batch(self, indices: List[int], offset: int) -> List[SweepExample]:
-        return [self.example(i, offset) for i in indices]
+    def batch(self, indices: List[int], offset: int, difficulty: float = 1.0) -> List[SweepExample]:
+        return [self.example(i, offset, difficulty) for i in indices]
 
 
 def collate_sweep(examples: List[SweepExample], pad_id: int):

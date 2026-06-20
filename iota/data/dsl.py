@@ -108,16 +108,21 @@ def _emit_distractor_lines(rng: random.Random, budget: int) -> List[List[str]]:
 # Mode A — state_track
 # ----------------------------------------------------------------------------
 def _gen_state_track(
-    rng: random.Random, n_ops: int, density: float, seq_len: int
+    rng: random.Random, n_ops: int, density: float, seq_len: int, ops_kinds=None
 ) -> Tuple[List[List[str]], str, Dict]:
     n_ops = max(1, int(n_ops))
     state = rng.randint(0, MOD - 1)
     val = state
     start_line = ["START", ACC, "=", str(state)]
 
+    # Which update kinds are allowed. Modular MULTIPLICATION is near-unlearnable
+    # for a tiny model, so as a *learnable* control we default the curriculum to
+    # additive state tracking; the full set stays available for completeness.
+    kinds = list(ops_kinds) if ops_kinds else ["add", "sub", "mul", "affine"]
+
     ops: List[List[str]] = []
     for _ in range(n_ops):
-        kind = rng.choice(["add", "sub", "mul", "affine"])
+        kind = rng.choice(kinds)
         if kind == "add":
             b = rng.randint(0, MOD - 1)
             ops.append([ACC, "=", "(", ACC, "+", str(b), ")", "mod", str(MOD)])
@@ -161,6 +166,7 @@ def _gen_state_track(
         "query": {"type": "state_track", "var": ACC},
         "n_ops": n_ops,
         "answers": [val % MOD],
+        "query_keys": [ACC],
         "n_queries": 1,
     }
     return out, target, meta
@@ -206,8 +212,9 @@ def _gen_assoc_recall(
         chosen = rng.sample(range(n), nq)
         query_lines = [["GET", keys[i]] for i in chosen]
         answers = [values[i] % MOD for i in chosen]
+        chosen_keys = [keys[i] for i in chosen]
         target = " ".join(f"{a:02d}" for a in answers)
-        query = {"type": "multi_get", "keys": [keys[i] for i in chosen], "n_queries": nq}
+        query = {"type": "multi_get", "keys": chosen_keys, "n_queries": nq}
     else:
         # Single query. query_pos: "early" (first half, guarantees distance) or
         # "uniform" (any key, used by the capacity sweep so position isn't a bias).
@@ -215,6 +222,7 @@ def _gen_assoc_recall(
         i = rng.randint(0, hi - 1)
         query_lines = [["GET", keys[i]]]
         answers = [values[i] % MOD]
+        chosen_keys = [keys[i]]
         target = str(values[i] % MOD)
         query = {"type": "get", "key": keys[i], "n_queries": 1}
 
@@ -226,7 +234,8 @@ def _gen_assoc_recall(
     # queried bindings are defined early and recalled across distance.
     out: List[List[str]] = list(set_lines) + dlines + list(query_lines)
 
-    meta = {"query": query, "n_bindings": n, "answers": answers, "n_queries": nq}
+    meta = {"query": query, "n_bindings": n, "answers": answers,
+            "query_keys": chosen_keys, "n_queries": nq}
     return out, target, meta
 
 
@@ -243,6 +252,7 @@ def gen(
     query_type=None,
     query_pos: str = "early",
     n_queries: int = 1,
+    ops_kinds=None,
 ) -> Tuple[str, str, Dict]:
     """Generate one example.
 
@@ -258,7 +268,9 @@ def gen(
 
     rng = _mk_rng(mode, n_bindings, distractor_density, seq_len, seed)
     if mode == "state_track":
-        lines, target, extra = _gen_state_track(rng, n_bindings, distractor_density, seq_len)
+        lines, target, extra = _gen_state_track(
+            rng, n_bindings, distractor_density, seq_len, ops_kinds=ops_kinds
+        )
     else:
         lines, target, extra = _gen_assoc_recall(
             rng, n_bindings, distractor_density, seq_len,

@@ -1,6 +1,6 @@
-# Phase 6 sweep training: mixed curriculum (assoc_recall multi-query +
-# state_track control), n_bindings<=16, seq_len<=512, train to PLATEAU
-# (patience early-stop on n=500 held-out), identical budget across archs.
+# Phase 6 sweep training (CPU-validated): interleaved multi-query + additive
+# state_track control; flat easy phase then difficulty ramp; plateau on per-query.
+# SAME schedule shape; per-arch LR (GLA groks slower -> higher LR, same protocol).
 arch: transformer
 d_model: 256
 n_layers: 4
@@ -13,7 +13,7 @@ curriculum:
     min: 2
     max: 16
   seq_len:
-    min: 128
+    min: 64
     max: 512
   n_queries:
     min: 1
@@ -26,18 +26,23 @@ curriculum:
     min: 2
     max: 16
   seq_len:
-    min: 128
+    min: 64
     max: 512
   distractor_density: 0.1
+  ops_kinds:
+  - add
+  - sub
   weight: 0.3
 train:
-  max_steps: 10000
   batch_size: 64
-  lr: 0.003
   warmup: 200
   weight_decay: 0.01
+  max_steps: 10000
+  easy_steps: 2000
+  ramp_steps: 4000
   eval_every: 500
   eval_n: 500
-  patience: 5
+  patience: 8
   seed: 0
+  lr: 0.0015
   run_name: transformer_sweep

@@ -87,11 +87,18 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     wd = float(tcfg.get("weight_decay", 0.01))
     eval_every = 20 if smoke else int(tcfg.get("eval_every", 500))
     eval_n = 64 if smoke else int(tcfg.get("eval_n", 500))
-    patience = int(tcfg.get("patience", 5))
+    patience = int(tcfg.get("patience", 8))
+    # Curriculum schedule: a FLAT easy phase (difficulty 0 = smallest n_bindings /
+    # 1 query / shortest seq) lets the model master the induction pattern, THEN a
+    # linear ramp to full difficulty. Ramping from step 0 (no flat phase) climbs
+    # faster than the model bootstraps and it never learns; a too-high lr makes
+    # the difficulty change forget the easy skill. Validated on CPU.
+    easy_steps = 10 if smoke else int(tcfg.get("easy_steps", max(1, max_steps // 8)))
+    ramp_steps = 30 if smoke else int(tcfg.get("ramp_steps", max(1, max_steps // 2)))
     run_name = tcfg.get("run_name", f"{cfg['arch']}_sweep")
 
-    # Fixed held-out eval set (disjoint stream via EVAL_OFFSET), built once.
-    eval_examples = sampler.batch(list(range(eval_n)), EVAL_OFFSET)
+    # Fixed held-out eval set at FULL difficulty (disjoint stream), built once.
+    eval_examples = sampler.batch(list(range(eval_n)), EVAL_OFFSET, difficulty=1.0)
     opt = torch.optim.AdamW(model.parameters(), lr=base_lr, weight_decay=wd, betas=(0.9, 0.95))
 
     print(f"[sweep] model={cfg['arch']} params={model.num_params()/1e6:.2f}M device={device} "
@@ -104,7 +111,8 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
         lr = _lr_at(step, base_lr, warmup, max_steps)
         for g in opt.param_groups:
             g["lr"] = lr
-        ex = sampler.batch(list(range(cursor, cursor + batch_size)), TRAIN_OFFSET)
+        difficulty = min(1.0, max(0.0, (step + 1 - easy_steps) / ramp_steps))
+        ex = sampler.batch(list(range(cursor, cursor + batch_size)), TRAIN_OFFSET, difficulty)
         cursor += batch_size
         inp, tgt, mask = collate_sweep(ex, tok.pad_id)
         inp, tgt, mask = inp.to(device), tgt.to(device), mask.to(device)
@@ -119,12 +127,17 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
 
         if (step + 1) % eval_every == 0 or step == max_steps - 1:
             scores = teacher_forced_scores(model, eval_examples, tok.pad_id, device)
-            acc = sum(1 for s in scores if all(s)) / max(1, len(scores))
-            history["eval_acc"].append({"step": step + 1, "acc": acc})
+            # plateau signal = per-QUERY accuracy (graded); exact-all-queries is too
+            # stringent for multi-query and would mask real learning progress.
+            exact = sum(1 for s in scores if all(s)) / max(1, len(scores))
+            per_q = sum(q for s in scores for q in s) / max(1, sum(len(s) for s in scores))
+            acc = per_q
+            history["eval_acc"].append({"step": step + 1, "per_query": per_q, "exact": exact,
+                                        "difficulty": round(difficulty, 3)})
             improved = acc > best_acc + 1e-4
             print(f"[sweep] {cfg['arch']} step {step+1:5d} loss {loss.item():.3f} "
-                  f"plateau_acc {acc:.3f} {'*' if improved else ''} "
-                  f"({time.time()-t0:.0f}s)", flush=True)
+                  f"per_q {per_q:.3f} exact {exact:.3f} diff {difficulty:.2f} "
+                  f"{'*' if improved else ''} ({time.time()-t0:.0f}s)", flush=True)
             if improved:
                 best_acc, bad = acc, 0
                 if not smoke:

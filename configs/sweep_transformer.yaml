@@ -1,6 +1,7 @@
-# Phase 6 sweep training. Moderate learnable ceiling (n_bindings<=8, n_queries<=3,
-# seq<=256); interleaved multi-query + additive state_track control; flat easy phase
-# -> difficulty ramp; plateau on per-query. lr is the GPU-tuned knob.
+# Phase 6 sweep training. Moderate ceiling (n_bindings<=8, n_queries<=3, seq<=256);
+# interleaved multi-query + additive state_track control; flat easy phase -> ramp;
+# plateau on per-query. lr 1.5e-3 (GPU-confirmed for transformer: per_q climbs to
+# 0.75 by step 3000 and rising; 3e-3/5e-3 destabilize). GLA: probe first.
 arch: transformer
 d_model: 256
 n_layers: 4
@@ -44,5 +45,5 @@ train:
   eval_n: 500
   patience: 8
   seed: 0
-  lr: 0.003
+  lr: 0.0015
   run_name: transformer_sweep

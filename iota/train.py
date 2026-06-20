@@ -241,10 +241,16 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--smoke", action="store_true", help="tiny CPU run in seconds")
     ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--lr", type=float, default=None, help="override train.lr (for tuning)")
+    ap.add_argument("--run_name", default=None, help="override train.run_name")
     args = ap.parse_args()
     cfg = yaml.safe_load(open(args.config))
     if args.seed is not None:
         cfg.setdefault("train", {})["seed"] = args.seed
+    if args.lr is not None:
+        cfg.setdefault("train", {})["lr"] = args.lr
+    if args.run_name is not None:
+        cfg.setdefault("train", {})["run_name"] = args.run_name
     train(cfg, smoke=args.smoke)
 
 

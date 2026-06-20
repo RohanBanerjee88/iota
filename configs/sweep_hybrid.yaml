@@ -1,6 +1,6 @@
-# Phase 6 sweep training (CPU-validated): interleaved multi-query + additive
-# state_track control; flat easy phase then difficulty ramp; plateau on per-query.
-# SAME schedule shape; per-arch LR (GLA groks slower -> higher LR, same protocol).
+# Phase 6 sweep training. Moderate learnable ceiling (n_bindings<=8, n_queries<=3,
+# seq<=256); interleaved multi-query + additive state_track control; flat easy phase
+# -> difficulty ramp; plateau on per-query. lr is the GPU-tuned knob.
 arch: hybrid
 d_model: 256
 n_layers: 5
@@ -17,38 +17,38 @@ curriculum:
 - mode: assoc_recall
   n_bindings:
     min: 2
-    max: 16
+    max: 8
   seq_len:
     min: 64
-    max: 512
+    max: 256
   n_queries:
     min: 1
-    max: 8
+    max: 3
   distractor_density: 0.1
   query_pos: uniform
-  weight: 0.7
+  weight: 0.75
 - mode: state_track
   n_bindings:
     min: 2
-    max: 16
+    max: 8
   seq_len:
     min: 64
-    max: 512
+    max: 256
   distractor_density: 0.1
   ops_kinds:
   - add
   - sub
-  weight: 0.3
+  weight: 0.25
 train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 10000
+  max_steps: 8000
   easy_steps: 2000
-  ramp_steps: 4000
+  ramp_steps: 3000
   eval_every: 500
   eval_n: 500
   patience: 8
   seed: 0
-  lr: 0.0015
+  lr: 0.003
   run_name: hybrid_sweep

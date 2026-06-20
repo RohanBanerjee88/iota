@@ -1,15 +1,11 @@
-# Phase 6 sweep training. Moderate learnable ceiling (n_bindings<=8, n_queries<=3,
-# seq<=256); interleaved multi-query + additive state_track control; flat easy phase
-# -> difficulty ramp; plateau on per-query. lr is the GPU-tuned knob.
-arch: gated_linear
+# FAST GPU tuning probe: transformer only, 3000 steps, eval every 250. Watch per_q.
+# Vary train.lr (try 1.5e-3 / 3e-3 / 5e-3) to find what bootstraps the 256-dim model.
+arch: transformer
 d_model: 256
 n_layers: 4
 n_heads: 4
 d_ff: 512
 dropout: 0.0
-chunk_size: 64
-decay_bias_init: 6.0
-short_conv: 0
 curriculum:
 - mode: assoc_recall
   n_bindings:
@@ -40,12 +36,12 @@ train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 8000
-  easy_steps: 2000
-  ramp_steps: 3000
-  eval_every: 500
+  max_steps: 3000
+  easy_steps: 1000
+  ramp_steps: 1500
+  eval_every: 250
   eval_n: 500
   patience: 8
   seed: 0
   lr: 0.003
-  run_name: gated_linear_sweep
+  run_name: tune_transformer

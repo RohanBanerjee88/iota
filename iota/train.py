@@ -142,7 +142,11 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
                 best_acc, bad = acc, 0
                 if not smoke:
                     _save(model, cfg, history, run_name)  # checkpoint the best
-            else:
+            elif difficulty >= 1.0:
+                # Only count toward patience AFTER the ramp is complete. During the
+                # easy phase + ramp the model can sit flat for a long time (GLA
+                # groks slowly), and counting patience there would early-stop it
+                # before it ever learns -- exactly what killed the GLA run.
                 bad += 1
                 if bad >= patience:
                     print(f"[sweep] {cfg['arch']} plateaued (patience {patience}) -> stop", flush=True)

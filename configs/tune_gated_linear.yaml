@@ -1,4 +1,6 @@
-# FAST GPU tuning probe: gated_linear only, 3000 steps, eval every 250. Vary --lr.
+# FAST GLA probe: lr 3e-3, long easy phase (2500) so we can SEE it grok (~step
+# 1500-2500) then climb on the ramp. ~12-15 min on T4. patience high so it won't
+# early-stop during the flat pre-grok phase.
 arch: gated_linear
 d_model: 256
 n_layers: 4
@@ -35,15 +37,15 @@ train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 3000
-  easy_steps: 1000
-  ramp_steps: 1500
+  max_steps: 5000
+  easy_steps: 2500
+  ramp_steps: 2000
   eval_every: 250
   eval_n: 500
-  patience: 8
+  patience: 50
   seed: 0
   lr: 0.003
-  run_name: tune_gated_linear
+  run_name: tune_gla
 chunk_size: 64
 decay_bias_init: 6.0
 short_conv: 0

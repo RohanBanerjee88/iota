@@ -1,7 +1,7 @@
-# Phase 6 sweep training. Moderate ceiling (n_bindings<=8, n_queries<=3, seq<=256);
-# interleaved multi-query + additive state_track control; flat easy phase -> ramp;
-# plateau on per-query. lr 1.5e-3 (GPU-confirmed for transformer: per_q climbs to
-# 0.75 by step 3000 and rising; 3e-3/5e-3 destabilize). GLA: probe first.
+# Phase 6 sweep training -- GATED LINEAR (the slow learner). lr 3e-3 (it never
+# groks at 1.5e-3); LONG easy phase (3000) so it groks before the ramp; generous
+# max_steps. Early-stop only fires after the ramp (diff=1.0), so the slow pre-grok
+# plateau no longer kills the run. transformer/hybrid keep lr 1.5e-3.
 arch: gated_linear
 d_model: 256
 n_layers: 4
@@ -41,12 +41,12 @@ train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 8000
-  easy_steps: 2000
-  ramp_steps: 3000
+  max_steps: 14000
+  easy_steps: 3000
+  ramp_steps: 4000
   eval_every: 500
   eval_n: 500
   patience: 8
   seed: 0
-  lr: 0.0015
+  lr: 0.003
   run_name: gated_linear_sweep

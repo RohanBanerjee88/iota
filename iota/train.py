@@ -95,6 +95,7 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     # the difficulty change forget the easy skill. Validated on CPU.
     easy_steps = 10 if smoke else int(tcfg.get("easy_steps", max(1, max_steps // 8)))
     ramp_steps = 30 if smoke else int(tcfg.get("ramp_steps", max(1, max_steps // 2)))
+    grad_clip = float(tcfg.get("grad_clip", 1.0))
     run_name = tcfg.get("run_name", f"{cfg['arch']}_sweep")
 
     # Fixed held-out eval set at FULL difficulty (disjoint stream), built once.
@@ -122,7 +123,7 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
         loss = (ce * mask).sum() / mask.sum().clamp_min(1.0)
         opt.zero_grad(set_to_none=True)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         opt.step()
 
         if (step + 1) % eval_every == 0 or step == max_steps - 1:

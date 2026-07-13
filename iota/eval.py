@@ -93,19 +93,45 @@ def exact_answer_accuracy(
 
 
 def load_checkpoint(run_name: str, results_dir: str = "experiments/results", device: str = "cpu"):
-    """Rebuild a model from a saved run json + weights (safetensors or .pt)."""
+    """Rebuild a model from a saved run json + weights (safetensors or .pt).
+
+    Robust to a missing run json: if `{run_name}.json` isn't there but the weights
+    are, reconstruct the config from `configs/sweep_{arch}.yaml` (the arch is the
+    run_name minus its trailing `_sweep`/`_milestone` suffix).
+    """
     import json
     import os
 
-    import yaml  # noqa: F401
+    import yaml
 
+    from .data.tokenizer import get_tokenizer
     from .models import build_model
 
-    with open(os.path.join(results_dir, f"{run_name}.json")) as fh:
-        run = json.load(fh)
-    cfg = run["config"]
+    json_path = os.path.join(results_dir, f"{run_name}.json")
+    if os.path.exists(json_path):
+        with open(json_path) as fh:
+            run = json.load(fh)
+        cfg = run["config"]
+        weights = run["weights"]
+    else:
+        # Fallback: derive arch from run_name and load the matching sweep config.
+        arch = run_name
+        for suffix in ("_sweep", "_milestone"):
+            if arch.endswith(suffix):
+                arch = arch[: -len(suffix)]
+                break
+        cfg_path = f"configs/sweep_{arch}.yaml"
+        if not os.path.exists(cfg_path):
+            raise FileNotFoundError(
+                f"no {run_name}.json and no {cfg_path} to reconstruct config from"
+            )
+        cfg = yaml.safe_load(open(cfg_path))
+        cfg["vocab_size"] = get_tokenizer().vocab_size
+        weights = f"{run_name}.safetensors"
+        print(f"  [load_checkpoint] {run_name}.json missing -> rebuilt config from {cfg_path}")
+
     model = build_model(cfg).to(device)
-    wpath = os.path.join(results_dir, run["weights"])
+    wpath = os.path.join(results_dir, weights)
     if wpath.endswith(".safetensors"):
         from safetensors.torch import load_file
 

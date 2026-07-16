@@ -1,3 +1,7 @@
+# LONG-CONTEXT RETRAIN: seq_len<=640 (was 256) so the capacity sweep's length
+# (nb=128 -> ~773 tok) is ~in-distribution and doesn't confound capacity with
+# length extrapolation. Control (state_track) reweighted 0.33 and the trainer now
+# drives early-stop off the BALANCED per-mode mean, so the control can't hide.
 # Phase 6 sweep -- TRANSFORMER baseline. lr 1.5e-3 (needed for ~0.83 plateau;
 # 1.2e-3 stalls at 0.59), gentle ramp (5000) + tight grad_clip 0.5 to kill the
 # loss-spike crash at the ramp without lowering lr. GLA/hybrid unchanged (grad_clip
@@ -15,30 +19,30 @@ curriculum:
     max: 8
   seq_len:
     min: 64
-    max: 256
+    max: 640
   n_queries:
     min: 1
     max: 3
   distractor_density: 0.1
   query_pos: uniform
-  weight: 0.75
+  weight: 0.67
 - mode: state_track
   n_bindings:
     min: 2
     max: 8
   seq_len:
     min: 64
-    max: 256
+    max: 640
   distractor_density: 0.1
   ops_kinds:
   - add
   - sub
-  weight: 0.25
+  weight: 0.33
 train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 11000
+  max_steps: 13000
   easy_steps: 2000
   ramp_steps: 5000
   eval_every: 500

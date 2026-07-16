@@ -214,9 +214,19 @@ def _cell_examples(tok, cell: Dict, n: int, seed_base: int) -> List[SweepExample
 
 def cells_for_pass(pass_id: int) -> List[Dict]:
     """The eval grid for each pass (see PHASE6_EVAL_SPEC.md §3)."""
-    if pass_id == 1:  # capacity (headline): multi-query, fixed length
+    if pass_id == 1:  # capacity (headline): multi-query, length held in-distribution
+        # seq_len=256 is a length the models train on. The distractor budget's
+        # length-floor pads every low/mid-nb example UP to ~256 tokens (bindings
+        # buried in distractors, exactly the training regime), so the crossover
+        # region (nb up to ~50) varies ONLY capacity, not length. Past ~50 bindings
+        # the SET lines themselves exceed 256 tokens and true_len grows to ~773 at
+        # nb=128 -- a mild 1.2x RoPE extrapolation for a 640-trained model, and the
+        # regime where linear attention is expected dead anyway. The old grid
+        # (seq_len=512) forced even nb=2 to ~510 tokens, ~2x the training length,
+        # tanking the attention models on LENGTH before capacity mattered --
+        # inverting the headline.
         return [
-            {"mode": "assoc_recall", "seq_len": 512, "n_bindings": nb,
+            {"mode": "assoc_recall", "seq_len": 256, "n_bindings": nb,
              "n_queries": min(nb, 16), "query_pos": "uniform", "sweep": nb}
             for nb in (2, 4, 8, 16, 32, 64, 128)
         ]

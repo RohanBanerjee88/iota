@@ -39,6 +39,22 @@ from .util import seed_everything
 RESULTS_DIR = "experiments/results"
 
 
+def _per_mode_per_q(scores, examples) -> Dict[str, float]:
+    """Per-query accuracy bucketed by task mode (from each example's meta).
+
+    Guards against the aggregate hiding a dead task: assoc_recall emits several
+    queries per example while state_track emits one, so a failing control barely
+    moves the pooled mean. Returns {mode: per_query_accuracy}.
+    """
+    hit: Dict[str, int] = {}
+    tot: Dict[str, int] = {}
+    for s, ex in zip(scores, examples):
+        m = ex.meta.get("mode", "?")
+        hit[m] = hit.get(m, 0) + sum(1 for q in s if q)
+        tot[m] = tot.get(m, 0) + len(s)
+    return {m: hit[m] / max(1, tot[m]) for m in tot}
+
+
 def _lr_at(step: int, base_lr: float, warmup: int, total: int) -> float:
     if step < warmup:
         return base_lr * (step + 1) / max(1, warmup)
@@ -132,12 +148,21 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
             # stringent for multi-query and would mask real learning progress.
             exact = sum(1 for s in scores if all(s)) / max(1, len(scores))
             per_q = sum(q for s in scores for q in s) / max(1, sum(len(s) for s in scores))
-            acc = per_q
+            # Per-MODE breakdown. The aggregate per_q is dominated by assoc_recall
+            # (up to 3 queries/example vs 1 for state_track), so a dead control task
+            # stays invisible in the mean. Report each mode, and drive the plateau /
+            # early-stop off the BALANCED mean of the modes present so the control
+            # must actually be learned before we stop.
+            per_mode = _per_mode_per_q(scores, eval_examples)
+            acc = sum(per_mode.values()) / max(1, len(per_mode))  # balanced across modes
             history["eval_acc"].append({"step": step + 1, "per_query": per_q, "exact": exact,
+                                        "balanced": round(acc, 4),
+                                        "by_mode": {m: round(v, 4) for m, v in per_mode.items()},
                                         "difficulty": round(difficulty, 3)})
             improved = acc > best_acc + 1e-4
+            mode_str = " ".join(f"{m[:5]} {v:.3f}" for m, v in sorted(per_mode.items()))
             print(f"[sweep] {cfg['arch']} step {step+1:5d} loss {loss.item():.3f} "
-                  f"per_q {per_q:.3f} exact {exact:.3f} diff {difficulty:.2f} "
+                  f"bal {acc:.3f} [{mode_str}] exact {exact:.3f} diff {difficulty:.2f} "
                   f"{'*' if improved else ''} ({time.time()-t0:.0f}s)", flush=True)
             if improved:
                 best_acc, bad = acc, 0

@@ -1,79 +1,121 @@
-"""Sanity check: evaluate each recovered checkpoint on its EXACT training
-distribution, bucketed by task mode.
+"""Sanity check: evaluate each checkpoint on its EXACT training distribution.
 
-Motivation: the Phase-6 eval passes (cells_for_pass) run at seq_len=512 with
-distractor_density=0 -- i.e. ~2x the max training length (64..256) that every
-model saw. That entangles length-extrapolation with capacity and can tank the
-attention-based models before capacity even matters. Before trusting any sweep
-number we must confirm the checkpoints actually reproduce their ~0.85 training
-accuracy IN-distribution. This script does exactly that and separates assoc_recall
-(the real task) from state_track (the control) so we can see, per model:
+The Phase-6 eval passes deliberately probe OUT of distribution (capacity to 128
+bindings, length to 8192). That makes a low score ambiguous: a bad checkpoint and a
+genuine capacity limit look identical. This script removes the ambiguity by scoring
+each model on the distribution it actually trained on, split BY TASK MODE:
 
     assoc_pq   -- in-distribution associative-recall per-query accuracy
-    state_pq   -- in-distribution state-tracking per-query accuracy
+    state_pq   -- in-distribution state-tracking (control) per-query accuracy
 
-Run on the Kaggle box after the checkpoints are in experiments/results/.
+A healthy model is high on both. `state_pq` near chance (~0.01) means the control
+never learned, and no sweep figure is trustworthy until that is fixed -- the pooled
+per-query metric hides this, because assoc emits several queries per example while
+state_track emits one.
+
+Ranges are read from configs/sweep_{arch}.yaml rather than hardcoded, so this can
+never silently drift out of sync with the curriculum again.
+
+    python -m scripts.sanity_indist [--n 500] [--only transformer]
 """
 
+from __future__ import annotations
+
+import argparse
 import random
 
 import torch
+import yaml
 
-from iota.data.dataset import EVAL_OFFSET, make_sweep_example, collate_padded
+from iota.data.dataset import EVAL_OFFSET, make_sweep_example
 from iota.data.tokenizer import get_tokenizer
 from iota.eval import load_checkpoint, teacher_forced_scores
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-N = 500          # examples per (model, mode)
-tok = get_tokenizer()
-
-# --- exact training ranges (from configs/sweep_*.yaml, identical across arches) ---
-NB = (2, 8)          # n_bindings min,max
-SEQ = (64, 256)      # seq_len min,max
-NQ = (1, 3)          # n_queries min,max (assoc only)
-DENS = 0.1
-OPS = ["add", "sub"]
+ARCHS = ["transformer", "gated_linear", "hybrid"]
+RESULTS_DIR = "experiments/results"
 
 
-def build_set(mode, n):
-    """n in-distribution examples for `mode`, drawn like the curriculum does."""
+def _rng_range(spec, default):
+    """Read an int / list / {min,max} curriculum spec as an inclusive (lo, hi)."""
+    if isinstance(spec, dict):
+        return int(spec["min"]), int(spec["max"])
+    if isinstance(spec, (list, tuple)):
+        return min(spec), max(spec)
+    if spec is None:
+        return default
+    return int(spec), int(spec)
+
+
+def build_set(tok, comp: dict, n: int, salt: int):
+    """n examples drawn the way CurriculumSampler draws them at full difficulty."""
+    mode = comp["mode"]
+    nb_lo, nb_hi = _rng_range(comp.get("n_bindings"), (2, 8))
+    sl_lo, sl_hi = _rng_range(comp.get("seq_len"), (64, 256))
+    nq_lo, nq_hi = _rng_range(comp.get("n_queries"), (1, 1))
+    dens = float(comp.get("distractor_density", 0.0))
     exs = []
     for idx in range(n):
-        r = random.Random(EVAL_OFFSET + idx + (0 if mode == "assoc_recall" else 7_000_000))
-        nb = r.randint(*NB)
-        seq_len = r.randint(*SEQ)
+        r = random.Random(EVAL_OFFSET + salt + idx)
+        nb = r.randint(nb_lo, nb_hi)
+        seq_len = r.randint(sl_lo, sl_hi)
         seed = r.randrange(1 << 30)
         if mode == "assoc_recall":
-            nq = max(1, min(r.randint(*NQ), nb))
+            nq = max(1, min(r.randint(nq_lo, nq_hi), nb))
             exs.append(make_sweep_example(
-                tok, "assoc_recall", nb, DENS, seq_len, seed,
-                n_queries=nq, query_pos="uniform"))
+                tok, mode, nb, dens, seq_len, seed,
+                n_queries=nq, query_pos=comp.get("query_pos", "uniform")))
         else:
             exs.append(make_sweep_example(
-                tok, "state_track", nb, DENS, seq_len, seed, ops_kinds=OPS))
+                tok, mode, nb, dens, seq_len, seed,
+                ops_kinds=comp.get("ops_kinds")))
     return exs
 
 
-def per_q(model, exs):
-    sc = teacher_forced_scores(model, exs, tok.pad_id, DEVICE, minibatch=64)
+def score(model, exs, tok, device, minibatch):
+    sc = teacher_forced_scores(model, exs, tok.pad_id, device, minibatch)
     flat = [q for e in sc for q in e]
+    per_q = sum(flat) / max(1, len(flat))
     exact = sum(1 for e in sc if all(e)) / max(1, len(sc))
-    return sum(flat) / max(1, len(flat)), exact
+    return per_q, exact
 
 
-assoc = build_set("assoc_recall", N)
-state = build_set("state_track", N)
-print(f"built {N} assoc + {N} state_track in-distribution examples "
-      f"(seq {SEQ}, nb {NB}, density {DENS})\n")
+def main() -> int:
+    ap = argparse.ArgumentParser(description="in-distribution checkpoint sanity check")
+    ap.add_argument("--n", type=int, default=500)
+    ap.add_argument("--only", choices=ARCHS)
+    ap.add_argument("--minibatch", type=int, default=64)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    args = ap.parse_args()
 
-RUNS = ["transformer_sweep", "gated_linear_sweep", "hybrid_sweep"]
-print(f"{'model':22s} {'assoc_pq':>9} {'assoc_exact':>12} {'state_pq':>9} {'state_exact':>12}")
-print("-" * 70)
-for run in RUNS:
-    model, _ = load_checkpoint(run, device=DEVICE)
-    a_pq, a_ex = per_q(model, assoc)
-    s_pq, s_ex = per_q(model, state)
-    print(f"{run:22s} {a_pq:9.3f} {a_ex:12.3f} {s_pq:9.3f} {s_ex:12.3f}")
-    del model
-    if DEVICE == "cuda":
-        torch.cuda.empty_cache()
+    tok = get_tokenizer()
+    archs = [args.only] if args.only else ARCHS
+
+    print(f"{'model':16s} {'assoc_pq':>9} {'assoc_ex':>9} {'state_pq':>9} {'state_ex':>9}")
+    print("-" * 58)
+    for arch in archs:
+        cfg = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        run_name = cfg.get("train", {}).get("run_name", f"{arch}_sweep")
+        try:
+            model, _ = load_checkpoint(run_name, results_dir=RESULTS_DIR, device=args.device)
+        except Exception as e:
+            print(f"{arch:16s} -- no usable checkpoint ({type(e).__name__}: {e})")
+            continue
+        # Each curriculum component IS the training distribution for its mode.
+        out = {}
+        for salt, comp in enumerate(cfg["curriculum"]):
+            exs = build_set(tok, comp, args.n, salt * 1_000_000)
+            out[comp["mode"]] = score(model, exs, tok, args.device, args.minibatch)
+        a_pq, a_ex = out.get("assoc_recall", (float("nan"),) * 2)
+        s_pq, s_ex = out.get("state_track", (float("nan"),) * 2)
+        print(f"{arch:16s} {a_pq:9.3f} {a_ex:9.3f} {s_pq:9.3f} {s_ex:9.3f}")
+        del model
+        if args.device.startswith("cuda"):
+            torch.cuda.empty_cache()
+
+    print("\nHealthy = both per-query columns high. state_pq ~0.01 means the control\n"
+          "never learned and no sweep figure is trustworthy yet.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

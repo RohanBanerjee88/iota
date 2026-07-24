@@ -11,6 +11,7 @@ import argparse
 import csv
 import math
 import os
+import random
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
@@ -167,6 +168,38 @@ def wilson_ci(k: int, n: int, z: float = 1.96) -> Tuple[float, float]:
     return (max(0.0, center - half), min(1.0, center + half))
 
 
+def cluster_bootstrap_ci(
+    scores: List[List[bool]], n_boot: int = 2000, seed: int = 0, alpha: float = 0.05
+) -> Tuple[float, float]:
+    """CI for PER-QUERY accuracy, resampling whole EXAMPLES (the cluster).
+
+    A Wilson interval over flattened queries would assume every query is
+    independent, but queries inside one example share a prompt and a model state
+    and are strongly correlated -- that understates the interval. Resampling at the
+    example level respects the clustering. Used for the headline capacity curve;
+    `wilson_ci` still covers the exact-match (one Bernoulli per example) column.
+    """
+    if not scores:
+        return (0.0, 0.0)
+    rng = random.Random(seed)
+    n = len(scores)
+    hits = [sum(1 for q in s if q) for s in scores]
+    tots = [len(s) for s in scores]
+    if sum(tots) == 0:
+        return (0.0, 0.0)
+    idx_range = range(n)
+    means = []
+    for _ in range(n_boot):
+        pick = [rng.choice(idx_range) for _ in range(n)]
+        h = sum(hits[i] for i in pick)
+        t = sum(tots[i] for i in pick)
+        means.append(h / t if t else 0.0)
+    means.sort()
+    lo = means[int((alpha / 2) * n_boot)]
+    hi = means[min(n_boot - 1, int((1 - alpha / 2) * n_boot))]
+    return (max(0.0, lo), min(1.0, hi))
+
+
 @torch.no_grad()
 def teacher_forced_scores(
     model, examples: List[SweepExample], pad_id: int, device: str, minibatch: int = 32
@@ -248,7 +281,11 @@ def cells_for_pass(pass_id: int) -> List[Dict]:
 CSV_FIELDS = [
     "model", "mode", "pass", "seq_len_nominal", "seq_len_true_tokens",
     "n_bindings", "n_queries", "distractor_density",
-    "accuracy_exact", "accuracy_per_query", "ci_low", "ci_high", "n", "seed",
+    "accuracy_exact", "accuracy_per_query",
+    # ci_low/ci_high are the Wilson interval for accuracy_EXACT; the per-query
+    # column has its own cluster-bootstrap interval. Pairing a per-query point with
+    # the exact-match band would be a category error, so they are kept separate.
+    "ci_low", "ci_high", "ci_low_pq", "ci_high_pq", "n", "seed",
 ]
 
 
@@ -279,17 +316,20 @@ def run_pass(
                     torch.cuda.empty_cache()
                 print(f"  [OOM] {name} pass{pass_id} cell seq_len={cell['seq_len']} "
                       f"n_bindings={cell['n_bindings']} -> recorded as OOM")
-                rows.append(_row(name, pass_id, cell, true_len, None, None, (None, None), n, seed))
+                rows.append(_row(name, pass_id, cell, true_len, None, None,
+                                 (None, None), (None, None), n, seed))
                 continue
             exact = sum(1 for s in scores if all(s)) / max(1, len(scores))
             flat = [q for s in scores for q in s]
             per_q = sum(flat) / max(1, len(flat))
             k = sum(1 for s in scores if all(s))
             lo, hi = wilson_ci(k, len(scores))
-            rows.append(_row(name, pass_id, cell, true_len, exact, per_q, (lo, hi), n, seed))
+            pq_lo, pq_hi = cluster_bootstrap_ci(scores, seed=seed)
+            rows.append(_row(name, pass_id, cell, true_len, exact, per_q,
+                             (lo, hi), (pq_lo, pq_hi), n, seed))
             print(f"  pass{pass_id} {name:13s} sweep={cell['sweep']:<5} "
                   f"true_len={true_len:6.0f} exact={exact:.3f} per_q={per_q:.3f} "
-                  f"CI=[{lo:.3f},{hi:.3f}]")
+                  f"CI_pq=[{pq_lo:.3f},{pq_hi:.3f}]")
     if out_csv:
         os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
         with open(out_csv, "w", newline="") as fh:
@@ -300,7 +340,7 @@ def run_pass(
     return rows
 
 
-def _row(name, pass_id, cell, true_len, exact, per_q, ci, n, seed):
+def _row(name, pass_id, cell, true_len, exact, per_q, ci, ci_pq, n, seed):
     return {
         "model": name, "mode": cell["mode"], "pass": pass_id,
         "seq_len_nominal": cell["seq_len"], "seq_len_true_tokens": round(true_len, 1),
@@ -310,6 +350,8 @@ def _row(name, pass_id, cell, true_len, exact, per_q, ci, n, seed):
         "accuracy_per_query": None if per_q is None else round(per_q, 4),
         "ci_low": None if ci[0] is None else round(ci[0], 4),
         "ci_high": None if ci[1] is None else round(ci[1], 4),
+        "ci_low_pq": None if ci_pq[0] is None else round(ci_pq[0], 4),
+        "ci_high_pq": None if ci_pq[1] is None else round(ci_pq[1], 4),
         "n": n, "seed": seed,
     }
 

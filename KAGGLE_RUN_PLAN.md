@@ -22,8 +22,8 @@
 |---|---|---|
 | Params | 2–3M each (2.13 / 2.14 / 2.66M) | tiny, fast, fits free T4 easily |
 | Train task mix | `assoc_recall` (multi-query) + `state_track` | recall is the test, state_track is the control |
-| **Training ceiling `n_bindings ≤ 16`** | **hard rule** | eval extrapolates to 128 → curve measures architectural capacity, not memorized difficulty |
-| Train `seq_len ≤ 512` | hard rule | eval extrapolates to 8192 → measures length-gen |
+| **Training ceiling `n_bindings ≤ 16`, `n_queries ≤ 6`** | **hard rule** | eval extrapolates to 128 bindings / 16 queries → the curve measures architectural capacity, not memorized difficulty. Raised from 8/3: a 16× binding extrapolation risked flattening *all three* models and erasing the crossover. |
+| Train `seq_len ≤ 640` | hard rule | eval extrapolates to 8192 → measures length-gen. 640 covers the capacity sweep's longest cell (nb=128 ⇒ ~773 tok) at a mild 1.2× RoPE extrapolation, so **capacity is not confounded with length** — the flaw that inverted the first sweep. |
 | Max-steps ceiling | ~8–10k (GLA-sized) | transformer/hybrid early-stop well before; GLA uses it |
 | Early-stop | n≥500 held-out, patience ~5 evals | the fixed-large-n rule that avoids the §0 early-stop artifact |
 | Precision | fp32 first run | correctness over speed; revisit bf16 only if time-bound |
@@ -35,7 +35,7 @@
 
 | Pass | Mode | Fixed | Swept |
 |---|---|---|---|
-| **1 — capacity (headline)** | assoc_recall, multi-query | seq_len≈512 | n_bindings {2,4,8,16,32,64,128} |
+| **1 — capacity (headline)** | assoc_recall, multi-query | seq_len=256 (in-distribution; true_len stays ~245–370 for nb ≤ 64) | n_bindings {2,4,8,16,32,64,128} |
 | **2 — length-gen** | assoc_recall | n_bindings=8 | seq_len {128…8192} |
 | **3 — control** | state_track | n_bindings n/a | seq_len {128…8192} |
 
@@ -43,13 +43,34 @@ Per cell: paired prompts across all 3 archs (same seed), n=500–1000, Wilson/bo
 
 ---
 
-## 3. Session partitioning (Kaggle: 9-hr sessions, ~30 GPU-hr/week)
+## 3. How to run it (Kaggle: 9-hr sessions, ~30 GPU-hr/week)
 
-**Session A — Train + Pass 1 + Pass 3 (cheap, decisive).** Train all three to plateau; Pass 1 (capacity, headline); Pass 3 (control). Push artifacts to HF Hub *during* the run.
+Everything goes through one resumable driver, `scripts/run_all.py`. **Every stage is safe to re-run** — completed work is skipped, so a session timeout costs only the in-progress model.
 
-**Session B — Pass 2 (length-gen) + Phase 7 cost profiling.** Pass 2 to 8192 (dense may OOM — that's a result); profiling hygiene per BUILD_PLAN §6. Push CSVs + plots.
+**Session A — train + Pass 1 + Pass 3 (cheap, decisive).**
+```bash
+git pull origin main
+python -m scripts.run_all --stage train --repo <user>/iota-sweep   # HF backup after each model
+python -m scripts.run_all --stage eval  --passes 1,3
+```
 
-**Session C (buffer)** — re-runs, `plot.py` money figure, Gradio Space.
+**Session B — Pass 2 (length-gen) + cost profiling + the figure.**
+```bash
+python -m scripts.run_all --stage eval --passes 2   # dense may OOM at 8192 — that's a result
+python -m scripts.run_all --stage profile
+python -m scripts.run_all --stage plot
+```
+
+Useful at any time:
+```bash
+python -m scripts.run_all --stage status      # what's trained / stale / missing
+python -m scripts.run_all --only gated_linear --stage train   # finish one model
+python -m scripts.sanity_indist               # per-mode in-distribution check
+```
+
+**Resume logic.** A checkpoint counts as done only if the weights exist, its *saved curriculum matches the current config*, and its history shows real training. The curriculum check is what stops an old checkpoint (trained at the superseded `seq_len ≤ 256` / `n_bindings ≤ 8` ceilings) from being silently reused and reproducing the broken sweep — those are reported `stale` and retrained.
+
+**The gate before any figure.** The train summary prints per-mode accuracy. Every model must show `assoc` high **and** `state` well above chance (~0.01). A control at chance means the figure is not trustworthy yet — this was the failure the pooled per-query metric hid the first time round.
 
 ---
 

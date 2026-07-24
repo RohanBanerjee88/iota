@@ -2,7 +2,10 @@
 # (nb=128 -> ~773 tok) is ~in-distribution and doesn't confound capacity with
 # length extrapolation. Control (state_track) reweighted 0.33 and the trainer now
 # drives early-stop off the BALANCED per-mode mean, so the control can't hide.
-# Phase 6 sweep training. Long-context ceiling (n_bindings<=8, n_queries<=3, seq<=640
+# CEILINGS n_bindings<=16 / n_queries<=6 (were 8/3): the capacity sweep evaluates
+# to 128 bindings / 16 queries, and a 16x binding + 5x query extrapolation risked
+# flattening ALL THREE models and erasing the crossover. Eval still extrapolates 8x.
+# Phase 6 sweep training. Ceiling n_bindings<=16, n_queries<=6, seq<=640;
 # interleaved multi-query + additive state_track control; flat easy phase -> ramp;
 # plateau on per-query. lr 1.5e-3 (GPU-confirmed for transformer: per_q climbs to
 # 0.75 by step 3000 and rising; 3e-3/5e-3 destabilize). GLA: probe first.
@@ -22,20 +25,20 @@ curriculum:
 - mode: assoc_recall
   n_bindings:
     min: 2
-    max: 8
+    max: 16
   seq_len:
     min: 64
     max: 640
   n_queries:
     min: 1
-    max: 3
+    max: 6
   distractor_density: 0.1
   query_pos: uniform
   weight: 0.67
 - mode: state_track
   n_bindings:
     min: 2
-    max: 8
+    max: 16
   seq_len:
     min: 64
     max: 640
@@ -48,7 +51,7 @@ train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 10000
+  max_steps: 12000
   easy_steps: 2000
   ramp_steps: 3000
   eval_every: 500

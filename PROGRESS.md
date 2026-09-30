@@ -14,13 +14,14 @@ has been fixed (see the timeline). **No trustworthy figure exists yet.** The nex
 clean run `r01` from scratch on Kaggle, with results published automatically to the
 `kaggle-results` branch.
 
-**Next action:** run `notebooks/kaggle_train.ipynb` with `PLAN="smoke"`, then `"A"`, then `"B"`.
+**Next action:** smoke passed on Kaggle. Run `notebooks/kaggle_train.ipynb` with `PLAN="A"` (Save & Run All), then `"B"`.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r01 | — | — | smoke → A → B | pending | — |
+| r01 | — | — | A → B | pending | — |
+| r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
 
 How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. Check the
 **sanity gate first** (section 1b). If any model has `state` or `assoc` near 0.01, stop:

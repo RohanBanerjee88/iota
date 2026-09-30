@@ -1,6 +1,6 @@
 # iota run `r01`
 
-- **updated:** 2026-09-30 04:21 UTC (last stage: `train:hybrid`)
+- **updated:** 2026-09-30 05:32 UTC (last stage: `train:transformer`)
 - **code:** `7e1b8ef` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -8,7 +8,7 @@
 
 | model | best step | balanced | assoc (per-query) | state (control) | exact | lr | verdict |
 |---|---:|---:|---:|---:|---:|---:|---|
-| transformer | – | – | – | – | – | – | not trained yet |
+| transformer | 14500 | 0.159 | 0.305 | 0.012 | 0.096 | 0.0015 | ⚠ control at chance -- figure NOT trustworthy |
 | gated_linear | – | – | – | – | – | – | not trained yet |
 | hybrid | 9500 | 0.509 | 0.983 | 0.036 | 0.642 | 0.0015 | ⚠ control at chance -- figure NOT trustworthy |
 

@@ -1,0 +1,15 @@
+
+##### train started 2026-09-30 02:52:27 UTC argv=--stage all --smoke
+
+### STAGE train  (hybrid, transformer, gated_linear)
+
+
+========================================================================
+=== TRAIN hybrid -> hybrid_sweep
+========================================================================
+[sweep] model=hybrid params=2.66M device=cuda max_steps=60 bs=8 patience=8
+[sweep] hybrid step    20 loss 3.003 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (2s)
+[sweep] hybrid step    40 loss 2.411 bal 0.003 [assoc 0.006 state 0.000] exact 0.000 diff 1.00 * (4s)
+[sweep] hybrid step    60 loss 1.907 bal 0.009 [assoc 0.018 state 0.000] exact 0.031 diff 1.00 * (6s)
+[sweep] hybrid BEST plateau_acc = 0.0092 -> experiments/smoke/hybrid_sweep
+=== hybrid done, best balanced acc = 0.0092

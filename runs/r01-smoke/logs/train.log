@@ -24,3 +24,14 @@
 [sweep] transformer step    60 loss 2.390 bal 0.003 [assoc 0.006 state 0.000] exact 0.016 diff 1.00 * (2s)
 [sweep] transformer BEST plateau_acc = 0.0031 -> experiments/smoke/transformer_sweep
 === transformer done, best balanced acc = 0.0031
+  [sync] published 3 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r01-smoke
+
+========================================================================
+=== TRAIN gated_linear -> gated_linear_sweep
+========================================================================
+[sweep] model=gated_linear params=2.14M device=cuda max_steps=60 bs=8 patience=8
+[sweep] gated_linear step    20 loss 2.415 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (1s)
+[sweep] gated_linear step    40 loss 2.115 bal 0.003 [assoc 0.006 state 0.000] exact 0.000 diff 1.00 * (3s)
+[sweep] gated_linear step    60 loss 1.814 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 1.00  (5s)
+[sweep] gated_linear BEST plateau_acc = 0.0031 -> experiments/smoke/gated_linear_sweep
+=== gated_linear done, best balanced acc = 0.0031

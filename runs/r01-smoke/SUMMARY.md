@@ -1,6 +1,6 @@
 # iota run `r01-smoke`
 
-- **updated:** 2026-09-30 02:52 UTC (last stage: `train:transformer`)
+- **updated:** 2026-09-30 02:52 UTC (last stage: `train:gated_linear`)
 - **code:** `1453249` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Interactive
 
@@ -9,7 +9,7 @@
 | model | best step | balanced | assoc (per-query) | state (control) | exact | lr | verdict |
 |---|---:|---:|---:|---:|---:|---:|---|
 | transformer | 60 | 0.003 | 0.006 | 0.000 | 0.016 | 0.0015 | ⚠ control at chance -- figure NOT trustworthy |
-| gated_linear | – | – | – | – | – | – | not trained yet |
+| gated_linear | 40 | 0.003 | 0.006 | 0.000 | 0.000 | 0.003 | ⚠ control at chance -- figure NOT trustworthy |
 | hybrid | 60 | 0.009 | 0.018 | 0.000 | 0.031 | 0.0015 | ⚠ control at chance -- figure NOT trustworthy |
 
 Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `logs/train.log` and the `*_sweep.json` files.

@@ -14,12 +14,13 @@ has been fixed (see the timeline). **No trustworthy figure exists yet.** The nex
 clean run `r01` from scratch on Kaggle, with results published automatically to the
 `kaggle-results` branch.
 
-**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). Fix the three design flaws, validate on CPU, then run r02.
+**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). The three flaws are fixed and CPU-validated. Run r02 with `PLAN="tune"` first.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r02 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
 
@@ -28,6 +29,23 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-09-30 — r02 design: fix the three r01 flaws (approved), CPU-validated.**
+- **Control → overwrite.** `state_track` now uses `ops_kinds: [set]` (`x = 88`): hold one value across
+  distance and keep the latest, with no arithmetic. CPU probe (d128, 2 layers): transformer 0.01 → **1.00**
+  on the control. Risk to watch: overwriting the same key needs a *learned forget* in linear attention. If
+  GLA fails this control while acing recall, fall back to single-binding recall as the control.
+- **Keys → random + shuffled** from [0,128). There is no counting shortcut, and every eval key has been
+  seen in training. The CPU transformer's recall climbs steadily (0.14 → 0.32 by step 4000): harder
+  (multi-digit key matching), not stuck.
+- **Ceilings → n_bindings ≤ 64, n_queries ≤ 16.** The capacity pass is in-distribution to 64; only 128
+  (~870 tok) extrapolates.
+- **LR probe** (`run_all --stage tune`, notebook `PLAN="tune"`): every arch × lr {7.5e-4, 1.5e-3, 3e-3},
+  identical 4000-step budget, grad_clip 1.0 for all (the transformer's 0.5 was a one-off). This yields
+  `tune.csv`, from which each sweep config's lr is set. Estimated at ~3–3.5 h on a T4.
+- The small CPU GLA learned nothing in 3000 steps (neither task). That fits its known slow start and is
+  not informative; the full-size GPU probe decides.
+- Pipeline smoke (with the tune stage) passes end to end on CPU; 62 tests pass; Phase 2 gate 10,000/10,000.
 
 **2026-09-30 — r01 plan A: the pipeline works; the experiment design still has three flaws.**
 Trained on a Kaggle T4 (hybrid 79 min, transformer 70 min, GLA 111 min). Sanity gate (in-distribution, n=500):

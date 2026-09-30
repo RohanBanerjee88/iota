@@ -53,8 +53,9 @@ def test_assoc_recall_query_defined_early():
         for k in qkeys:
             assert k in last_set_idx, f"{k} never SET"
             assert last_set_idx[k] < query_idx
-            # "early": the queried binding lives in the first half of the pool
-            assert int(k) < max(1, meta["n_bindings"] // 2)
+            # "early": the queried binding is among the first half of the SET lines
+            set_order = [ln.split()[1] for ln in lines if ln.startswith("SET ")]
+            assert set_order.index(k) < max(1, meta["n_bindings"] // 2)
 
 
 def test_assoc_recall_rejects_too_many_bindings():
@@ -85,3 +86,24 @@ def test_multi_query_answers_match_oracle():
         # oracle.solve_all reproduces every queried answer, in order
         got = [int(a) for a in oracle.solve_all(prompt)]
         assert got == meta["answers"]
+
+
+def test_keys_are_random_distinct_and_shuffled():
+    # r01: keys 0..n-1 in order let "GET k" be solved by counting SET lines.
+    in_order = 0
+    for seed in range(40):
+        prompt, _, meta = dsl.gen("assoc_recall", 8, 0.0, 64, seed=seed)
+        keys = [int(ln.split()[1]) for ln in prompt.splitlines() if ln.startswith("SET ")]
+        assert len(set(keys)) == 8 and all(0 <= k < dsl.MAX_BINDINGS for k in keys)
+        in_order += keys == list(range(8))
+    assert in_order == 0
+
+
+def test_overwrite_control_keeps_latest_value():
+    from iota.data import oracle
+
+    for seed in range(30):
+        prompt, target, _ = dsl.gen("state_track", 6, 0.2, 96, seed=seed, ops_kinds=["set"])
+        assigns = [ln.split()[-1] for ln in prompt.splitlines() if ln.startswith(("x =", "START"))]
+        assert all("mod" not in ln and "+" not in ln for ln in prompt.splitlines())
+        assert target == assigns[-1] == oracle.solve(prompt)

@@ -113,3 +113,13 @@ def test_eval_backs_off_batch_instead_of_recording_oom():
     got = _scores_with_backoff(_OOMAbove(base, 2), exs, TOK.pad_id, "cpu", 8)
     assert got == ref  # same scores, just computed at a smaller batch
     assert _scores_with_backoff(_OOMAbove(base, 0), exs, TOK.pad_id, "cpu", 8) is None
+
+
+def test_summary_shows_lr_probe_with_best_marked(tmp_path):
+    (tmp_path / "tune.csv").write_text(
+        "arch,lr,grad_clip,steps,best_step,best_balanced,assoc,state,exact,final_balanced,seconds\n"
+        "transformer,0.00075,1.0,4000,4000,0.40,0.5,0.3,0.2,0.40,600\n"
+        "transformer,0.0015,1.0,4000,3500,0.62,0.7,0.54,0.4,0.60,600\n")
+    s = build_summary(str(tmp_path), "r02")
+    assert "LR probe" in s
+    assert "| transformer ★ | 0.0015 |" in s and "| transformer | 0.00075 |" in s

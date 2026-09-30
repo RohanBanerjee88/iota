@@ -1,14 +1,11 @@
-# LONG-CONTEXT RETRAIN: seq_len<=640 (was 256) so the capacity sweep's length
-# (nb=128 -> ~773 tok) is ~in-distribution and doesn't confound capacity with
-# length extrapolation. Control (state_track) reweighted 0.33 and the trainer now
-# drives early-stop off the BALANCED per-mode mean, so the control can't hide.
-# CEILINGS n_bindings<=16 / n_queries<=6 (were 8/3): the capacity sweep evaluates
-# to 128 bindings / 16 queries, and a 16x binding + 5x query extrapolation risked
-# flattening ALL THREE models and erasing the crossover. Eval still extrapolates 8x.
-# Phase 6 sweep training. Ceiling n_bindings<=16, n_queries<=6, seq<=640;
-# interleaved multi-query + additive state_track control; flat easy phase -> ramp;
-# plateau on per-query. lr 1.5e-3 (GPU-confirmed for transformer: per_q climbs to
-# 0.75 by step 3000 and rising; 3e-3/5e-3 destabilize). GLA: probe first.
+# r02 CURRICULUM (after r01 failed the sanity gate -- see PROGRESS.md):
+#  * control = OVERWRITE state_track (ops_kinds [set], `x = 88`): hold one value
+#    across distance. The add/sub control was silent modular arithmetic that no
+#    model learned, so it could not act as a control.
+#  * recall keys are random + shuffled from [0,128) (dsl.py), so there is no
+#    counting shortcut and every eval key has been seen in training.
+#  * n_bindings <= 64 / n_queries <= 16: the capacity pass (2..128 bindings,
+#    min(nb,16) queries) is in-distribution up to 64; only 128 extrapolates.
 arch: hybrid
 d_model: 256
 n_layers: 5
@@ -25,13 +22,13 @@ curriculum:
 - mode: assoc_recall
   n_bindings:
     min: 2
-    max: 16
+    max: 64
   seq_len:
     min: 64
     max: 640
   n_queries:
     min: 1
-    max: 6
+    max: 16
   distractor_density: 0.1
   query_pos: uniform
   weight: 0.67
@@ -44,8 +41,7 @@ curriculum:
     max: 640
   distractor_density: 0.1
   ops_kinds:
-  - add
-  - sub
+  - set
   weight: 0.33
 train:
   batch_size: 64

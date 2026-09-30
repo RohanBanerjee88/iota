@@ -269,10 +269,10 @@ def cells_for_pass(pass_id: int) -> List[Dict]:
              "n_queries": 8, "query_pos": "uniform", "sweep": sl}
             for sl in (128, 256, 512, 1024, 2048, 4096, 8192)
         ]
-    if pass_id == 3:  # control: additive state_track (learnable home turf), swept length
+    if pass_id == 3:  # control: overwrite state_track (hold ONE value), swept length
         return [
             {"mode": "state_track", "seq_len": sl, "n_bindings": 8,
-             "n_queries": 1, "ops_kinds": ["add", "sub"], "sweep": sl}
+             "n_queries": 1, "ops_kinds": ["set"], "sweep": sl}
             for sl in (128, 256, 512, 1024, 2048, 4096, 8192)
         ]
     raise ValueError(f"unknown pass {pass_id}")

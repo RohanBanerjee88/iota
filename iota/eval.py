@@ -289,6 +289,26 @@ CSV_FIELDS = [
 ]
 
 
+def _scores_with_backoff(model, examples, pad_id, device, minibatch, name=""):
+    """teacher_forced_scores, halving the eval batch on OOM down to batch 1.
+
+    An OOM at eval batch 32 says nothing about the architecture -- it is a choice
+    of eval batch size. Only a model that cannot fit ONE sequence has truly hit
+    its memory wall (that is the result Panel C reports). Returns None then.
+    """
+    mb = minibatch
+    while True:
+        try:
+            return teacher_forced_scores(model, examples, pad_id, device, mb)
+        except torch.cuda.OutOfMemoryError:
+            if device.startswith("cuda"):
+                torch.cuda.empty_cache()
+            if mb == 1:
+                return None
+            mb = max(1, mb // 2)
+            print(f"  [OOM] {name}: retrying cell at eval batch {mb}", flush=True)
+
+
 def run_pass(
     pass_id: int,
     models: Dict[str, object],
@@ -309,13 +329,10 @@ def run_pass(
         examples = _cell_examples(tok, cell, n, seed_base)
         true_len = sum(e.true_len for e in examples) / max(1, len(examples))
         for name, model in models.items():
-            try:
-                scores = teacher_forced_scores(model, examples, pad, device, minibatch)
-            except torch.cuda.OutOfMemoryError:
-                if device.startswith("cuda"):
-                    torch.cuda.empty_cache()
+            scores = _scores_with_backoff(model, examples, pad, device, minibatch, name)
+            if scores is None:
                 print(f"  [OOM] {name} pass{pass_id} cell seq_len={cell['seq_len']} "
-                      f"n_bindings={cell['n_bindings']} -> recorded as OOM")
+                      f"n_bindings={cell['n_bindings']} -> OOM even at batch 1, recorded as OOM")
                 rows.append(_row(name, pass_id, cell, true_len, None, None,
                                  (None, None), (None, None), n, seed))
                 continue
@@ -329,7 +346,7 @@ def run_pass(
                              (lo, hi), (pq_lo, pq_hi), n, seed))
             print(f"  pass{pass_id} {name:13s} sweep={cell['sweep']:<5} "
                   f"true_len={true_len:6.0f} exact={exact:.3f} per_q={per_q:.3f} "
-                  f"CI_pq=[{pq_lo:.3f},{pq_hi:.3f}]")
+                  f"CI_pq=[{pq_lo:.3f},{pq_hi:.3f}]", flush=True)
     if out_csv:
         os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
         with open(out_csv, "w", newline="") as fh:

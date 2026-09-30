@@ -4,8 +4,10 @@ Usage:
     python tasks.py smoke     # tiny end-to-end data demo (CPU, seconds)
     python tasks.py test      # pytest -q
     python tasks.py report    # Phase 2 acceptance summary (10k examples)
-    python tasks.py train     # Phase 5+ (not built in the first session)
-    python tasks.py eval
+    python tasks.py train     # Phase 5 milestone (dense transformer, CPU)
+    python tasks.py gate      # Phase 6 §0 gate: all three learn easy recall (CPU)
+    python tasks.py sweep     # full pipeline dry run: python -m scripts.run_all --smoke
+    python tasks.py eval      # the real sweep stages -> scripts/run_all.py (GPU)
     python tasks.py profile
     python tasks.py plot
 """
@@ -127,10 +129,9 @@ def gate() -> int:
     return 0 if ok else 1
 
 
-def _not_built(name: str):
+def _run_all(*argv: str):
     def _fn() -> int:
-        print(f"[{name}] is a later phase (Phase 6+). Stopping at the Phase 5/§0 milestone.")
-        return 0
+        return subprocess.call([sys.executable, "-m", "scripts.run_all", *argv])
 
     return _fn
 
@@ -141,9 +142,10 @@ TARGETS = {
     "report": report,
     "train": train,
     "gate": gate,
-    "eval": _not_built("eval"),
-    "profile": _not_built("profile"),
-    "plot": _not_built("plot"),
+    "sweep": _run_all("--stage", "all", "--smoke", "--no-gh"),
+    "eval": _run_all("--stage", "eval", "--passes", "1,3,2"),
+    "profile": _run_all("--stage", "profile"),
+    "plot": _run_all("--stage", "plot"),
 }
 
 

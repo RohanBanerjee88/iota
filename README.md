@@ -4,112 +4,99 @@ A custom linear-time architecture for bounded formal reasoning.
 
 The repo exists to produce **one deliverable**: a graph of exact, verifier-checked
 accuracy vs. recall-load / sequence-length, per architecture, with a cost axis
-(VRAM / latency). See [`BUILD_PLAN.md`](BUILD_PLAN.md) for the full working spec and
-phase order.
+(VRAM / latency). It answers one question: *where does a cheap fixed-memory model stop
+being correct, and what is the smallest fix that keeps it correct?*
+
+> "On verifier-checked multi-query recall, pure linear attention holds dense-level
+> accuracy up to ~N bindings, then degrades; a hybrid with k full-attention layers
+> recovers it at ~W% of dense memory. On a single-accumulator control, linear matches
+> dense, so the gap is specifically associative recall."
+
+- [`BUILD_PLAN.md`](BUILD_PLAN.md): the original spec and guardrails
+- [`PHASE6_EVAL_SPEC.md`](PHASE6_EVAL_SPEC.md): how the experiment is designed so the figure is interpretable
+- [`KAGGLE_RUN_PLAN.md`](KAGGLE_RUN_PLAN.md): how to run it on a GPU
+- [`PROGRESS.md`](PROGRESS.md): **what happened, what we learned, what's next** (start here)
 
 ## Status
 
-**Phases 0–5 complete + Phase 6 §0 pre-sweep gate PASSED.** Stopped before the
-length/recall sweep (awaiting greenlight to size the GPU run).
-
-- **Phase 0 — scaffold**: repo tree, `seed_everything`, `tasks.py` runner.
-- **Phase 1 — `iota/data/dsl.py`**: deterministic task generator, two modes
-  (`state_track` control, `assoc_recall` MQAR-style recall test).
-- **Phase 2 — `oracle.py` + `verifier.py`**: an independent recursive-descent
-  interpreter and a verifier. **Gate: 10,000 examples, 100% oracle/target
-  agreement, verifier catches every corruption.** Plus 10 hand-authored
-  adversarial cases (unusual spacing, nested parens, negative intermediates,
-  mod-boundary values, unparenthesized precedence) proving oracle independence.
-- **Phase 3 — `tokenizer.py`**: word/keyword level, numbers digit-split →
-  **vocab = 99 (< 100)**, lossless round-trip. Exposes the *true* tokenized
-  length (post digit-split), threaded through dataset/eval so real token length
-  (not nominal `seq_len`) is the x-axis.
-- **Phase 4 — `models/`**: `transformer` (dense, FlashAttention via SDPA),
-  `gated_linear` (chunk-parallel GLA + recurrent reference check), `hybrid`
-  (mostly-linear + k full-attention layers) behind one `SeqModel` interface.
-  Defaults land at **2.1 / 2.1 / 2.7 M params**. The chunked GLA matches its
-  recurrent reference to 1e-4 across chunk sizes.
-- **Phase 5 — `train.py` + `eval.py`**: config-driven, masked next-token CE,
-  verifier-checked exact-answer eval, safetensors + run-json checkpoints.
-  **Milestone: the 2.1M dense transformer reaches 98.8% exact-answer accuracy
-  (n=1000 held-out) on the in-distribution `assoc_recall` slice**, early-stopping
-  at ~500 steps (~3.5 min on 4 CPU cores). This validates the whole pipeline.
-
-> Milestone scope: in-distribution = short sequences, low recall load, pure-recall
-> (`GET`) queries — the cleanest pipeline validation. Arithmetic-op queries,
-> `state_track`, and the length/recall sweep are Phase 6.
-
-### Phase 6 §0 pre-sweep gate (all three architectures must learn easy recall)
-
-Before spending GPU on the sweep, all three contenders are trained on an
-**identical easy slice** (`assoc_recall`, `n_bindings ∈ {2,4}`, `seq_len 64`,
-`GET`) with an **identical budget** (same optimizer/steps/seed; only the
-architecture differs). Pass = none is stuck at the ~3% marginal-prediction floor.
-
-| model | exact-answer acc (n=500) | notes |
+| Phase | What | State |
 |---|---|---|
-| transformer | ~0.95 | converges in ~500 steps |
-| gated_linear (pure) | ~0.94 | **groks recall at ~step 1000–2000** (slower learner) |
-| hybrid | ~1.00 | full-attention layers make recall trivial |
+| 0–2 | scaffold, task generator, independent oracle + verifier | ✅ 10,000/10,000 agreement |
+| 3–5 | tokenizer (vocab 99), three models, training; transformer hits 98.8% on easy recall | ✅ |
+| 6 §0 | all three architectures learn easy recall (0.95 / 0.94 / 1.00) | ✅ |
+| 6–8 | sweep training, 3 eval passes, cost profiling, figure | 🟡 code done + CPU-verified; clean GPU run `r01` pending |
+| 9 | Gradio demo | ⬜ waits for a trustworthy figure |
 
-This gate caught two real bugs that would have produced a meaningless sweep:
-1. **GLA backward NaN** — the acausal entries of the intra-chunk decay matrix
-   overflowed (`exp(+Δ)=inf`), and `torch.where`-after-`exp` turned the masked
-   `0*inf` into `NaN` in backward, poisoning every gradient. Fixed by masking to
-   `-inf` *before* the `exp`.
-2. **Decay-gate over-forgetting** — initialising the gate at γ=0.88 forgets an
-   early binding (`γ^96 ≈ 1e-6`) before the query; init high (γ=0.9975) so memory
-   persists. The pure-linear model then learns recall with no conv needed.
+Earlier GPU attempts each exposed an experiment-design flaw. The worst was a
+length/capacity confound that made linear *look* better than the transformer, along
+with a control task stuck at chance. All are fixed; see [`PROGRESS.md`](PROGRESS.md).
 
-Reproduce: `python tasks.py gate` (~30–40 min CPU).
+## The three contenders
 
-## Quickstart
+| model | idea | params |
+|---|---|---|
+| `transformer` | dense causal attention (SDPA/Flash), RoPE, the baseline | 2.13M |
+| `gated_linear` | gated linear attention: a fixed-size decaying memory, chunk-parallel | 2.14M |
+| `hybrid` | gated linear with 2 of 5 layers swapped for full attention | 2.66M |
+
+## The tasks
+
+**`assoc_recall`, the real test.** Facts are defined early and buried in noise, then
+retrieved (several queries per prompt: MQAR). A fixed-size state must hold them all.
+Each answer follows its query and is always 2 digits; the model is scored on the digits
+after each `=` of a `GET`:
+
+```
+SET 0 = 25
+SET 1 = 6
+SET 2 = 91
+DISTRACTOR mn gg zz
+DISTRACTOR pp hh pp zz rr hh qx qx
+GET 0 = 25
+GET 1 = 06
+```
+
+**`state_track`, the control.** One running value; linear attention's home turf.
+If linear matches dense here but not on recall, the gap is specifically recall.
+
+```
+START x = 10
+x = ( x - 44 ) mod 97
+DISTRACTOR pp hh tt
+x = ( x + 88 ) mod 97
+ANSWER x     → 54
+```
+
+Every answer is checked by an independent oracle (`iota/data/oracle.py`), never by
+hand-written labels.
+
+## Running it
+
+**Locally (CPU):**
 
 ```bash
-pip install -r requirements.txt
-python -m iota.data.dsl --smoke           # one tiny example of each mode
-python -m iota.data.tokenizer             # vocab size + round-trip check
-python tasks.py test                      # full suite (CPU, ~10s)
-python tasks.py report                    # Phase 2 acceptance summary
-python -m iota.train --config configs/milestone_transformer.yaml --smoke   # pipeline smoke
-python tasks.py train                     # reproduce the Phase 5 milestone (~3.5 min CPU)
+pip install -r requirements.txt pytest
+python -m pytest -q                                   # 59 tests, ~20s
+python tasks.py report                                # Phase 2 data gate (10k examples)
+python -m scripts.run_all --stage all --smoke --no-gh # whole pipeline, tiny, ~4 min CPU
 ```
 
-## Task modes
+**On Kaggle (the real run):** open [`notebooks/kaggle_train.ipynb`](notebooks/kaggle_train.ipynb),
+add the `GH_TOKEN` and `HF_TOKEN` secrets, and run with `PLAN="smoke"`, then `"A"`, then `"B"`.
+Details in [`KAGGLE_RUN_PLAN.md`](KAGGLE_RUN_PLAN.md).
 
-**Mode A — `state_track`** (control). A single accumulator carried across distance:
+**Where results go:** every stage publishes CSVs, logs, the figure and a `SUMMARY.md` to the
+[`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch under
+`runs/<run_id>/`. Weights go to the HF Hub. Nothing needs to be copied out of Kaggle by hand.
 
-```
-START x = 7
-x = ( x * 3 + 5 ) mod 97
-DISTRACTOR qx lk mn
-x = ( x + 41 ) mod 97
-ANSWER x
-```
-
-**Mode B — `assoc_recall`** (the real test). Many bindings defined early, buried
-under distractors, then one is retrieved — a fixed-size recurrent state must hold all
-bindings at once, so linear-attention accuracy is expected to degrade as
-`n_bindings` grows while a transformer holds:
+## Repo map
 
 ```
-SET v0 = 14
-SET v1 = 3
-...
-DISTRACTOR ...
-GET v0            # or: ANSWER ( v0 + v1 ) mod 97
+iota/data/      dsl.py (generator) · oracle.py · verifier.py · tokenizer.py · dataset.py
+iota/models/    base.py (SeqModel) · transformer.py · gated_linear.py · hybrid.py
+iota/           train.py · eval.py (passes 1-3) · profile.py (cost) · plot.py (figure)
+scripts/        run_all.py (resumable driver) · sync_results.py (→ kaggle-results)
+                sanity_indist.py (per-mode gate) · push_to_hf.py · retrain_all.py (legacy)
+configs/        sweep_*.yaml (the real run) · milestone_*.yaml (§0 gate) · tune_*.yaml (lr probes)
+notebooks/      kaggle_train.ipynb
 ```
-
-## Next — Phase 6 (the sweep) and carry-forwards
-
-Phase 6 evaluates exact accuracy across the length grid (128→8192, OOD beyond
-training) and recall-load grid (`n_bindings` 2→64) for all three models, writing a
-tidy CSV. Two carry-forwards are already hooked in `dsl.py` (see the TODO there):
-
-- `assoc_recall` eval must query keys **uniformly** across all `n_bindings`
-  (`query_pos="uniform"`, implemented) rather than only the early half.
-- Support a **multi-query** variant (several `GET`s per prompt, each verified) —
-  generation + oracle support is still TODO.
-
-Then Phase 7 profile (latency/VRAM), Phase 8 the money graph, Phase 9 demo. Do not
-start a phase before the previous one's acceptance test passes.

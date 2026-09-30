@@ -79,41 +79,61 @@ def score(model, exs, tok, device, minibatch):
     return per_q, exact
 
 
+SANITY_FIELDS = ["model", "assoc_pq", "assoc_exact", "state_pq", "state_exact", "n"]
+
+
+def run_sanity(n: int = 500, archs=ARCHS, minibatch: int = 64, device: str = "cpu",
+               results_dir: str = RESULTS_DIR, out_csv: str = None) -> list:
+    """Score each checkpoint on its own training distribution; optionally write CSV."""
+    tok = get_tokenizer()
+    rows = []
+    print(f"{'model':16s} {'assoc_pq':>9} {'assoc_ex':>9} {'state_pq':>9} {'state_ex':>9}",
+          flush=True)
+    print("-" * 58, flush=True)
+    for arch in archs:
+        cfg = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        run_name = cfg.get("train", {}).get("run_name", f"{arch}_sweep")
+        try:
+            model, _ = load_checkpoint(run_name, results_dir=results_dir, device=device)
+        except Exception as e:
+            print(f"{arch:16s} -- no usable checkpoint ({type(e).__name__}: {e})", flush=True)
+            continue
+        # Each curriculum component IS the training distribution for its mode.
+        out = {}
+        for salt, comp in enumerate(cfg["curriculum"]):
+            exs = build_set(tok, comp, n, salt * 1_000_000)
+            out[comp["mode"]] = score(model, exs, tok, device, minibatch)
+        a_pq, a_ex = out.get("assoc_recall", (float("nan"),) * 2)
+        s_pq, s_ex = out.get("state_track", (float("nan"),) * 2)
+        print(f"{arch:16s} {a_pq:9.3f} {a_ex:9.3f} {s_pq:9.3f} {s_ex:9.3f}", flush=True)
+        rows.append({"model": arch, "assoc_pq": round(a_pq, 4), "assoc_exact": round(a_ex, 4),
+                     "state_pq": round(s_pq, 4), "state_exact": round(s_ex, 4), "n": n})
+        del model
+        if device.startswith("cuda"):
+            torch.cuda.empty_cache()
+
+    print("\nHealthy = both per-query columns high. state_pq ~0.01 means the control\n"
+          "never learned and no sweep figure is trustworthy yet.", flush=True)
+    if out_csv:
+        import csv
+        with open(out_csv, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=SANITY_FIELDS)
+            w.writeheader()
+            w.writerows(rows)
+        print(f"wrote {out_csv}", flush=True)
+    return rows
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="in-distribution checkpoint sanity check")
     ap.add_argument("--n", type=int, default=500)
     ap.add_argument("--only", choices=ARCHS)
     ap.add_argument("--minibatch", type=int, default=64)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--out", default=None, help="also write a CSV here")
     args = ap.parse_args()
-
-    tok = get_tokenizer()
-    archs = [args.only] if args.only else ARCHS
-
-    print(f"{'model':16s} {'assoc_pq':>9} {'assoc_ex':>9} {'state_pq':>9} {'state_ex':>9}")
-    print("-" * 58)
-    for arch in archs:
-        cfg = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
-        run_name = cfg.get("train", {}).get("run_name", f"{arch}_sweep")
-        try:
-            model, _ = load_checkpoint(run_name, results_dir=RESULTS_DIR, device=args.device)
-        except Exception as e:
-            print(f"{arch:16s} -- no usable checkpoint ({type(e).__name__}: {e})")
-            continue
-        # Each curriculum component IS the training distribution for its mode.
-        out = {}
-        for salt, comp in enumerate(cfg["curriculum"]):
-            exs = build_set(tok, comp, args.n, salt * 1_000_000)
-            out[comp["mode"]] = score(model, exs, tok, args.device, args.minibatch)
-        a_pq, a_ex = out.get("assoc_recall", (float("nan"),) * 2)
-        s_pq, s_ex = out.get("state_track", (float("nan"),) * 2)
-        print(f"{arch:16s} {a_pq:9.3f} {a_ex:9.3f} {s_pq:9.3f} {s_ex:9.3f}")
-        del model
-        if args.device.startswith("cuda"):
-            torch.cuda.empty_cache()
-
-    print("\nHealthy = both per-query columns high. state_pq ~0.01 means the control\n"
-          "never learned and no sweep figure is trustworthy yet.")
+    run_sanity(n=args.n, archs=[args.only] if args.only else ARCHS,
+               minibatch=args.minibatch, device=args.device, out_csv=args.out)
     return 0
 
 

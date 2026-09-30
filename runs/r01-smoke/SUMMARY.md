@@ -1,8 +1,8 @@
 # iota run `r01-smoke`
 
-- **updated:** 2026-09-30 02:53 UTC (last stage: `plot`)
-- **code:** `1453249` on `claude/wonderful-ritchie-hbm5zn`
-- **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Interactive
+- **updated:** 2026-09-30 03:01 UTC (last stage: `train:hybrid`)
+- **code:** `7e1b8ef` on `claude/wonderful-ritchie-hbm5zn`
+- **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
 

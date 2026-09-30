@@ -35,3 +35,15 @@
 [sweep] gated_linear step    60 loss 1.814 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 1.00  (6s)
 [sweep] gated_linear BEST plateau_acc = 0.0031 -> experiments/smoke/gated_linear_sweep
 === gated_linear done, best balanced acc = 0.0031
+  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r01-smoke
+
+========================================================================
+=== TRAIN SUMMARY
+========================================================================
+  hybrid         [ok] step 60: assoc_recall=0.018 state_track=0.000  (balanced 0.0092)
+  transformer    [ok] step 60: assoc_recall=0.006 state_track=0.000  (balanced 0.0031)
+  gated_linear   [ok] step 60: assoc_recall=0.000 state_track=0.000  (balanced 0.0)
+
+Healthy = assoc high AND state well above chance (~0.01).
+If state is still ~0.01 the control never learned -- stop and fix that
+before trusting any figure.

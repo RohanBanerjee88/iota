@@ -14,13 +14,13 @@ has been fixed (see the timeline). **No trustworthy figure exists yet.** The nex
 clean run `r01` from scratch on Kaggle, with results published automatically to the
 `kaggle-results` branch.
 
-**Next action:** smoke passed on Kaggle. Run `notebooks/kaggle_train.ipynb` with `PLAN="A"` (Save & Run All), then `"B"`.
+**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). Fix the three design flaws, validate on CPU, then run r02.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r01 | — | — | A → B | pending | — |
+| r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
 
 How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. Check the
@@ -28,6 +28,32 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-09-30 — r01 plan A: the pipeline works; the experiment design still has three flaws.**
+Trained on a Kaggle T4 (hybrid 79 min, transformer 70 min, GLA 111 min). Sanity gate (in-distribution, n=500):
+
+| model | assoc per-query | state (control) per-query |
+|---|---:|---:|
+| hybrid | 0.988 | 0.016 |
+| transformer | **0.300** | 0.004 |
+| gated_linear | 1.000 | 0.008 |
+
+1. **The control is not a control.** `state_track` never rose above chance for *any* model, even in the
+   easy phase (2 ops). The task asks for chained multi-digit modular arithmetic done silently
+   (`10 − 22 + 54 mod 97 = 42`, digits split), which is an arithmetic test, not a state-holding test.
+   So it cannot show "linear ≈ dense on single-slot memory".
+2. **The dense baseline is broken, not beaten.** Transformer loss jumped from 0.35 to about 1.3 when the
+   difficulty ramp started and never recovered. Its Pass-1 per-query accuracy is ≈2/n_bindings at every
+   load (0.58, 0.29, 0.13, 0.065 at nb = 4, 8, 16, 32), the signature of picking among the bound values
+   without doing the key→value lookup. The hybrid has the same attention layers and learned fine, so this
+   is optimisation (recipe or grad_clip 0.5), not architecture.
+3. **Pass 1 past 16 bindings measures extrapolation, not capacity.** Keys are always `0..n-1` in order,
+   so "GET k" can be solved by counting to the k-th SET line. Training never sees keys ≥ 16 or more than
+   6 queries. Both GLA *and* the full-attention hybrid fall off the same cliff right at the training edge
+   (nb 16 → 32: 0.99 → 0.41 and 0.96 → 0.44). If it were state capacity, the hybrid would hold. GLA stores
+   16 bindings perfectly, so its real capacity limit has not been reached yet.
+
+No figure from r01. Plan B (length + cost) was not run: it would measure a broken baseline.
 
 **2026-09-30 — Kaggle → GitHub link, fresh-run prep.**
 - `scripts/sync_results.py`: after every stage (and after each model in training), the

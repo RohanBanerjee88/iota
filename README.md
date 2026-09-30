@@ -4,4 +4,4 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
-| [r01-smoke](runs/r01-smoke/SUMMARY.md) | 2026-09-30 02:52 UTC | train | Tesla T4 | `1453249` |
+| [r01-smoke](runs/r01-smoke/SUMMARY.md) | 2026-09-30 02:52 UTC | sanity | Tesla T4 | `1453249` |

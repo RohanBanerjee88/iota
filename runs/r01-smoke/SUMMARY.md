@@ -1,6 +1,6 @@
 # iota run `r01-smoke`
 
-- **updated:** 2026-09-30 02:52 UTC (last stage: `eval 1,3,2`)
+- **updated:** 2026-09-30 02:53 UTC (last stage: `profile`)
 - **code:** `1453249` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Interactive
 
@@ -68,7 +68,17 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=8 per cell, pai
 
 ## 5. Cost (forward pass, batch 1)
 
-_`cost_profile.csv` not synced yet._
+Peak VRAM MB / median latency ms.
+
+| seq_len | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 26.6 MB / 3.63 ms | 27.1 MB / 8.78 ms | 29.2 MB / 8.43 ms |
+| 256 | 27.9 MB / 3.68 ms | 28.2 MB / 13.54 ms | 30.4 MB / 12.04 ms |
+| 512 | 30.4 MB / 3.70 ms | 30.5 MB / 23.31 ms | 32.8 MB / 19.16 ms |
+| 1024 | 35.4 MB / 5.25 ms | 35.0 MB / 44.19 ms | 37.5 MB / 35.86 ms |
+| 2048 | 46.2 MB / 11.93 ms | 44.8 MB / 81.16 ms | 47.8 MB / 69.04 ms |
+| 4096 | 65.4 MB / 20.76 ms | 62.1 MB / 161.38 ms | 66.1 MB / 128.51 ms |
+| 8192 | 105.5 MB / 64.43 ms | 98.3 MB / 321.01 ms | 104.3 MB / 257.60 ms |
 
 ## 6. Figure
 

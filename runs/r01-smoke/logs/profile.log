@@ -1,0 +1,27 @@
+
+##### profile started 2026-09-30 02:52:59 UTC argv=--stage all --smoke
+
+### STAGE profile
+
+  transformer   seq=128       26.6MB     3.63ms (28.35 ms/1k tok)
+  transformer   seq=256       27.9MB     3.68ms (14.39 ms/1k tok)
+  transformer   seq=512       30.4MB     3.70ms (7.23 ms/1k tok)
+  transformer   seq=1024      35.4MB     5.25ms (5.12 ms/1k tok)
+  transformer   seq=2048      46.2MB    11.93ms (5.83 ms/1k tok)
+  transformer   seq=4096      65.4MB    20.76ms (5.07 ms/1k tok)
+  transformer   seq=8192     105.4MB    64.43ms (7.86 ms/1k tok)
+  gated_linear  seq=128       27.1MB     8.78ms (68.56 ms/1k tok)
+  gated_linear  seq=256       28.2MB    13.54ms (52.90 ms/1k tok)
+  gated_linear  seq=512       30.5MB    23.31ms (45.52 ms/1k tok)
+  gated_linear  seq=1024      35.0MB    44.19ms (43.16 ms/1k tok)
+  gated_linear  seq=2048      44.8MB    81.16ms (39.63 ms/1k tok)
+  gated_linear  seq=4096      62.1MB   161.38ms (39.40 ms/1k tok)
+  gated_linear  seq=8192      98.3MB   321.01ms (39.19 ms/1k tok)
+  hybrid        seq=128       29.2MB     8.43ms (65.86 ms/1k tok)
+  hybrid        seq=256       30.4MB    12.05ms (47.05 ms/1k tok)
+  hybrid        seq=512       32.7MB    19.16ms (37.42 ms/1k tok)
+  hybrid        seq=1024      37.5MB    35.86ms (35.02 ms/1k tok)
+  hybrid        seq=2048      47.8MB    69.04ms (33.71 ms/1k tok)
+  hybrid        seq=4096      66.1MB   128.51ms (31.37 ms/1k tok)
+  hybrid        seq=8192     104.3MB   257.60ms (31.45 ms/1k tok)
+wrote experiments/smoke/cost_profile.csv (21 rows)

@@ -8,3 +8,4 @@
 2026-09-30 02:53 UTC  stage=plot  code=1453249  files=15
 2026-09-30 03:01 UTC  stage=train:hybrid  code=7e1b8ef  files=2
 2026-09-30 03:01 UTC  stage=train:transformer  code=7e1b8ef  files=3
+2026-09-30 03:01 UTC  stage=train:gated_linear  code=7e1b8ef  files=4

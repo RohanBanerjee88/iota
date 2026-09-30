@@ -1,0 +1,4 @@
+model,assoc_pq,assoc_exact,state_pq,state_exact,n
+hybrid,0.9875,0.964,0.016,0.016,500
+transformer,0.3001,0.142,0.004,0.004,500
+gated_linear,1.0,1.0,0.008,0.008,500

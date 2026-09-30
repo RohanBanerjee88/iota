@@ -1,0 +1,14 @@
+
+##### sanity started 2026-09-30 07:23:44 UTC argv=--stage sanity --repo BanerjeeRohan44/iota-r01
+
+### STAGE sanity (each model on its own training distribution)
+
+model             assoc_pq  assoc_ex  state_pq  state_ex
+----------------------------------------------------------
+hybrid               0.987     0.964     0.016     0.016
+transformer          0.300     0.142     0.004     0.004
+gated_linear         1.000     1.000     0.008     0.008
+
+Healthy = both per-query columns high. state_pq ~0.01 means the control
+never learned and no sweep figure is trustworthy yet.
+wrote experiments/results/sanity_indist.csv

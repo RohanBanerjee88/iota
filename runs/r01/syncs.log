@@ -2,3 +2,4 @@
 2026-09-30 05:32 UTC  stage=train:transformer  code=7e1b8ef  files=3
 2026-09-30 07:23 UTC  stage=train:gated_linear  code=7e1b8ef  files=4
 2026-09-30 07:23 UTC  stage=train  code=7e1b8ef  files=4
+2026-09-30 07:23 UTC  stage=sanity  code=7e1b8ef  files=6

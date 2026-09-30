@@ -6,3 +6,8 @@ experiments/results/*.json
 experiments/results/*.csv
 experiments/plots/*.png
 .ipynb_checkpoints/
+experiments/results/*.png
+experiments/results/*.pdf
+experiments/results/logs/
+experiments/results/.cache/
+experiments/smoke/

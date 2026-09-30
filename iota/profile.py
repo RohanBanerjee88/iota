@@ -58,9 +58,11 @@ def _peak_mb(device: str) -> Optional[float]:
 
 @torch.no_grad()
 def measure(model, seq_len: int, batch_size: int, vocab_size: int, device: str,
-            warmup: int = 2, iters: int = 5) -> Dict:
-    """One (model, seq_len) cell: peak VRAM + mean forward latency.
+            warmup: int = 3, iters: int = 5) -> Dict:
+    """One (model, seq_len) cell: peak VRAM + MEDIAN forward latency.
 
+    BUILD_PLAN §6: >=3 warmup iters, synchronize around every timing, median of
+    >=5 runs (the median shrugs off a one-off stall that would skew a mean).
     Raises torch.cuda.OutOfMemoryError to the caller, which records it as a result.
     """
     model.eval()
@@ -70,11 +72,14 @@ def measure(model, seq_len: int, batch_size: int, vocab_size: int, device: str,
     _sync(device)
     _reset_peak(device)
 
-    t0 = time.perf_counter()
+    times = []
     for _ in range(iters):
+        _sync(device)
+        t0 = time.perf_counter()
         model(x)
-    _sync(device)
-    dt_ms = (time.perf_counter() - t0) * 1000.0 / iters
+        _sync(device)
+        times.append((time.perf_counter() - t0) * 1000.0)
+    dt_ms = sorted(times)[len(times) // 2]
 
     peak = _peak_mb(device)
     del x

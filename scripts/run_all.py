@@ -10,6 +10,17 @@ the whole run.
     python -m scripts.run_all --stage profile
     python -m scripts.run_all --stage plot
     python -m scripts.run_all --stage all      --repo <user>/iota-sweep
+    python -m scripts.run_all --stage all      --smoke     # whole pipeline in minutes
+
+Every stage tees its output to experiments/results/logs/<stage>.log and, when
+GH_TOKEN is set, publishes the run's small artifacts (CSVs, run jsons, logs, the
+figure, a SUMMARY.md) to the `kaggle-results` branch under runs/<run_id>/ -- that
+is how results get from Kaggle back to the repo (see scripts/sync_results.py).
+
+--smoke trains each model for 60 steps, evaluates every pass at n=8, profiles and
+plots, all into experiments/smoke/ with HF traffic off. It exists to catch a
+broken pipeline, GPU issue or bad GitHub token in ~5 minutes instead of 6 hours
+in. Its numbers are meaningless.
 
 Resume logic (the part that answers "do I have to run everything again?"):
 a checkpoint counts as DONE only if all three hold --
@@ -25,6 +36,7 @@ STALE and retrained.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -32,6 +44,7 @@ import sys
 import yaml
 
 RESULTS_DIR = "experiments/results"
+SMOKE_DIR = "experiments/smoke"
 # short -> long: results bank early, and the slow learner (most timeout-prone)
 # runs last, once the others are already safe on the Hub.
 ARCH_ORDER = ["hybrid", "transformer", "gated_linear"]
@@ -77,7 +90,7 @@ def checkpoint_status(arch: str) -> tuple:
         return "stale", run_name, "trained on a DIFFERENT curriculum than the current config"
     evals = run.get("history", {}).get("eval_acc", [])
     last_step = evals[-1].get("step", 0) if evals else 0
-    if last_step < MIN_REAL_STEPS:
+    if last_step < MIN_REAL_STEPS and RESULTS_DIR != SMOKE_DIR:
         return "stale", run_name, f"only {last_step} steps (smoke run)"
     return "ok", run_name, f"trained {last_step} steps"
 
@@ -150,6 +163,32 @@ def hf_push(run_name: str, repo: str, token) -> None:
             print(f"  [hf] pushed {run_name}.{ext}", flush=True)
 
 
+def hf_pull_results(repo: str, token) -> None:
+    """Fetch result CSVs that exist on the Hub but not locally.
+
+    Kaggle wipes the disk between sessions, so the plot stage in Session B would
+    otherwise only see Session B's own CSVs and silently drop Session A's panels.
+    Local files always win -- a CSV is only downloaded when it is absent here.
+    """
+    api = _hf_api(token)
+    if api is None:
+        return
+    from huggingface_hub import hf_hub_download
+    try:
+        remote = api.list_repo_files(repo, repo_type="model")
+    except Exception as e:
+        print(f"  [hf] cannot list {repo} ({e})", flush=True)
+        return
+    for f in remote:
+        if f.endswith(".csv") and "/" not in f and not os.path.exists(os.path.join(RESULTS_DIR, f)):
+            try:
+                hf_hub_download(repo_id=repo, filename=f, repo_type="model", token=token,
+                                local_dir=RESULTS_DIR)
+                print(f"  [hf] pulled {f}", flush=True)
+            except Exception as e:
+                print(f"  [hf] could not pull {f} ({e})", flush=True)
+
+
 def hf_push_results(repo: str, token) -> None:
     """Push CSVs / figures produced by the eval, profile and plot stages."""
     api = _hf_api(token)
@@ -186,7 +225,7 @@ def stage_train(args) -> None:
         print(f"\n{'='*72}\n=== TRAIN {arch} -> {run_name}\n{'='*72}", flush=True)
         cfg = yaml.safe_load(open(_cfg_path(arch)))
         try:
-            out = train(cfg, smoke=False)
+            out = train(cfg, smoke=args.smoke)
         except Exception as e:
             print(f"!! {arch} FAILED: {type(e).__name__}: {e}", flush=True)
             continue
@@ -196,6 +235,7 @@ def stage_train(args) -> None:
                 hf_push(run_name, args.repo, args.token)
             except Exception as e:
                 print(f"  [hf] push failed ({e}); weights still local", flush=True)
+        _publish(args, f"train:{arch}")  # visible on GitHub even if a later model dies
 
     print(f"\n{'='*72}\n=== TRAIN SUMMARY\n{'='*72}", flush=True)
     for arch in archs:
@@ -204,6 +244,26 @@ def stage_train(args) -> None:
     print("\nHealthy = assoc high AND state well above chance (~0.01).\n"
           "If state is still ~0.01 the control never learned -- stop and fix that\n"
           "before trusting any figure.", flush=True)
+
+
+def _ensure_checkpoints(args) -> None:
+    """Pull any checkpoint that isn't usable locally from the Hub (Session B)."""
+    for arch in ARCH_ORDER:
+        status, run_name, _ = checkpoint_status(arch)
+        if status != "ok" and not args.no_hf:
+            hf_pull(run_name, args.repo, args.token)
+
+
+def stage_sanity(args) -> None:
+    """In-distribution, per-mode check: the gate before trusting ANY sweep number."""
+    from scripts.sanity_indist import run_sanity
+
+    print("\n### STAGE sanity (each model on its own training distribution)\n", flush=True)
+    _ensure_checkpoints(args)
+    archs = [a for a in ARCH_ORDER if checkpoint_status(a)[0] == "ok"]
+    run_sanity(n=8 if args.smoke else 500, archs=archs, minibatch=args.minibatch,
+               device=args.device, results_dir=RESULTS_DIR,
+               out_csv=os.path.join(RESULTS_DIR, "sanity_indist.csv"))
 
 
 def stage_eval(args) -> None:
@@ -265,6 +325,8 @@ def stage_plot(args) -> None:
     from iota.plot import make_figure
 
     print("\n### STAGE plot\n", flush=True)
+    if not args.no_hf:
+        hf_pull_results(args.repo, args.token)  # Session A's CSVs, if this is Session B
     make_figure(results_dir=RESULTS_DIR)
     if not args.no_hf:
         try:
@@ -273,12 +335,62 @@ def stage_plot(args) -> None:
             print(f"  [hf] results push failed ({e})", flush=True)
 
 
+# ---------------------------------------------------------------------------
+# logging + publishing
+# ---------------------------------------------------------------------------
+class _Tee:
+    """Write to the console AND a log file, so every stage leaves a full transcript."""
+
+    def __init__(self, stream, fh):
+        self.stream, self.fh = stream, fh
+
+    def write(self, s):
+        self.stream.write(s)
+        self.fh.write(s)
+        return len(s)
+
+    def flush(self):
+        self.stream.flush()
+        self.fh.flush()
+
+    def __getattr__(self, name):  # isatty, encoding, ... -> the real console
+        return getattr(self.stream, name)
+
+
+def _run_logged(log_name: str, fn, args) -> None:
+    os.makedirs(os.path.join(RESULTS_DIR, "logs"), exist_ok=True)
+    path = os.path.join(RESULTS_DIR, "logs", f"{log_name}.log")
+    with open(path, "a", buffering=1) as fh:
+        stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        fh.write(f"\n##### {log_name} started {stamp} argv={' '.join(sys.argv[1:])}\n")
+        out, err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = _Tee(out, fh), _Tee(err, fh)
+        try:
+            fn(args)
+        except Exception:
+            import traceback
+            traceback.print_exc()  # lands in the log too, then re-raise
+            raise
+        finally:
+            sys.stdout, sys.stderr = out, err
+
+
+def _publish(args, stage: str) -> bool:
+    if args.no_gh:
+        return False
+    from scripts.sync_results import sync
+    # IOTA_GH_REMOTE_URL redirects the push (e.g. to a local bare repo) for testing.
+    return sync(RESULTS_DIR, args.run_id, stage=stage, repo=args.gh_repo,
+                remote_url=os.environ.get("IOTA_GH_REMOTE_URL"))
+
+
 def main() -> int:
+    global RESULTS_DIR
     import torch
 
     ap = argparse.ArgumentParser(description="iota Phase-6 end-to-end driver")
     ap.add_argument("--stage", default="all",
-                    choices=["all", "train", "eval", "profile", "plot", "status"])
+                    choices=["all", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train just one architecture")
     ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2'")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
@@ -288,10 +400,29 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=1000, help="examples per eval cell")
     ap.add_argument("--minibatch", type=int, default=32)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--smoke", action="store_true",
+                    help="dry-run the whole pipeline in minutes (experiments/smoke/, no HF)")
+    ap.add_argument("--run-id", default=os.environ.get("IOTA_RUN_ID", "adhoc"),
+                    help="folder name under runs/ on the kaggle-results branch")
+    ap.add_argument("--gh-repo", default="RohanBanerjee88/iota")
+    ap.add_argument("--no-gh", action="store_true", help="don't publish to GitHub")
     args = ap.parse_args()
 
+    if args.smoke:
+        import iota.train
+        RESULTS_DIR = SMOKE_DIR
+        iota.train.RESULTS_DIR = SMOKE_DIR  # smoke checkpoints never touch real ones
+        args.no_hf, args.force = True, True
+        args.n, args.minibatch = 8, 8
+        args.run_id = f"{args.run_id}-smoke"
+    if not args.no_gh and not os.environ.get("GH_TOKEN"):
+        print("NOTE: GH_TOKEN not set -> results will NOT be published to GitHub", flush=True)
+        args.no_gh = True
+
     print(f"iota run_all: stage={args.stage} device={args.device} "
-          f"hf={'off' if args.no_hf else args.repo}", flush=True)
+          f"hf={'off' if args.no_hf else args.repo} "
+          f"github={'off' if args.no_gh else f'{args.gh_repo}@kaggle-results/runs/{args.run_id}'}"
+          f"{'  [SMOKE -> ' + SMOKE_DIR + ']' if args.smoke else ''}", flush=True)
 
     if args.stage == "status":
         for arch in ARCH_ORDER:
@@ -299,16 +430,35 @@ def main() -> int:
             print(f"  {arch:14s} [{status:7s}] {detail}", flush=True)
         return 0
 
+    published = []
+
+    def stage(log_name, fn, label):
+        # Publish in `finally`: a stage that crashes still ships its log (with the
+        # traceback) to GitHub, which is exactly when it is needed most.
+        try:
+            _run_logged(log_name, fn, args)
+        finally:
+            published.append(_publish(args, label))
+
     if args.stage in ("all", "train"):
-        stage_train(args)
+        stage("train", stage_train, "train")
+    if args.stage in ("all", "sanity"):
+        stage("sanity", stage_sanity, "sanity")
     if args.stage in ("all", "eval"):
         if args.stage == "all":
             args.passes = "1,3,2"  # cheap+decisive first, expensive last
-        stage_eval(args)
+        stage(f"eval_p{args.passes.replace(',', '')}", stage_eval, f"eval {args.passes}")
     if args.stage in ("all", "profile"):
-        stage_profile(args)
+        stage("profile", stage_profile, "profile")
     if args.stage in ("all", "plot"):
-        stage_plot(args)
+        stage("plot", stage_plot, "plot")
+
+    if not args.no_gh:
+        ok = all(published)
+        print(f"\nGitHub link: {'OK' if ok else 'FAILED'} -> https://github.com/{args.gh_repo}"
+              f"/tree/kaggle-results/runs/{args.run_id}", flush=True)
+        if args.smoke and not ok:
+            return 2  # a broken link must stop you before the long run, not after
     return 0
 
 

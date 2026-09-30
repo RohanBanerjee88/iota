@@ -43,41 +43,59 @@ Per cell: paired prompts across all 3 archs (same seed), n=500–1000, Wilson/bo
 
 ---
 
-## 3. How to run it (Kaggle: 9-hr sessions, ~30 GPU-hr/week)
+## 3. How to run it (Kaggle: capped GPU sessions + a weekly GPU quota)
 
-Everything goes through one resumable driver, `scripts/run_all.py`. **Every stage is safe to re-run** — completed work is skipped, so a session timeout costs only the in-progress model.
+Use [`notebooks/kaggle_train.ipynb`](notebooks/kaggle_train.ipynb). It is a thin wrapper around one resumable driver, `scripts/run_all.py`. **Every stage is safe to re-run**: completed work is skipped, so a session timeout costs only the model in progress.
 
-**Session A — train + Pass 1 + Pass 3 (cheap, decisive).**
+**One-time setup:**
+- Kaggle sidebar: *Accelerator* **GPU T4 x2**, *Internet* **on**.
+- *Add-ons → Secrets*:
+  - **`GH_TOKEN`**: a GitHub fine-grained token scoped to `RohanBanerjee88/iota` with *Contents: Read and write*.
+  - **`HF_TOKEN`**: a Hugging Face token with *Write*.
+
+**Run it in this order** by setting `PLAN` in cell 1. Keep the same `RUN_ID` throughout.
+
+| PLAN | does | how to launch | roughly |
+|---|---|---|---|
+| `smoke` | tests + the whole pipeline at toy size; must print `GitHub link: OK` | interactive | ~10 min |
+| `A` | smoke, train all three, sanity gate, eval passes 1 & 3 | *Save Version → Save & Run All* | hours (GLA is slowest) |
+| `B` | smoke, eval pass 2, cost profile, figure | *Save & Run All* | ~1 h |
+| `all` | A + B in one session, if it fits | *Save & Run All* | — |
+
+"Save & Run All" runs the notebook as a background job, so you can close the browser.
+
+The same stages from a shell:
 ```bash
-git pull origin main
-python -m scripts.run_all --stage train --repo <user>/iota-sweep   # HF backup after each model
-python -m scripts.run_all --stage eval  --passes 1,3
-```
-
-**Session B — Pass 2 (length-gen) + cost profiling + the figure.**
-```bash
-python -m scripts.run_all --stage eval --passes 2   # dense may OOM at 8192 — that's a result
+python -m scripts.run_all --stage all --smoke                     # dry run into experiments/smoke/
+python -m scripts.run_all --stage train  --repo <user>/<hf-repo>   # HF + GitHub publish after each model
+python -m scripts.run_all --stage sanity                          # per-mode in-distribution gate
+python -m scripts.run_all --stage eval   --passes 1,3
+python -m scripts.run_all --stage eval   --passes 2               # dense may OOM at 8192 -- that's a result
 python -m scripts.run_all --stage profile
-python -m scripts.run_all --stage plot
+python -m scripts.run_all --stage plot                            # pulls Session A's CSVs from HF first
+python -m scripts.run_all --stage status                          # what's trained / stale / missing
+python -m scripts.run_all --only gated_linear --stage train       # finish one model
 ```
 
-Useful at any time:
-```bash
-python -m scripts.run_all --stage status      # what's trained / stale / missing
-python -m scripts.run_all --only gated_linear --stage train   # finish one model
-python -m scripts.sanity_indist               # per-mode in-distribution check
-```
+**How results come back.** After every stage, and after each model during training, `scripts/sync_results.py` commits the run's small artifacts to the **`kaggle-results`** branch under `runs/<RUN_ID>/`:
+- CSVs and run jsons
+- `logs/<stage>.log`
+- the figure
+- an auto-generated `SUMMARY.md` with every table
+
+Files from earlier syncs are kept, so Session B adds to Session A. Weights stay on HF. To analyse a run, read `runs/<RUN_ID>/SUMMARY.md`, or tell Claude "results for r01 are in". Claude fetches the branch directly.
 
 **Resume logic.** A checkpoint counts as done only if the weights exist, its *saved curriculum matches the current config*, and its history shows real training. The curriculum check is what stops an old checkpoint (trained at the superseded `seq_len ≤ 256` / `n_bindings ≤ 8` ceilings) from being silently reused and reproducing the broken sweep — those are reported `stale` and retrained.
 
-**The gate before any figure.** The train summary prints per-mode accuracy. Every model must show `assoc` high **and** `state` well above chance (~0.01). A control at chance means the figure is not trustworthy yet — this was the failure the pooled per-query metric hid the first time round.
+**The gate before any figure.** The train summary and the `sanity` stage (`sanity_indist.csv`, section 1b of `SUMMARY.md`) report per-mode accuracy. Every model must show `assoc` high **and** `state` well above chance (~0.01). A control at chance means the figure is not trustworthy yet. That was the failure the pooled per-query metric hid the first time round.
 
 ---
 
 ## 4. Kaggle gotchas
 
-- **Persist before timeout** — push checkpoints + CSVs to HF Hub *during* the run.
-- **Enable GPU** and confirm `torch.cuda.is_available()` in cell 1.
+- **Persist before timeout.** `run_all` pushes checkpoints to HF and results to GitHub *during* the run, not at the end.
+- **Enable GPU** (T4). Cell 2 asserts `torch.cuda.is_available()`. Don't `pip install torch` on Kaggle; use the preinstalled build.
+- **Public results.** The repo is public, so the `kaggle-results` branch is too. Tokens are never written to logs.
 - **Pin threads** to avoid oversubscription in the data/eval loops.
 - **`flash-linear-attention` stays optional** — never blocks the run.
 - **dense at 8192** may OOM on a 16GB T4 — expected; record the length where it dies.

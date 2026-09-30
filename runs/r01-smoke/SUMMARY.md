@@ -1,6 +1,6 @@
 # iota run `r01-smoke`
 
-- **updated:** 2026-09-30 02:53 UTC (last stage: `profile`)
+- **updated:** 2026-09-30 02:53 UTC (last stage: `plot`)
 - **code:** `1453249` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Interactive
 
@@ -82,4 +82,4 @@ Peak VRAM MB / median latency ms.
 
 ## 6. Figure
 
-_Not plotted yet._
+![money figure](money_figure.png)

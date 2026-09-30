@@ -258,3 +258,15 @@
   ..._linear_sweep.safetensors: 100%|██████████| 8.65MB / 8.65MB            
   [hf] pushed gated_linear_sweep.safetensors
   [hf] pushed gated_linear_sweep.json
+  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r01
+
+========================================================================
+=== TRAIN SUMMARY
+========================================================================
+  hybrid         [ok] step 9500: assoc_recall=0.983 state_track=0.036  (balanced 0.5095)
+  transformer    [ok] step 14500: assoc_recall=0.305 state_track=0.012  (balanced 0.1585)
+  gated_linear   [ok] step 19000: assoc_recall=0.998 state_track=0.018  (balanced 0.5081)
+
+Healthy = assoc high AND state well above chance (~0.01).
+If state is still ~0.01 the control never learned -- stop and fix that
+before trusting any figure.

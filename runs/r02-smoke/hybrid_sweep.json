@@ -1,0 +1,106 @@
+{
+  "config": {
+    "arch": "hybrid",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 6.0,
+    "short_conv": 0,
+    "full_attention_layers": [
+      2,
+      4
+    ],
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 12000,
+      "easy_steps": 2000,
+      "ramp_steps": 3000,
+      "eval_every": 500,
+      "eval_n": 500,
+      "patience": 8,
+      "seed": 0,
+      "lr": 0.0015,
+      "run_name": "hybrid_sweep"
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 20,
+        "per_query": 0.0,
+        "exact": 0.0,
+        "balanced": 0.0,
+        "by_mode": {
+          "assoc_recall": 0.0,
+          "state_track": 0.0
+        },
+        "difficulty": 0.333
+      },
+      {
+        "step": 40,
+        "per_query": 0.009852216748768473,
+        "exact": 0.0,
+        "balanced": 0.0052,
+        "by_mode": {
+          "assoc_recall": 0.0104,
+          "state_track": 0.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 60,
+        "per_query": 0.007389162561576354,
+        "exact": 0.015625,
+        "balanced": 0.0276,
+        "by_mode": {
+          "assoc_recall": 0.0052,
+          "state_track": 0.05
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "hybrid_sweep.safetensors"
+}

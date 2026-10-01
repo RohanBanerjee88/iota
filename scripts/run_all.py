@@ -64,13 +64,14 @@ def _run_name(cfg: dict, arch: str) -> str:
 
 
 def _fingerprint(cfg: dict) -> dict:
-    """The parts of a config that define WHAT the model learned.
+    """The parts of a config that define WHAT the model is and what it learned.
 
-    Architecture + curriculum only. Deliberately excludes lr / max_steps / patience:
-    re-tuning the optimizer shouldn't invalidate a finished checkpoint, but changing
-    the task distribution (sequence length, binding/query ceilings, task mix) must.
+    Every model key (arch, sizes, short_conv, ...) + the curriculum. Deliberately
+    excludes the `train` block (lr / max_steps / patience): re-tuning the optimizer
+    shouldn't invalidate a finished checkpoint, but changing the architecture or the
+    task distribution must. (vocab_size is filled in at train time, so it's ignored.)
     """
-    return {"arch": cfg.get("arch"), "curriculum": cfg.get("curriculum")}
+    return {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
 
 
 def checkpoint_status(arch: str) -> tuple:
@@ -490,7 +491,7 @@ def main() -> int:
                     help="folder name under runs/ on the kaggle-results branch")
     ap.add_argument("--gh-repo", default="RohanBanerjee88/iota")
     ap.add_argument("--no-gh", action="store_true", help="don't publish to GitHub")
-    ap.add_argument("--tune-lrs", default="0.00075,0.0015,0.003",
+    ap.add_argument("--tune-lrs", default="0.00075,0.0015",
                     help="lr grid for --stage tune (same grid for every arch)")
     ap.add_argument("--tune-steps", type=int, default=4000)
     args = ap.parse_args()

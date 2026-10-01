@@ -123,3 +123,22 @@ def test_summary_shows_lr_probe_with_best_marked(tmp_path):
     s = build_summary(str(tmp_path), "r02")
     assert "LR probe" in s
     assert "| transformer ★ | 0.0015 |" in s and "| transformer | 0.00075 |" in s
+
+
+def test_checkpoint_without_conv_is_stale_under_conv_config(tmp_path, monkeypatch):
+    # The fingerprint must cover model keys, not just the curriculum: a checkpoint
+    # trained with short_conv 0 must never be reused for a short_conv 4 config.
+    import yaml
+    import scripts.run_all as ra
+
+    monkeypatch.setattr(ra, "RESULTS_DIR", str(tmp_path))
+    cfg = yaml.safe_load(open("configs/sweep_transformer.yaml"))
+    old = dict(cfg, short_conv=0, vocab_size=99)
+    (tmp_path / "transformer_sweep.safetensors").write_bytes(b"x")
+    hist = {"eval_acc": [{"step": 5000}]}
+    (tmp_path / "transformer_sweep.json").write_text(json.dumps({"config": old, "history": hist}))
+    assert ra.checkpoint_status("transformer")[0] == "stale"
+    same = dict(cfg, vocab_size=99)  # identical model + curriculum, lr changes are fine
+    same["train"] = dict(cfg["train"], lr=0.123)
+    (tmp_path / "transformer_sweep.json").write_text(json.dumps({"config": same, "history": hist}))
+    assert ra.checkpoint_status("transformer")[0] == "ok"

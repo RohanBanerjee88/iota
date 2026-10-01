@@ -6,12 +6,18 @@
 #    counting shortcut and every eval key has been seen in training.
 #  * n_bindings <= 64 / n_queries <= 16: the capacity pass (2..128 bindings,
 #    min(nb,16) queries) is in-distribution up to 64; only 128 extrapolates.
+#  * short_conv 4 on EVERY mixer (attention and GLA): a 4-tap causal depthwise
+#    conv that fuses neighbouring tokens. r02's lr probe: pure attention could not
+#    learn multi-digit key matching (assoc 0.18) while the hybrid did (1.00); on CPU
+#    the conv took transformer recall 0.26 -> 0.90 at the same budget. On for all
+#    three so the comparison stays fair; attention cost stays O(T^2).
 arch: transformer
 d_model: 256
 n_layers: 4
 n_heads: 4
 d_ff: 512
 dropout: 0.0
+short_conv: 4
 curriculum:
 - mode: assoc_recall
   n_bindings:

@@ -20,7 +20,8 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r02 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
+| r03 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
+| r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
 
@@ -29,6 +30,15 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-01 — Decision (option 1): short conv on for all three, re-tune as r03.**
+- `short_conv: 4` in every sweep config (all mixers: attention and GLA). This is a scope change: the
+  contender is now "gated linear attention + short conv" (the standard modern design), not "pure" linear.
+  It is the same for all three, so the comparison stays fair.
+- The checkpoint fingerprint now covers every model key, not just the curriculum, so a no-conv checkpoint
+  can never be silently reused (tested).
+- lr grid → {7.5e-4, 1.5e-3}: 3e-3 lost for every arch in r02. New run id **r03** (fresh HF repo), so the
+  r02 no-conv probe stays a clean record. CPU smoke with conv passes end to end; 64 tests pass.
 
 **2026-10-01 — r02 lr probe (Kaggle T4, 3 h): the new control works; the pure transformer still can't learn recall.**
 

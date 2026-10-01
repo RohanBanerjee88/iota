@@ -58,7 +58,7 @@ Use [`notebooks/kaggle_train.ipynb`](notebooks/kaggle_train.ipynb). It is a thin
 | PLAN | does | how to launch | roughly |
 |---|---|---|---|
 | `smoke` | tests + the whole pipeline at toy size; must print `GitHub link: OK` | interactive | ~10 min |
-| `tune` | smoke + the lr probe: every arch × lr {7.5e-4, 1.5e-3, 3e-3}, same 4000-step budget, grad_clip 1.0 → `tune.csv` | *Save & Run All* | ~3–3.5 h |
+| `tune` | smoke + the lr probe: every arch × lr {7.5e-4, 1.5e-3} (3e-3 lost for every arch in r02), same 4000-step budget, grad_clip 1.0 → `tune.csv` | *Save & Run All* | ~2–2.5 h |
 | `A` | smoke, train all three, sanity gate, eval passes 1 & 3 | *Save Version → Save & Run All* | hours (GLA is slowest) |
 | `B` | smoke, eval pass 2, cost profile, figure | *Save & Run All* | ~1 h |
 | `all` | A + B in one session, if it fits | *Save & Run All* | — |

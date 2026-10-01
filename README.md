@@ -35,9 +35,13 @@ with a control task stuck at chance. All are fixed; see [`PROGRESS.md`](PROGRESS
 
 | model | idea | params |
 |---|---|---|
-| `transformer` | dense causal attention (SDPA/Flash), RoPE, the baseline | 2.13M |
+| `transformer` | dense causal attention (SDPA/Flash), RoPE, the baseline | 2.14M |
 | `gated_linear` | gated linear attention: a fixed-size decaying memory, chunk-parallel | 2.14M |
-| `hybrid` | gated linear with 2 of 5 layers swapped for full attention | 2.66M |
+| `hybrid` | gated linear with 2 of 5 layers swapped for full attention | 2.67M |
+
+All three put a 4-tap short causal conv in front of every mixer (`short_conv: 4`). It fuses
+neighbouring tokens so multi-digit keys can be matched; without it pure attention never learned
+the recall task (r02). It is on for all three so the comparison stays fair.
 
 ## The tasks
 
@@ -79,7 +83,7 @@ hand-written labels.
 
 ```bash
 pip install -r requirements.txt pytest
-python -m pytest -q                                   # 62 tests, ~20s
+python -m pytest -q                                   # 64 tests, ~20s
 python tasks.py report                                # Phase 2 data gate (10k examples)
 python -m scripts.run_all --stage all --smoke --no-gh # whole pipeline, tiny, ~4 min CPU
 ```

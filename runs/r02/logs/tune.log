@@ -128,3 +128,11 @@
 [sweep] gated_linear step  4000 loss 1.996 bal 0.510 [assoc 0.020 state 1.000] exact 0.355 diff 1.00  (1149s)
 [sweep] gated_linear BEST plateau_acc = 0.5126 -> experiments/results/tune_gated_linear_lr0.003
 [tune] gated_linear lr=0.003: best balanced 0.5126 (assoc 0.0252, state 1.0) in 1149s
+  [sync] published 11 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r02
+
+========================================================================
+=== TUNE SUMMARY (best lr per arch by balanced score)
+========================================================================
+  transformer    lr=0.0015  balanced 0.583  assoc 0.177  state 0.989
+  hybrid         lr=0.00075  balanced 1.0  assoc 1.0  state 1.0
+  gated_linear   lr=0.00075  balanced 0.5358  assoc 0.0716  state 1.0

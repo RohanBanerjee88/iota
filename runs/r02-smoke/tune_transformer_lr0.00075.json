@@ -1,0 +1,100 @@
+{
+  "config": {
+    "arch": "transformer",
+    "d_model": 256,
+    "n_layers": 4,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 4000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
+      "eval_every": 500,
+      "eval_n": 256,
+      "patience": 1000000,
+      "seed": 0,
+      "lr": 0.00075,
+      "run_name": "tune_transformer_lr0.00075",
+      "grad_clip": 1.0
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 20,
+        "per_query": 0.0,
+        "exact": 0.0,
+        "balanced": 0.0,
+        "by_mode": {
+          "assoc_recall": 0.0,
+          "state_track": 0.0
+        },
+        "difficulty": 0.333
+      },
+      {
+        "step": 40,
+        "per_query": 0.0024630541871921183,
+        "exact": 0.0,
+        "balanced": 0.0013,
+        "by_mode": {
+          "assoc_recall": 0.0026,
+          "state_track": 0.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 60,
+        "per_query": 0.0,
+        "exact": 0.0,
+        "balanced": 0.0,
+        "by_mode": {
+          "assoc_recall": 0.0,
+          "state_track": 0.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "tune_transformer_lr0.00075.safetensors"
+}

@@ -1,0 +1,13 @@
+
+##### tune started 2026-10-01 02:55:24 UTC argv=--stage all --smoke
+
+### STAGE tune  (transformer, hybrid, gated_linear x lr [0.00075], 4000 steps each)
+
+
+=== TUNE transformer lr=0.00075
+[sweep] model=transformer params=2.13M device=cuda max_steps=60 bs=8 patience=1000000
+[sweep] transformer step    20 loss 3.228 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (1s)
+[sweep] transformer step    40 loss 2.977 bal 0.001 [assoc 0.003 state 0.000] exact 0.000 diff 1.00 * (2s)
+[sweep] transformer step    60 loss 2.513 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 1.00  (3s)
+[sweep] transformer BEST plateau_acc = 0.0013 -> experiments/smoke/tune_transformer_lr0.00075
+[tune] transformer lr=0.00075: best balanced 0.0013 (assoc 0.0026, state 0.0) in 5s

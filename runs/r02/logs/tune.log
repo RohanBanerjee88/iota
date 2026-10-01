@@ -1,0 +1,18 @@
+
+##### tune started 2026-10-01 02:56:32 UTC argv=--stage tune --repo BanerjeeRohan44/iota-r02
+
+### STAGE tune  (transformer, hybrid, gated_linear x lr [0.00075, 0.0015, 0.003], 4000 steps each)
+
+
+=== TUNE transformer lr=0.00075
+[sweep] model=transformer params=2.13M device=cuda max_steps=4000 bs=64 patience=1000000
+[sweep] transformer step   500 loss 0.319 bal 0.100 [assoc 0.013 state 0.187] exact 0.066 diff 0.00 * (19s)
+[sweep] transformer step  1000 loss 0.096 bal 0.153 [assoc 0.020 state 0.286] exact 0.102 diff 0.00 * (38s)
+[sweep] transformer step  1500 loss 0.952 bal 0.405 [assoc 0.051 state 0.758] exact 0.273 diff 0.25 * (79s)
+[sweep] transformer step  2000 loss 1.079 bal 0.517 [assoc 0.078 state 0.956] exact 0.344 diff 0.50 * (166s)
+[sweep] transformer step  2500 loss 1.232 bal 0.528 [assoc 0.077 state 0.978] exact 0.348 diff 0.75 * (306s)
+[sweep] transformer step  3000 loss 1.251 bal 0.547 [assoc 0.094 state 1.000] exact 0.363 diff 1.00 * (508s)
+[sweep] transformer step  3500 loss 1.246 bal 0.550 [assoc 0.101 state 1.000] exact 0.363 diff 1.00 * (741s)
+[sweep] transformer step  4000 loss 1.392 bal 0.551 [assoc 0.101 state 1.000] exact 0.363 diff 1.00 * (975s)
+[sweep] transformer BEST plateau_acc = 0.5507 -> experiments/results/tune_transformer_lr0.00075
+[tune] transformer lr=0.00075: best balanced 0.5507 (assoc 0.1015, state 1.0) in 976s

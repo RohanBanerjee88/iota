@@ -1,6 +1,6 @@
 # iota run `r02`
 
-- **updated:** 2026-10-01 03:12 UTC (last stage: `tune:transformer:0.00075`)
+- **updated:** 2026-10-01 03:29 UTC (last stage: `tune:transformer:0.0015`)
 - **code:** `d218e42` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -8,7 +8,8 @@
 
 | arch | lr | best balanced | assoc | state | exact | best step | final balanced | time |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| transformer ★ | 0.00075 | 0.551 | 0.102 | 1.000 | 0.363 | 4000 | 0.551 | 976s |
+| transformer | 0.00075 | 0.551 | 0.102 | 1.000 | 0.363 | 4000 | 0.551 | 976s |
+| transformer ★ | 0.0015 | 0.583 | 0.177 | 0.989 | 0.363 | 4000 | 0.583 | 975s |
 
 4000 steps each, grad_clip 1.0. ★ = best lr for that arch.
 

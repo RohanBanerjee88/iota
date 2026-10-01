@@ -16,3 +16,17 @@
 [sweep] transformer step  4000 loss 1.392 bal 0.551 [assoc 0.101 state 1.000] exact 0.363 diff 1.00 * (975s)
 [sweep] transformer BEST plateau_acc = 0.5507 -> experiments/results/tune_transformer_lr0.00075
 [tune] transformer lr=0.00075: best balanced 0.5507 (assoc 0.1015, state 1.0) in 976s
+  [sync] published 3 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r02
+
+=== TUNE transformer lr=0.0015
+[sweep] model=transformer params=2.13M device=cuda max_steps=4000 bs=64 patience=1000000
+[sweep] transformer step   500 loss 0.387 bal 0.068 [assoc 0.015 state 0.121] exact 0.043 diff 0.00 * (19s)
+[sweep] transformer step  1000 loss 0.170 bal 0.047 [assoc 0.017 state 0.077] exact 0.027 diff 0.00  (38s)
+[sweep] transformer step  1500 loss 1.014 bal 0.305 [assoc 0.061 state 0.549] exact 0.203 diff 0.25 * (78s)
+[sweep] transformer step  2000 loss 1.154 bal 0.438 [assoc 0.063 state 0.813] exact 0.301 diff 0.50 * (166s)
+[sweep] transformer step  2500 loss 1.268 bal 0.533 [assoc 0.088 state 0.978] exact 0.352 diff 0.75 * (307s)
+[sweep] transformer step  3000 loss 1.054 bal 0.560 [assoc 0.164 state 0.956] exact 0.352 diff 1.00 * (508s)
+[sweep] transformer step  3500 loss 1.043 bal 0.578 [assoc 0.177 state 0.978] exact 0.359 diff 1.00 * (741s)
+[sweep] transformer step  4000 loss 1.141 bal 0.583 [assoc 0.177 state 0.989] exact 0.363 diff 1.00 * (975s)
+[sweep] transformer BEST plateau_acc = 0.5830 -> experiments/results/tune_transformer_lr0.0015
+[tune] transformer lr=0.0015: best balanced 0.583 (assoc 0.177, state 0.989) in 975s

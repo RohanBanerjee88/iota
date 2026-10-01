@@ -78,3 +78,21 @@ def test_from_config_round_trips_arch():
         cfg = _load(path)
         model = build_model(cfg)
         assert model.forward(torch.randint(0, VOCAB, (1, 8))).shape[-1] == VOCAB
+
+
+def test_short_conv_is_causal_for_every_arch():
+    # short_conv fuses neighbouring tokens (multi-digit keys); it must never see the future.
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+
+    V = get_tokenizer().vocab_size
+    torch.manual_seed(0)
+    for arch in ("transformer", "gated_linear", "hybrid"):
+        m = build_model({"arch": arch, "vocab_size": V, "d_model": 32, "n_layers": 3, "n_heads": 4,
+                         "d_ff": 64, "chunk_size": 8, "full_attention_layers": [1],
+                         "short_conv": 4}).eval()
+        x = torch.randint(0, V, (2, 24))
+        x2 = x.clone()
+        x2[:, 15] = (x2[:, 15] + 1) % V
+        with torch.no_grad():
+            assert torch.allclose(m(x)[:, :15], m(x2)[:, :15], atol=1e-5), arch

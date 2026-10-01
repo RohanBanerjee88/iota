@@ -30,6 +30,29 @@ the figure is not trustworthy.
 
 ## Timeline
 
+**2026-10-01 — r02 lr probe (Kaggle T4, 3 h): the new control works; the pure transformer still can't learn recall.**
+
+| arch | lr 7.5e-4 (assoc / state) | lr 1.5e-3 | lr 3e-3 |
+|---|---|---|---|
+| transformer | 0.10 / 1.00 | **0.18 / 0.99** | 0.02 / 0.68 |
+| hybrid | **1.00 / 1.00** (by step 3000) | 1.00 / 1.00 | 0.05 / 0.95 |
+| gated_linear | **0.07 / 1.00** | 0.04 / 1.00 | 0.02 / 1.00 |
+
+- **The overwrite control is learned by all three** (GLA 1.00 at every lr). It is now a real control, and the
+  "linear can't forget" risk did not materialise.
+- **lr 3e-3 is worst for every arch**, which drops it from the grid.
+- **The transformer has the r01 signature again.** Easy-phase loss reaches 0.10 (it learns 2-binding
+  recall), then jumps to about 1.0–1.4 once length and load ramp up and stays there. The hybrid, with the
+  *same* attention layers plus GLA layers in front, learns everything by step 3000.
+  Hypothesis: multi-digit keys (`1 0 0`) need neighbouring tokens fused before attention can match them;
+  GLA layers supply that local mixing and pure attention has to discover it through RoPE alone.
+- **CPU test of the hypothesis** (d128, 2 layers, identical 3000-step budget): adding a 4-tap short causal
+  conv (`short_conv: 4`, the Based/Mamba/Zoology ingredient) took transformer recall from 0.16 → **0.73** at
+  step 1000 and 0.26 (final, no conv) → **0.83** by step 1500. `short_conv` now exists for every mixer
+  (default off, causality-tested).
+- GLA's recall stays low at 4000 steps. Whether that is slow learning or a real capacity limit can only be
+  read from the per-n_bindings breakdown in Pass 1 after full training.
+
 **2026-09-30 — r02 design: fix the three r01 flaws (approved), CPU-validated.**
 - **Control → overwrite.** `state_track` now uses `ops_kinds: [set]` (`x = 88`): hold one value across
   distance and keep the latest, with no arithmetic. CPU probe (d128, 2 layers): transformer 0.01 → **1.00**

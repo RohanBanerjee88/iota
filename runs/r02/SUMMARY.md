@@ -1,6 +1,6 @@
 # iota run `r02`
 
-- **updated:** 2026-10-01 05:30 UTC (last stage: `tune:gated_linear:0.0015`)
+- **updated:** 2026-10-01 05:49 UTC (last stage: `tune:gated_linear:0.003`)
 - **code:** `d218e42` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -13,6 +13,7 @@
 | transformer | 0.003 | 0.352 | 0.024 | 0.681 | 0.242 | 4000 | 0.352 | 961s |
 | gated_linear ★ | 0.00075 | 0.536 | 0.072 | 1.000 | 0.359 | 3500 | 0.533 | 1152s |
 | gated_linear | 0.0015 | 0.522 | 0.045 | 1.000 | 0.359 | 4000 | 0.522 | 1144s |
+| gated_linear | 0.003 | 0.513 | 0.025 | 1.000 | 0.355 | 3000 | 0.510 | 1149s |
 | hybrid ★ | 0.00075 | 1.000 | 1.000 | 1.000 | 1.000 | 3000 | 1.000 | 1347s |
 | hybrid | 0.0015 | 1.000 | 1.000 | 1.000 | 1.000 | 3500 | 1.000 | 1348s |
 | hybrid | 0.003 | 0.498 | 0.052 | 0.945 | 0.336 | 4000 | 0.498 | 1340s |

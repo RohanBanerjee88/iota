@@ -48,15 +48,15 @@
       "warmup": 200,
       "weight_decay": 0.01,
       "max_steps": 15000,
-      "easy_steps": 2000,
-      "ramp_steps": 5000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
       "eval_every": 500,
       "eval_n": 500,
       "patience": 8,
       "seed": 0,
       "lr": 0.0015,
       "run_name": "transformer_sweep",
-      "grad_clip": 0.5
+      "grad_clip": 1.0
     },
     "vocab_size": 99
   },

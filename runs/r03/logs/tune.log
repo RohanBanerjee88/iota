@@ -58,3 +58,17 @@
 [sweep] hybrid step  4000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (1482s)
 [sweep] hybrid BEST plateau_acc = 1.0000 -> experiments/results/tune_hybrid_lr0.0015
 [tune] hybrid lr=0.0015: best balanced 1.0 (assoc 1.0, state 1.0) in 1482s
+  [sync] published 6 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r03
+
+=== TUNE gated_linear lr=0.00075
+[sweep] model=gated_linear params=2.14M device=cuda max_steps=4000 bs=64 patience=1000000
+[sweep] gated_linear step   500 loss 1.493 bal 0.026 [assoc 0.008 state 0.044] exact 0.016 diff 0.00 * (27s)
+[sweep] gated_linear step  1000 loss 1.030 bal 0.081 [assoc 0.008 state 0.154] exact 0.055 diff 0.00 * (53s)
+[sweep] gated_linear step  1500 loss 1.604 bal 0.406 [assoc 0.021 state 0.791] exact 0.285 diff 0.25 * (109s)
+[sweep] gated_linear step  2000 loss 1.542 bal 0.521 [assoc 0.054 state 0.989] exact 0.352 diff 0.50 * (227s)
+[sweep] gated_linear step  2500 loss 1.525 bal 0.528 [assoc 0.055 state 1.000] exact 0.355 diff 0.75 * (413s)
+[sweep] gated_linear step  3000 loss 1.534 bal 0.537 [assoc 0.074 state 1.000] exact 0.355 diff 1.00 * (672s)
+[sweep] gated_linear step  3500 loss 1.490 bal 0.541 [assoc 0.082 state 1.000] exact 0.363 diff 1.00 * (969s)
+[sweep] gated_linear step  4000 loss 1.656 bal 0.541 [assoc 0.081 state 1.000] exact 0.359 diff 1.00  (1266s)
+[sweep] gated_linear BEST plateau_acc = 0.5409 -> experiments/results/tune_gated_linear_lr0.00075
+[tune] gated_linear lr=0.00075: best balanced 0.5409 (assoc 0.0818, state 1.0) in 1266s

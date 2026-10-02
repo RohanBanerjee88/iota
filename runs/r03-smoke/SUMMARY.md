@@ -1,6 +1,6 @@
 # iota run `r03-smoke`
 
-- **updated:** 2026-10-02 16:58 UTC (last stage: `eval 1,3,2`)
+- **updated:** 2026-10-02 16:58 UTC (last stage: `profile`)
 - **code:** `f6bbd0f` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -82,13 +82,13 @@ Peak VRAM MB / median latency ms.
 
 | seq_len | transformer | gated_linear | hybrid |
 |---:|---|---|---|
-| 128 | 26.8 MB / 4.01 ms | 27.1 MB / 10.25 ms | 29.2 MB / 8.99 ms |
-| 256 | 28.1 MB / 4.07 ms | 28.2 MB / 15.62 ms | 30.4 MB / 13.18 ms |
-| 512 | 31.1 MB / 4.25 ms | 30.5 MB / 25.50 ms | 32.9 MB / 20.92 ms |
-| 1024 | 36.4 MB / 6.54 ms | 35.0 MB / 48.62 ms | 37.9 MB / 39.15 ms |
-| 2048 | 48.2 MB / 8.95 ms | 44.7 MB / 90.63 ms | 49.3 MB / 70.08 ms |
-| 4096 | 69.4 MB / 23.81 ms | 62.1 MB / 167.75 ms | 70.1 MB / 136.45 ms |
-| 8192 | 113.5 MB / 72.36 ms | 98.3 MB / 334.12 ms | 111.5 MB / 270.94 ms |
+| 128 | 26.8 MB / 4.17 ms | 27.1 MB / 8.95 ms | 29.2 MB / 8.80 ms |
+| 256 | 28.1 MB / 4.30 ms | 28.2 MB / 13.76 ms | 30.4 MB / 12.41 ms |
+| 512 | 31.1 MB / 4.09 ms | 30.5 MB / 24.47 ms | 32.9 MB / 19.74 ms |
+| 1024 | 36.4 MB / 6.93 ms | 35.0 MB / 44.27 ms | 37.9 MB / 35.26 ms |
+| 2048 | 48.2 MB / 9.31 ms | 44.7 MB / 81.58 ms | 49.3 MB / 65.74 ms |
+| 4096 | 69.4 MB / 23.27 ms | 62.1 MB / 158.40 ms | 70.1 MB / 128.16 ms |
+| 8192 | 113.5 MB / 71.12 ms | 98.3 MB / 320.30 ms | 111.5 MB / 256.23 ms |
 
 ## 6. Figure
 

@@ -1,6 +1,6 @@
 # iota run `r03-smoke`
 
-- **updated:** 2026-10-02 16:57 UTC (last stage: `train:hybrid`)
+- **updated:** 2026-10-02 16:57 UTC (last stage: `train:transformer`)
 - **code:** `f6bbd0f` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

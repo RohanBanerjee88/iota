@@ -11,6 +11,10 @@
 #    learn multi-digit key matching (assoc 0.18) while the hybrid did (1.00); on CPU
 #    the conv took transformer recall 0.26 -> 0.90 at the same budget. On for all
 #    three so the comparison stays fair; attention cost stays O(T^2).
+#  * TRAIN RECIPE from the r03 lr probe (runs/r03/tune.csv; same protocol for all):
+#    lr picked per arch from {7.5e-4, 1.5e-3}; grad_clip 1.0, easy 1000 / ramp 2000
+#    (the probe's schedule) and ONE common ceiling of 15000 steps with plateau
+#    early-stop for every arch -- identical budget, each trained to its plateau.
 arch: hybrid
 d_model: 256
 n_layers: 5
@@ -52,12 +56,13 @@ train:
   batch_size: 64
   warmup: 200
   weight_decay: 0.01
-  max_steps: 12000
-  easy_steps: 2000
-  ramp_steps: 3000
+  max_steps: 15000
+  easy_steps: 1000
+  ramp_steps: 2000
   eval_every: 500
   eval_n: 500
   patience: 8
   seed: 0
-  lr: 0.0015
+  lr: 0.00075
   run_name: hybrid_sweep
+  grad_clip: 1.0

@@ -20,7 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r03 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
+| r03 | 2026-10-02 | `d16845c` | tune ✅ → A → B | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | lrs set (1.5e-3 / 7.5e-4 / 1.5e-3), common schedule → run plan A |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
@@ -30,6 +30,23 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-02 — r03 lr probe (with short conv): the transformer is fixed; the recipe is locked.**
+
+| arch | lr 7.5e-4 (assoc / state) | lr 1.5e-3 | chosen |
+|---|---|---|---|
+| transformer | 0.82 / 1.00 | **0.83 / 1.00** | 1.5e-3 |
+| hybrid | **1.00 / 1.00** (step 3000) | 1.00 / 1.00 (step 3500) | 7.5e-4 (tie → reached 1.0 first) |
+| gated_linear | 0.08 / 1.00 | **0.23 / 1.00** | 1.5e-3 |
+
+- **The short conv fixed the dense baseline:** transformer recall went from 0.18 (r02, no conv) to 0.83 at the
+  same budget. GLA also improved (0.07 → 0.23). The hybrid was already at 1.00 and still is.
+- **The control is learned by all three at every lr.**
+- **Recipe for plan A, identical protocol for all three:** the chosen lr, grad_clip 1.0, easy 1000 / ramp
+  2000 (the probe's schedule), and one common 15000-step ceiling with plateau early-stop. This replaces the
+  per-arch leftover schedules from earlier fixes.
+- GLA's pooled recall (0.23) is dominated by high-load examples (up to 64 bindings, 16 queries). Whether that
+  is a capacity limit or slow learning is exactly what Pass 1's per-n_bindings curve will show.
 
 **2026-10-01 — Decision (option 1): short conv on for all three, re-tune as r03.**
 - `short_conv: 4` in every sweep config (all mixers: attention and GLA). This is a scope change: the

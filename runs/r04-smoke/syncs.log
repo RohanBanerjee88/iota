@@ -2,3 +2,4 @@
 2026-10-02 20:22 UTC  stage=tune:hybrid:0.00075  code=c1fadb5  files=4
 2026-10-02 20:22 UTC  stage=tune:gated_linear:0.00075  code=c1fadb5  files=5
 2026-10-02 20:22 UTC  stage=tune  code=c1fadb5  files=5
+2026-10-02 20:22 UTC  stage=train:hybrid  code=c1fadb5  files=7

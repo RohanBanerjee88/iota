@@ -20,7 +20,8 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r03 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
+| r04 | — | — | A → B | prepared: 5-layer transformer + GLA (param-matched to hybrid) | — |
+| r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
@@ -30,6 +31,79 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-02 — r03 plan B: length generalisation is the strongest result; the cost panel does not measure
+what the thesis needs.**
+
+Pass 2, recall at n_bindings = 8 vs length (trained ≤ 640 tokens):
+
+| tokens | 512 | 1024 | 2048 | 4096 | 8192 |
+|---|---:|---:|---:|---:|---:|
+| transformer | 0.980 | 0.953 | **0.242** | 0.015 | 0.010 |
+| gated_linear | 0.988 | 0.987 | **0.985** | 0.972 | **0.942** |
+| hybrid | 1.000 | 0.996 | **0.384** | 0.026 | 0.010 |
+
+- **GLA keeps ~0.94–0.99 recall out to 12.8× its training length;** both RoPE-attention models collapse
+  between 1024 and 2048 tokens. Same pattern as the Pass-3 control.
+- **The cost panel (forward pass, batch 1) does not show "linear is cheaper".** VRAM is nearly identical
+  (8192 tokens: 105 / 90 / 103 MB), because SDPA's memory-efficient kernel never materialises the T×T matrix.
+  Latency favours dense (72 vs 313 ms), because dense uses a fused CUDA kernel and our GLA is a pure-PyTorch
+  chunk loop. This measures *implementations*, not architectures. Linear attention's real advantage is
+  **decode**: a constant-size state vs a KV cache that grows with context. BUILD_PLAN §6 asked for
+  prefill and decode separately, and we only measure prefill. That is a known gap, now visible.
+
+**2026-10-02 — r04 prepared: depth/param-matched.** Transformer and GLA go from 4 → 5 layers (2.665M / 2.670M
+vs hybrid 2.668M). Data, conv, lr (tuned at 4 layers in r03), schedule and seed are unchanged, so depth/size
+is the only difference from r03.
+
+**2026-10-02 — r03 plan A: the first run to pass the sanity gate. A real (modest) linear-vs-dense gap, a
+dominant hybrid, and a clean length result.**
+Training (T4): hybrid hit 1.00 by step 6000 and stopped at 10000; the transformer **plateaued at ~0.84
+recall from step 3000 to 14000**; GLA climbed slowly to 0.83 and was still creeping up (+0.002 per 1000
+steps) when it hit the 15000 ceiling. Sanity (in-distribution): assoc 1.00 / 0.85 / 0.81
+(hybrid / transformer / GLA), control 1.00 for all → gate passes.
+
+Pass 1, capacity (per-query, n=1000, CI ≈ ±0.01):
+
+| n_bindings | transformer | gated_linear | hybrid |
+|---:|---:|---:|---:|
+| 2 / 8 / 16 | 0.998 / 0.979 / 0.952 | 0.998 / 0.985 / 0.958 | 1.00 / 1.00 / 1.00 |
+| 32 | 0.875 | 0.866 | 1.00 |
+| 64 | **0.736** | **0.591** | 0.996 |
+| 128 (extrapolated) | **0.521** | **0.255** | 0.989 |
+
+Pass 3, control (state_track) vs length: **GLA 1.00 at every length up to 8192.** The transformer and hybrid
+(RoPE attention) are 1.00 up to 512, then 0.83 / 0.77 at 1024, ~0.08 at 2048, ~0.01–0.2 beyond. They fail
+past ~1.6× the 640-token training length.
+
+What this supports:
+- **Linear ≈ dense up to 32 bindings, then linear degrades faster** (−0.15 at 64, −0.27 at 128). That is the
+  predicted direction, but a modest gap.
+- **The hybrid (2 of 5 layers attention) beats everything at every load.**
+- **The control rules out "linear is just worse":** on single-value memory, linear is never worse, and it is
+  far better at length extrapolation, where RoPE attention collapses.
+
+What it does NOT yet support, the open confound:
+- **The dense baseline is weaker than the hybrid** (0.85 vs 1.00 in-distribution) **and smaller** (4 layers,
+  2.14M params vs 5 layers, 2.67M). "Hybrid recovers dense-level accuracy" needs a param- and depth-matched
+  comparison before it is a claim. The transformer's flat plateau (3000 → 14000) says more steps won't fix it.
+
+**2026-10-02 — r03 lr probe (with short conv): the transformer is fixed; the recipe is locked.**
+
+| arch | lr 7.5e-4 (assoc / state) | lr 1.5e-3 | chosen |
+|---|---|---|---|
+| transformer | 0.82 / 1.00 | **0.83 / 1.00** | 1.5e-3 |
+| hybrid | **1.00 / 1.00** (step 3000) | 1.00 / 1.00 (step 3500) | 7.5e-4 (tie → reached 1.0 first) |
+| gated_linear | 0.08 / 1.00 | **0.23 / 1.00** | 1.5e-3 |
+
+- **The short conv fixed the dense baseline:** transformer recall went from 0.18 (r02, no conv) to 0.83 at the
+  same budget. GLA also improved (0.07 → 0.23). The hybrid was already at 1.00 and still is.
+- **The control is learned by all three at every lr.**
+- **Recipe for plan A, identical protocol for all three:** the chosen lr, grad_clip 1.0, easy 1000 / ramp
+  2000 (the probe's schedule), and one common 15000-step ceiling with plateau early-stop. This replaces the
+  per-arch leftover schedules from earlier fixes.
+- GLA's pooled recall (0.23) is dominated by high-load examples (up to 64 bindings, 16 queries). Whether that
+  is a capacity limit or slow learning is exactly what Pass 1's per-n_bindings curve will show.
 
 **2026-10-01 — Decision (option 1): short conv on for all three, re-tune as r03.**
 - `short_conv: 4` in every sweep config (all mixers: attention and GLA). This is a scope change: the

@@ -1,5 +1,5 @@
 
-##### tune started 2026-10-01 23:49:56 UTC argv=--stage all --smoke
+##### tune started 2026-10-02 05:46:48 UTC argv=--stage all --smoke
 
 ### STAGE tune  (transformer, hybrid, gated_linear x lr [0.00075], 4000 steps each)
 
@@ -11,29 +11,3 @@
 [sweep] transformer step    60 loss 2.502 bal 0.003 [assoc 0.005 state 0.000] exact 0.000 diff 1.00  (3s)
 [sweep] transformer BEST plateau_acc = 0.0039 -> experiments/smoke/tune_transformer_lr0.00075
 [tune] transformer lr=0.00075: best balanced 0.0039 (assoc 0.0078, state 0.0) in 5s
-  [sync] published 3 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r03-smoke
-
-=== TUNE hybrid lr=0.00075
-[sweep] model=hybrid params=2.67M device=cuda max_steps=60 bs=8 patience=1000000
-[sweep] hybrid step    20 loss 3.326 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (1s)
-[sweep] hybrid step    40 loss 2.772 bal 0.004 [assoc 0.008 state 0.000] exact 0.000 diff 1.00 * (3s)
-[sweep] hybrid step    60 loss 2.264 bal 0.006 [assoc 0.013 state 0.000] exact 0.000 diff 1.00 * (6s)
-[sweep] hybrid BEST plateau_acc = 0.0065 -> experiments/smoke/tune_hybrid_lr0.00075
-[tune] hybrid lr=0.00075: best balanced 0.0065 (assoc 0.013, state 0.0) in 6s
-  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r03-smoke
-
-=== TUNE gated_linear lr=0.00075
-[sweep] model=gated_linear params=2.14M device=cuda max_steps=60 bs=8 patience=1000000
-[sweep] gated_linear step    20 loss 3.300 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (1s)
-[sweep] gated_linear step    40 loss 2.786 bal 0.004 [assoc 0.008 state 0.000] exact 0.000 diff 1.00 * (3s)
-[sweep] gated_linear step    60 loss 2.255 bal 0.033 [assoc 0.016 state 0.050] exact 0.016 diff 1.00 * (6s)
-[sweep] gated_linear BEST plateau_acc = 0.0328 -> experiments/smoke/tune_gated_linear_lr0.00075
-[tune] gated_linear lr=0.00075: best balanced 0.0328 (assoc 0.0155, state 0.05) in 6s
-  [sync] published 5 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r03-smoke
-
-========================================================================
-=== TUNE SUMMARY (best lr per arch by balanced score)
-========================================================================
-  transformer    lr=0.00075  balanced 0.0039  assoc 0.0078  state 0.0
-  hybrid         lr=0.00075  balanced 0.0065  assoc 0.013  state 0.0
-  gated_linear   lr=0.00075  balanced 0.0328  assoc 0.0155  state 0.05

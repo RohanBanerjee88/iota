@@ -1,7 +1,7 @@
 # iota run `r03`
 
-- **updated:** 2026-10-02 11:32 UTC (last stage: `eval 1,3`)
-- **code:** `e048745` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-02 17:04 UTC (last stage: `eval 2`)
+- **code:** `f6bbd0f` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 0. LR probe (identical short budget per arch; pick each arch's best)
@@ -53,7 +53,17 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 
 ## 3. Pass 2 — length generalisation
 
-_`pass2_length.csv` not synced yet._
+Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, paired prompts.
+
+| seq_len | true tokens | transformer | gated_linear | hybrid |
+|---:|---:|---|---|---|
+| 128 | 128 | 0.979 [0.98–0.98] (0.84) | 0.984 [0.98–0.99] (0.88) | 1.000 [1.00–1.00] (1.00) |
+| 256 | 256 | 0.980 [0.98–0.98] (0.85) | 0.987 [0.98–0.99] (0.90) | 1.000 [1.00–1.00] (1.00) |
+| 512 | 512 | 0.980 [0.98–0.98] (0.85) | 0.988 [0.99–0.99] (0.91) | 1.000 [1.00–1.00] (1.00) |
+| 1024 | 1024 | 0.953 [0.95–0.96] (0.70) | 0.987 [0.98–0.99] (0.90) | 0.996 [0.99–1.00] (0.97) |
+| 2048 | 2048 | 0.242 [0.23–0.25] (0.00) | 0.985 [0.98–0.99] (0.89) | 0.384 [0.37–0.39] (0.00) |
+| 4096 | 4096 | 0.015 [0.01–0.02] (0.00) | 0.972 [0.97–0.98] (0.81) | 0.026 [0.02–0.03] (0.00) |
+| 8192 | 8192 | 0.010 [0.01–0.01] (0.00) | 0.942 [0.94–0.95] (0.62) | 0.010 [0.01–0.01] (0.00) |
 
 ## 4. Pass 3 — state_track control
 

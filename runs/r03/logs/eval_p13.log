@@ -1,0 +1,63 @@
+
+##### eval_p13 started 2026-10-02 11:26:06 UTC argv=--stage eval --passes 1,3 --repo BanerjeeRohan44/iota-r03
+
+### STAGE eval  (passes [1, 3], device=cuda)
+
+  loaded hybrid_sweep (trained 6000 steps)
+  loaded transformer_sweep (trained 10000 steps)
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 1 -> experiments/results/pass1_capacity.csv
+  pass1 hybrid_sweep  sweep=2     true_len=   256 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass1 transformer_sweep sweep=2     true_len=   256 exact=0.995 per_q=0.998 CI_pq=[0.995,1.000]
+  pass1 gated_linear_sweep sweep=2     true_len=   256 exact=0.995 per_q=0.998 CI_pq=[0.995,1.000]
+  pass1 hybrid_sweep  sweep=4     true_len=   256 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass1 transformer_sweep sweep=4     true_len=   256 exact=0.968 per_q=0.992 CI_pq=[0.989,0.995]
+  pass1 gated_linear_sweep sweep=4     true_len=   256 exact=0.968 per_q=0.992 CI_pq=[0.989,0.995]
+  pass1 hybrid_sweep  sweep=8     true_len=   256 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass1 transformer_sweep sweep=8     true_len=   256 exact=0.841 per_q=0.979 CI_pq=[0.976,0.982]
+  pass1 gated_linear_sweep sweep=8     true_len=   256 exact=0.894 per_q=0.985 CI_pq=[0.983,0.988]
+  pass1 hybrid_sweep  sweep=16    true_len=   256 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass1 transformer_sweep sweep=16    true_len=   256 exact=0.465 per_q=0.952 CI_pq=[0.949,0.955]
+  pass1 gated_linear_sweep sweep=16    true_len=   256 exact=0.533 per_q=0.958 CI_pq=[0.955,0.961]
+  pass1 hybrid_sweep  sweep=32    true_len=   289 exact=0.998 per_q=1.000 CI_pq=[1.000,1.000]
+  pass1 transformer_sweep sweep=32    true_len=   289 exact=0.102 per_q=0.875 CI_pq=[0.870,0.880]
+  pass1 gated_linear_sweep sweep=32    true_len=   289 exact=0.112 per_q=0.866 CI_pq=[0.861,0.872]
+  pass1 hybrid_sweep  sweep=64    true_len=   386 exact=0.941 per_q=0.996 CI_pq=[0.995,0.997]
+  pass1 transformer_sweep sweep=64    true_len=   386 exact=0.004 per_q=0.736 CI_pq=[0.729,0.742]
+  pass1 gated_linear_sweep sweep=64    true_len=   386 exact=0.000 per_q=0.591 CI_pq=[0.583,0.598]
+  pass1 hybrid_sweep  sweep=128   true_len=   773 exact=0.838 per_q=0.989 CI_pq=[0.988,0.991]
+  pass1 transformer_sweep sweep=128   true_len=   773 exact=0.000 per_q=0.521 CI_pq=[0.513,0.529]
+  pass1 gated_linear_sweep sweep=128   true_len=   773 exact=0.000 per_q=0.255 CI_pq=[0.249,0.262]
+wrote experiments/results/pass1_capacity.csv (21 rows)
+  [hf] pushed pass1_capacity.csv
+  [hf] pushed sanity_indist.csv
+
+--- pass 3 -> experiments/results/pass3_control.csv
+  pass3 hybrid_sweep  sweep=128   true_len=   136 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 transformer_sweep sweep=128   true_len=   136 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=128   true_len=   136 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=256   true_len=   264 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 transformer_sweep sweep=256   true_len=   264 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=256   true_len=   264 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=512   true_len=   520 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 transformer_sweep sweep=512   true_len=   520 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=512   true_len=   520 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=1024  true_len=  1032 exact=0.771 per_q=0.771 CI_pq=[0.746,0.797]
+  pass3 transformer_sweep sweep=1024  true_len=  1032 exact=0.834 per_q=0.834 CI_pq=[0.812,0.858]
+  pass3 gated_linear_sweep sweep=1024  true_len=  1032 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=2048  true_len=  2056 exact=0.086 per_q=0.086 CI_pq=[0.068,0.104]
+  pass3 transformer_sweep sweep=2048  true_len=  2056 exact=0.080 per_q=0.080 CI_pq=[0.063,0.097]
+  pass3 gated_linear_sweep sweep=2048  true_len=  2056 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=4096  true_len=  4104 exact=0.011 per_q=0.011 CI_pq=[0.005,0.018]
+  pass3 transformer_sweep sweep=4096  true_len=  4104 exact=0.015 per_q=0.015 CI_pq=[0.008,0.023]
+  pass3 gated_linear_sweep sweep=4096  true_len=  4104 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 hybrid_sweep  sweep=8192  true_len=  8200 exact=0.211 per_q=0.211 CI_pq=[0.187,0.236]
+  pass3 transformer_sweep sweep=8192  true_len=  8200 exact=0.107 per_q=0.107 CI_pq=[0.088,0.127]
+  pass3 gated_linear_sweep sweep=8192  true_len=  8200 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+wrote experiments/results/pass3_control.csv (21 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+  [hf] pushed pass3_control.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv

@@ -10,3 +10,4 @@
 2026-10-02 11:25 UTC  stage=train:gated_linear  code=e048745  files=4
 2026-10-02 11:25 UTC  stage=train  code=e048745  files=4
 2026-10-02 11:26 UTC  stage=sanity  code=e048745  files=6
+2026-10-02 11:32 UTC  stage=eval 1,3  code=e048745  files=9

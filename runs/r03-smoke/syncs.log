@@ -26,3 +26,4 @@
 2026-10-02 16:57 UTC  stage=tune:hybrid:0.00075  code=f6bbd0f  files=4
 2026-10-02 16:57 UTC  stage=tune:gated_linear:0.00075  code=f6bbd0f  files=5
 2026-10-02 16:57 UTC  stage=tune  code=f6bbd0f  files=5
+2026-10-02 16:57 UTC  stage=train:hybrid  code=f6bbd0f  files=7

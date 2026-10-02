@@ -44,3 +44,17 @@
 [sweep] hybrid step  4000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (1484s)
 [sweep] hybrid BEST plateau_acc = 1.0000 -> experiments/results/tune_hybrid_lr0.00075
 [tune] hybrid lr=0.00075: best balanced 1.0 (assoc 1.0, state 1.0) in 1485s
+  [sync] published 5 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r03
+
+=== TUNE hybrid lr=0.0015
+[sweep] model=hybrid params=2.67M device=cuda max_steps=4000 bs=64 patience=1000000
+[sweep] hybrid step   500 loss 0.213 bal 0.235 [assoc 0.009 state 0.462] exact 0.164 diff 0.00 * (30s)
+[sweep] hybrid step  1000 loss 0.070 bal 0.277 [assoc 0.048 state 0.505] exact 0.184 diff 0.00 * (61s)
+[sweep] hybrid step  1500 loss 0.053 bal 0.686 [assoc 0.471 state 0.901] exact 0.426 diff 0.25 * (125s)
+[sweep] hybrid step  2000 loss 0.010 bal 0.927 [assoc 0.854 state 1.000] exact 0.746 diff 0.50 * (262s)
+[sweep] hybrid step  2500 loss 0.011 bal 0.992 [assoc 0.983 state 1.000] exact 0.938 diff 0.75 * (479s)
+[sweep] hybrid step  3000 loss 0.000 bal 0.998 [assoc 0.997 state 1.000] exact 0.984 diff 1.00 * (783s)
+[sweep] hybrid step  3500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00 * (1132s)
+[sweep] hybrid step  4000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (1482s)
+[sweep] hybrid BEST plateau_acc = 1.0000 -> experiments/results/tune_hybrid_lr0.0015
+[tune] hybrid lr=0.0015: best balanced 1.0 (assoc 1.0, state 1.0) in 1482s

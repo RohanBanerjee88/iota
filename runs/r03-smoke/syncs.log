@@ -11,3 +11,4 @@
 2026-10-01 23:51 UTC  stage=profile  code=d16845c  files=17
 2026-10-01 23:51 UTC  stage=plot  code=d16845c  files=20
 2026-10-02 05:46 UTC  stage=tune:transformer:0.00075  code=e048745  files=3
+2026-10-02 05:47 UTC  stage=tune:hybrid:0.00075  code=e048745  files=4

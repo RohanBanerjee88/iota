@@ -394,11 +394,16 @@ def stage_eval(args) -> None:
 
 
 def stage_profile(args) -> None:
-    from iota.profile import run_profile
+    from iota.profile import run_decode_profile, run_profile
 
     print("\n### STAGE profile\n", flush=True)
     run_profile(out_csv=os.path.join(RESULTS_DIR, "cost_profile.csv"),
                 device=args.device)
+    # decode: the cost axis that matters for linear attention (KV cache vs state)
+    lens = (128, 512, 2048) if args.smoke else None
+    kw = {"context_lens": lens} if lens else {}
+    run_decode_profile(out_csv=os.path.join(RESULTS_DIR, "decode_profile.csv"),
+                       device=args.device, **kw)
     if not args.no_hf:
         try:
             hf_push_results(args.repo, args.token)

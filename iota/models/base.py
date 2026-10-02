@@ -18,6 +18,21 @@ import torch.nn.functional as F
 # ---------------------------------------------------------------------------
 # Common layers
 # ---------------------------------------------------------------------------
+def conv_step(conv: nn.Conv1d, kernel: int, buf: torch.Tensor, x: torch.Tensor):
+    """One decode step of a causal depthwise conv.
+
+    `buf` holds the previous kernel-1 inputs (oldest first; zeros at the start,
+    matching the left zero-padding of the full-sequence path). x: (B, D).
+    Returns (y, new_buf). Uses the conv's own weights -- no new parameters.
+    """
+    window = torch.cat([buf, x.unsqueeze(1)], dim=1)            # (B, k, D), oldest first
+    w = conv.weight.squeeze(1).transpose(0, 1)                  # (k, D)
+    y = (window * w.unsqueeze(0)).sum(dim=1)
+    if conv.bias is not None:
+        y = y + conv.bias
+    return y, window[:, 1:]
+
+
 class RMSNorm(nn.Module):
     def __init__(self, d: int, eps: float = 1e-5):
         super().__init__()
@@ -52,6 +67,12 @@ class Block(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.mixer(self.norm1(x))
+        x = x + self.ff(self.norm2(x))
+        return x
+
+    def step(self, x: torch.Tensor, cache: dict) -> torch.Tensor:
+        """One-token decode step, x: (B, D). Same math as forward()."""
+        x = x + self.mixer.step(self.norm1(x), cache)
         x = x + self.ff(self.norm2(x))
         return x
 
@@ -94,6 +115,26 @@ class SeqModel(nn.Module):
 
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
+
+    # -- autoregressive decode (inference-cost benchmark; never used in training) --
+    def init_decode_cache(self, batch: int, max_len: int, device=None, dtype=torch.float32,
+                          prefill_len: int = 0) -> list:
+        """Per-layer decode caches: a KV cache for attention, a fixed (S, z) state
+        for gated linear attention. `prefill_len > 0` fills a SYNTHETIC context of
+        that many tokens (random contents) -- decode cost depends on the cache's
+        size, not its values, so this measures decode at a long context without a
+        slow token-by-token prefill. Adds no parameters or buffers."""
+        return [b.mixer.init_cache(batch, max_len, device, dtype, prefill_len)
+                for b in self.backbone.blocks]
+
+    @torch.no_grad()
+    def decode_step(self, tokens: torch.Tensor, cache: list) -> torch.Tensor:
+        """tokens: (B,) next token ids -> logits (B, vocab); updates `cache` in place."""
+        bb = self.backbone
+        x = bb.drop(bb.embed(tokens))
+        for block, c in zip(bb.blocks, cache):
+            x = block.step(x, c)
+        return bb.head(bb.norm(x))
 
 
 class LMBackbone(nn.Module):

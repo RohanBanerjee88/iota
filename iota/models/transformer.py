@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .base import Block, LMBackbone, SeqModel, apply_rope, build_rope_cache
+from .base import Block, LMBackbone, SeqModel, apply_rope, build_rope_cache, conv_step
 
 
 class CausalSelfAttention(nn.Module):
@@ -59,6 +59,37 @@ class CausalSelfAttention(nn.Module):
         )
         o = o.transpose(1, 2).contiguous().view(B, T, D)
         return self.out(o)
+
+    # -- decode: preallocated KV cache --------------------------------------
+    def init_cache(self, batch, max_len, device=None, dtype=torch.float32, prefill_len=0):
+        D = self.n_heads * self.head_dim
+        shape = (batch, self.n_heads, max_len, self.head_dim)
+        mk = torch.randn if prefill_len else torch.zeros  # synthetic context = random
+        cache = {"t": prefill_len,
+                 "k": mk(shape, device=device, dtype=dtype),
+                 "v": mk(shape, device=device, dtype=dtype)}
+        if self.conv is not None:
+            cache["conv"] = torch.zeros(batch, self.short_conv - 1, D, device=device, dtype=dtype)
+        self._rope(max_len, device, dtype)  # build the RoPE table once, not per step
+        return cache
+
+    def step(self, x: torch.Tensor, cache: dict) -> torch.Tensor:
+        """x: (B, D) for the token at position cache["t"] -> (B, D)."""
+        B, D = x.shape
+        if self.conv is not None:
+            x, cache["conv"] = conv_step(self.conv, self.short_conv, cache["conv"], x)
+        q, k, v = self.qkv(x).split(D, dim=-1)
+        q = q.view(B, self.n_heads, 1, self.head_dim)
+        k = k.view(B, self.n_heads, 1, self.head_dim)
+        v = v.view(B, self.n_heads, 1, self.head_dim)
+        t = cache["t"]
+        cos, sin = self._rope(t + 1, x.device, x.dtype)
+        q, k = apply_rope(q, cos[t:], sin[t:]), apply_rope(k, cos[t:], sin[t:])  # rotate at position t
+        cache["k"][:, :, t] = k[:, :, 0]
+        cache["v"][:, :, t] = v[:, :, 0]
+        cache["t"] = t + 1
+        o = F.scaled_dot_product_attention(q, cache["k"][:, :, : t + 1], cache["v"][:, :, : t + 1])
+        return self.out(o.reshape(B, D))
 
 
 class TransformerLM(SeqModel):

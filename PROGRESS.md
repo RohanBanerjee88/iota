@@ -32,6 +32,20 @@ the figure is not trustworthy.
 
 ## Timeline
 
+**2026-10-02 — Decode benchmark (fills the BUILD_PLAN §6 prefill/decode gap).**
+- Every mixer now has a one-token `step` (attention: preallocated KV cache + RoPE at position t; GLA: one
+  update of the (S, z) state; both: a rolling buffer for the short conv), plus `init_decode_cache` /
+  `decode_step` on every model. No new weights or buffers, so existing checkpoints load unchanged. A test
+  checks that token-by-token decoding reproduces the full forward to 1e-5 for all archs, with and without
+  the conv (measured: ≤ 3e-7).
+- `run_decode_profile` → `decode_profile.csv`: the exact bytes each model must keep, and the median ms per
+  generated token, at context 128 … 65536 (synthetic context; cost depends on size, not contents). It runs
+  inside the profile stage, so r04 plan B picks it up.
+- CPU numbers (5-layer configs): at 32768 context, transformer 320 MB of KV cache, hybrid 128 MB (2 attention
+  layers), **GLA 0.33 MB at every length**.
+- Figure: panels C/D are now decode memory and decode latency (the old prefill panel is the fallback, and
+  its numbers stay in SUMMARY.md).
+
 **2026-10-02 — r03 plan B: length generalisation is the strongest result; the cost panel does not measure
 what the thesis needs.**
 
@@ -241,8 +255,7 @@ patience only counts after the ramp.
 
 ## Known gaps / open questions
 
-- **Cost panel is forward-pass only.** The spec asks for prefill and decode latency
-  separately; `profile.py` measures one forward pass.
+- ~~Cost panel is forward-pass only~~ → fixed: decode benchmark (2026-10-02).
 - **One seed per model.** CIs cover eval sampling, not training variance. If the crossover
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but

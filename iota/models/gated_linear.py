@@ -23,7 +23,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .base import Block, LMBackbone, SeqModel
+from .base import Block, LMBackbone, SeqModel, conv_step
 
 EPS = 1e-6
 
@@ -164,6 +164,41 @@ class GatedLinearAttention(nn.Module):
             outs.append(num / den.unsqueeze(-1))
         o = torch.stack(outs, dim=2)                           # (B,H,T,Dh)
         return self._merge(o)
+
+
+    # -- decode: constant-size state -----------------------------------------
+    def init_cache(self, batch, max_len, device=None, dtype=torch.float32, prefill_len=0):
+        """The whole memory of the past: S (H x Dh x Dh) and z (H x Dh) per sequence.
+        Its size does not depend on max_len or the context length -- the point."""
+        H, Dh = self.n_heads, self.head_dim
+        if prefill_len:  # synthetic context: a positive, non-degenerate state
+            S = torch.rand(batch, H, Dh, Dh, device=device, dtype=dtype)
+            z = torch.rand(batch, H, Dh, device=device, dtype=dtype) + 1.0
+        else:
+            S = torch.zeros(batch, H, Dh, Dh, device=device, dtype=dtype)
+            z = torch.zeros(batch, H, Dh, device=device, dtype=dtype)
+        cache = {"S": S, "z": z}
+        if self.conv is not None:
+            cache["conv"] = torch.zeros(batch, self.short_conv - 1, H * Dh, device=device, dtype=dtype)
+        return cache
+
+    def step(self, x: torch.Tensor, cache: dict) -> torch.Tensor:
+        """x: (B, D) -> (B, D). One step of the recurrence in the module docstring."""
+        B, D = x.shape
+        H, Dh = self.n_heads, self.head_dim
+        if self.conv is not None:
+            x, cache["conv"] = conv_step(self.conv, self.short_conv, cache["conv"], x)
+        q = _phi(self.q_proj(x)).view(B, H, Dh)
+        k = _phi(self.k_proj(x)).view(B, H, Dh)
+        v = self.v_proj(x).view(B, H, Dh)
+        g = torch.sigmoid(self.g_proj(x))                                   # (B, H)
+        S = g[..., None, None] * cache["S"] + k.unsqueeze(-1) * v.unsqueeze(-2)
+        z = g[..., None] * cache["z"] + k
+        cache["S"], cache["z"] = S, z
+        num = torch.einsum("bhd,bhde->bhe", q, S)
+        den = torch.einsum("bhd,bhd->bh", q, z) + EPS
+        o = (num / den.unsqueeze(-1)).reshape(B, H * Dh)
+        return self.out(self.drop(o))
 
 
 class GatedLinearLM(SeqModel):

@@ -1,0 +1,30 @@
+
+##### profile started 2026-10-02 17:04:04 UTC argv=--stage profile --repo BanerjeeRohan44/iota-r03
+
+### STAGE profile
+
+  transformer   seq=128       18.7MB     3.88ms (30.28 ms/1k tok)
+  transformer   seq=256       20.0MB     5.50ms (21.47 ms/1k tok)
+  transformer   seq=512       22.8MB     4.02ms (7.84 ms/1k tok)
+  transformer   seq=1024      28.3MB     4.74ms (4.63 ms/1k tok)
+  transformer   seq=2048      39.3MB    11.12ms (5.43 ms/1k tok)
+  transformer   seq=4096      61.3MB    23.35ms (5.70 ms/1k tok)
+  transformer   seq=8192     105.3MB    71.52ms (8.73 ms/1k tok)
+  gated_linear  seq=128       19.0MB     9.55ms (74.58 ms/1k tok)
+  gated_linear  seq=256       20.1MB    13.81ms (53.94 ms/1k tok)
+  gated_linear  seq=512       22.4MB    23.08ms (45.09 ms/1k tok)
+  gated_linear  seq=1024      26.9MB    41.61ms (40.63 ms/1k tok)
+  gated_linear  seq=2048      35.9MB    78.15ms (38.16 ms/1k tok)
+  gated_linear  seq=4096      54.0MB   157.52ms (38.46 ms/1k tok)
+  gated_linear  seq=8192      90.2MB   313.35ms (38.25 ms/1k tok)
+  hybrid        seq=128       21.1MB     8.47ms (66.16 ms/1k tok)
+  hybrid        seq=256       22.3MB    12.06ms (47.13 ms/1k tok)
+  hybrid        seq=512       24.6MB    19.79ms (38.65 ms/1k tok)
+  hybrid        seq=1024      29.8MB    34.56ms (33.75 ms/1k tok)
+  hybrid        seq=2048      40.3MB    63.80ms (31.15 ms/1k tok)
+  hybrid        seq=4096      61.3MB   125.86ms (30.73 ms/1k tok)
+  hybrid        seq=8192     103.4MB   251.78ms (30.73 ms/1k tok)
+wrote experiments/results/cost_profile.csv (21 rows)
+  [hf] pushed cost_profile.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass2_length.csv

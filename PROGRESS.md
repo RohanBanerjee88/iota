@@ -14,19 +14,97 @@ has been fixed (see the timeline). **No trustworthy figure exists yet.** The nex
 clean run `r01` from scratch on Kaggle, with results published automatically to the
 `kaggle-results` branch.
 
-**Next action:** run `notebooks/kaggle_train.ipynb` with `PLAN="smoke"`, then `"A"`, then `"B"`.
+**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). The three flaws are fixed and CPU-validated. Run r02 with `PLAN="tune"` first.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r01 | — | — | smoke → A → B | pending | — |
+| r03 | — | — | tune → A → B | pending: run `PLAN="tune"` | — |
+| r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
+| r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
+| r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
 
 How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. Check the
 **sanity gate first** (section 1b). If any model has `state` or `assoc` near 0.01, stop:
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-01 — Decision (option 1): short conv on for all three, re-tune as r03.**
+- `short_conv: 4` in every sweep config (all mixers: attention and GLA). This is a scope change: the
+  contender is now "gated linear attention + short conv" (the standard modern design), not "pure" linear.
+  It is the same for all three, so the comparison stays fair.
+- The checkpoint fingerprint now covers every model key, not just the curriculum, so a no-conv checkpoint
+  can never be silently reused (tested).
+- lr grid → {7.5e-4, 1.5e-3}: 3e-3 lost for every arch in r02. New run id **r03** (fresh HF repo), so the
+  r02 no-conv probe stays a clean record. CPU smoke with conv passes end to end; 64 tests pass.
+
+**2026-10-01 — r02 lr probe (Kaggle T4, 3 h): the new control works; the pure transformer still can't learn recall.**
+
+| arch | lr 7.5e-4 (assoc / state) | lr 1.5e-3 | lr 3e-3 |
+|---|---|---|---|
+| transformer | 0.10 / 1.00 | **0.18 / 0.99** | 0.02 / 0.68 |
+| hybrid | **1.00 / 1.00** (by step 3000) | 1.00 / 1.00 | 0.05 / 0.95 |
+| gated_linear | **0.07 / 1.00** | 0.04 / 1.00 | 0.02 / 1.00 |
+
+- **The overwrite control is learned by all three** (GLA 1.00 at every lr). It is now a real control, and the
+  "linear can't forget" risk did not materialise.
+- **lr 3e-3 is worst for every arch**, which drops it from the grid.
+- **The transformer has the r01 signature again.** Easy-phase loss reaches 0.10 (it learns 2-binding
+  recall), then jumps to about 1.0–1.4 once length and load ramp up and stays there. The hybrid, with the
+  *same* attention layers plus GLA layers in front, learns everything by step 3000.
+  Hypothesis: multi-digit keys (`1 0 0`) need neighbouring tokens fused before attention can match them;
+  GLA layers supply that local mixing and pure attention has to discover it through RoPE alone.
+- **CPU test of the hypothesis** (d128, 2 layers, identical 3000-step budget): adding a 4-tap short causal
+  conv (`short_conv: 4`, the Based/Mamba/Zoology ingredient) took transformer recall from 0.16 → **0.73** at
+  step 1000 and 0.26 (final, no conv) → **0.83** by step 1500. `short_conv` now exists for every mixer
+  (default off, causality-tested).
+- GLA's recall stays low at 4000 steps. Whether that is slow learning or a real capacity limit can only be
+  read from the per-n_bindings breakdown in Pass 1 after full training.
+
+**2026-09-30 — r02 design: fix the three r01 flaws (approved), CPU-validated.**
+- **Control → overwrite.** `state_track` now uses `ops_kinds: [set]` (`x = 88`): hold one value across
+  distance and keep the latest, with no arithmetic. CPU probe (d128, 2 layers): transformer 0.01 → **1.00**
+  on the control. Risk to watch: overwriting the same key needs a *learned forget* in linear attention. If
+  GLA fails this control while acing recall, fall back to single-binding recall as the control.
+- **Keys → random + shuffled** from [0,128). There is no counting shortcut, and every eval key has been
+  seen in training. The CPU transformer's recall climbs steadily (0.14 → 0.32 by step 4000): harder
+  (multi-digit key matching), not stuck.
+- **Ceilings → n_bindings ≤ 64, n_queries ≤ 16.** The capacity pass is in-distribution to 64; only 128
+  (~870 tok) extrapolates.
+- **LR probe** (`run_all --stage tune`, notebook `PLAN="tune"`): every arch × lr {7.5e-4, 1.5e-3, 3e-3},
+  identical 4000-step budget, grad_clip 1.0 for all (the transformer's 0.5 was a one-off). This yields
+  `tune.csv`, from which each sweep config's lr is set. Estimated at ~3–3.5 h on a T4.
+- The small CPU GLA learned nothing in 3000 steps (neither task). That fits its known slow start and is
+  not informative; the full-size GPU probe decides.
+- Pipeline smoke (with the tune stage) passes end to end on CPU; 62 tests pass; Phase 2 gate 10,000/10,000.
+
+**2026-09-30 — r01 plan A: the pipeline works; the experiment design still has three flaws.**
+Trained on a Kaggle T4 (hybrid 79 min, transformer 70 min, GLA 111 min). Sanity gate (in-distribution, n=500):
+
+| model | assoc per-query | state (control) per-query |
+|---|---:|---:|
+| hybrid | 0.988 | 0.016 |
+| transformer | **0.300** | 0.004 |
+| gated_linear | 1.000 | 0.008 |
+
+1. **The control is not a control.** `state_track` never rose above chance for *any* model, even in the
+   easy phase (2 ops). The task asks for chained multi-digit modular arithmetic done silently
+   (`10 − 22 + 54 mod 97 = 42`, digits split), which is an arithmetic test, not a state-holding test.
+   So it cannot show "linear ≈ dense on single-slot memory".
+2. **The dense baseline is broken, not beaten.** Transformer loss jumped from 0.35 to about 1.3 when the
+   difficulty ramp started and never recovered. Its Pass-1 per-query accuracy is ≈2/n_bindings at every
+   load (0.58, 0.29, 0.13, 0.065 at nb = 4, 8, 16, 32), the signature of picking among the bound values
+   without doing the key→value lookup. The hybrid has the same attention layers and learned fine, so this
+   is optimisation (recipe or grad_clip 0.5), not architecture.
+3. **Pass 1 past 16 bindings measures extrapolation, not capacity.** Keys are always `0..n-1` in order,
+   so "GET k" can be solved by counting to the k-th SET line. Training never sees keys ≥ 16 or more than
+   6 queries. Both GLA *and* the full-attention hybrid fall off the same cliff right at the training edge
+   (nb 16 → 32: 0.99 → 0.41 and 0.96 → 0.44). If it were state capacity, the hybrid would hold. GLA stores
+   16 bindings perfectly, so its real capacity limit has not been reached yet.
+
+No figure from r01. Plan B (length + cost) was not run: it would measure a broken baseline.
 
 **2026-09-30 — Kaggle → GitHub link, fresh-run prep.**
 - `scripts/sync_results.py`: after every stage (and after each model in training), the

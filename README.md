@@ -24,7 +24,7 @@ being correct, and what is the smallest fix that keeps it correct?*
 | 0–2 | scaffold, task generator, independent oracle + verifier | ✅ 10,000/10,000 agreement |
 | 3–5 | tokenizer (vocab 99), three models, training; transformer hits 98.8% on easy recall | ✅ |
 | 6 §0 | all three architectures learn easy recall (0.95 / 0.94 / 1.00) | ✅ |
-| 6–8 | sweep training, 3 eval passes, cost profiling, figure | 🟡 code done + CPU-verified; clean GPU run `r01` pending |
+| 6–8 | sweep training, 3 eval passes, cost profiling, figure | 🟡 r01 ran end to end on Kaggle but failed the sanity gate; tasks redesigned, r02 next |
 | 9 | Gradio demo | ⬜ waits for a trustworthy figure |
 
 Earlier GPU attempts each exposed an experiment-design flaw. The worst was a
@@ -35,36 +35,43 @@ with a control task stuck at chance. All are fixed; see [`PROGRESS.md`](PROGRESS
 
 | model | idea | params |
 |---|---|---|
-| `transformer` | dense causal attention (SDPA/Flash), RoPE, the baseline | 2.13M |
+| `transformer` | dense causal attention (SDPA/Flash), RoPE, the baseline | 2.14M |
 | `gated_linear` | gated linear attention: a fixed-size decaying memory, chunk-parallel | 2.14M |
-| `hybrid` | gated linear with 2 of 5 layers swapped for full attention | 2.66M |
+| `hybrid` | gated linear with 2 of 5 layers swapped for full attention | 2.67M |
+
+All three put a 4-tap short causal conv in front of every mixer (`short_conv: 4`). It fuses
+neighbouring tokens so multi-digit keys can be matched; without it pure attention never learned
+the recall task (r02). It is on for all three so the comparison stays fair.
 
 ## The tasks
 
 **`assoc_recall`, the real test.** Facts are defined early and buried in noise, then
-retrieved (several queries per prompt: MQAR). A fixed-size state must hold them all.
+retrieved (several queries per prompt: MQAR). Keys are random numbers in shuffled order, so the
+only way to answer is to match the key. A fixed-size state must hold them all.
 Each answer follows its query and is always 2 digits; the model is scored on the digits
 after each `=` of a `GET`:
 
 ```
-SET 0 = 25
-SET 1 = 6
-SET 2 = 91
-DISTRACTOR mn gg zz
-DISTRACTOR pp hh pp zz rr hh qx qx
-GET 0 = 25
-GET 1 = 06
+SET 100 = 89
+SET 26 = 33
+SET 81 = 3
+DISTRACTOR lk tt mn pp lk
+DISTRACTOR hh zz gg zz
+GET 81 = 03
+GET 100 = 89
 ```
 
-**`state_track`, the control.** One running value; linear attention's home turf.
-If linear matches dense here but not on recall, the gap is specifically recall.
+**`state_track`, the control.** One value, overwritten a few times across distance; keep the
+latest. Linear attention's home turf. If linear matches dense here but not on recall, the gap is
+specifically recall.
 
 ```
-START x = 10
-x = ( x - 44 ) mod 97
-DISTRACTOR pp hh tt
-x = ( x + 88 ) mod 97
-ANSWER x     → 54
+START x = 17
+DISTRACTOR zz rr qx
+x = 65
+DISTRACTOR hh tt zz
+x = 30
+ANSWER x     → 30
 ```
 
 Every answer is checked by an independent oracle (`iota/data/oracle.py`), never by
@@ -76,13 +83,13 @@ hand-written labels.
 
 ```bash
 pip install -r requirements.txt pytest
-python -m pytest -q                                   # 59 tests, ~20s
+python -m pytest -q                                   # 64 tests, ~20s
 python tasks.py report                                # Phase 2 data gate (10k examples)
 python -m scripts.run_all --stage all --smoke --no-gh # whole pipeline, tiny, ~4 min CPU
 ```
 
 **On Kaggle (the real run):** open [`notebooks/kaggle_train.ipynb`](notebooks/kaggle_train.ipynb),
-add the `GH_TOKEN` and `HF_TOKEN` secrets, and run with `PLAN="smoke"`, then `"A"`, then `"B"`.
+add the `GH_TOKEN` and `HF_TOKEN` secrets, and run with `PLAN="smoke"`, then `"tune"`, `"A"`, `"B"`.
 Details in [`KAGGLE_RUN_PLAN.md`](KAGGLE_RUN_PLAN.md).
 
 **Where results go:** every stage publishes CSVs, logs, the figure and a `SUMMARY.md` to the

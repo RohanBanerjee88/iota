@@ -4,6 +4,7 @@ One command per stage; every stage is safe to re-run. Work that is already done 
 skipped, so a Kaggle session timeout costs you only the in-progress model -- never
 the whole run.
 
+    python -m scripts.run_all --stage tune     --repo <user>/iota-sweep   # lr probe
     python -m scripts.run_all --stage train    --repo <user>/iota-sweep
     python -m scripts.run_all --stage eval     --passes 1,3
     python -m scripts.run_all --stage eval     --passes 2
@@ -63,13 +64,14 @@ def _run_name(cfg: dict, arch: str) -> str:
 
 
 def _fingerprint(cfg: dict) -> dict:
-    """The parts of a config that define WHAT the model learned.
+    """The parts of a config that define WHAT the model is and what it learned.
 
-    Architecture + curriculum only. Deliberately excludes lr / max_steps / patience:
-    re-tuning the optimizer shouldn't invalidate a finished checkpoint, but changing
-    the task distribution (sequence length, binding/query ceilings, task mix) must.
+    Every model key (arch, sizes, short_conv, ...) + the curriculum. Deliberately
+    excludes the `train` block (lr / max_steps / patience): re-tuning the optimizer
+    shouldn't invalidate a finished checkpoint, but changing the architecture or the
+    task distribution must. (vocab_size is filled in at train time, so it's ignored.)
     """
-    return {"arch": cfg.get("arch"), "curriculum": cfg.get("curriculum")}
+    return {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
 
 
 def checkpoint_status(arch: str) -> tuple:
@@ -246,6 +248,89 @@ def stage_train(args) -> None:
           "before trusting any figure.", flush=True)
 
 
+TUNE_ORDER = ["transformer", "hybrid", "gated_linear"]  # the baseline that broke in r01 first
+TUNE_FIELDS = ["arch", "lr", "grad_clip", "steps", "best_step", "best_balanced",
+               "assoc", "state", "exact", "final_balanced", "seconds"]
+
+
+def stage_tune(args) -> None:
+    """Short, identical lr probe for every architecture (the fairness protocol).
+
+    Each (arch, lr) trains on the sweep curriculum for a short fixed budget --
+    same steps, schedule shape, grad_clip and eval for all -- and records its best
+    per-mode score. Pick each arch's lr from tune.csv, then run the real training.
+    Resumable: probes already in tune.csv are skipped.
+    """
+    import csv
+    import time
+
+    from iota.train import train
+
+    lrs = [float(x) for x in args.tune_lrs.split(",") if x.strip()]
+    if args.smoke:
+        lrs = lrs[:1]
+    path = os.path.join(RESULTS_DIR, "tune.csv")
+    done = set()
+    if os.path.exists(path) and not args.smoke:
+        with open(path) as fh:
+            done = {(r["arch"], float(r["lr"])) for r in csv.DictReader(fh)}
+    archs = [args.only] if args.only else TUNE_ORDER
+    print(f"\n### STAGE tune  ({', '.join(archs)} x lr {lrs}, {args.tune_steps} steps each)\n",
+          flush=True)
+    if args.smoke and os.path.exists(path):
+        os.remove(path)
+    for arch in archs:
+        for lr in lrs:
+            if (arch, lr) in done:
+                print(f"[tune] SKIP {arch} lr={lr} (already in tune.csv)", flush=True)
+                continue
+            cfg = yaml.safe_load(open(_cfg_path(arch)))
+            steps = args.tune_steps
+            cfg["train"].update({
+                "lr": lr, "grad_clip": 1.0, "max_steps": steps,
+                "easy_steps": steps // 4, "ramp_steps": steps // 2,
+                "eval_every": max(1, steps // 8), "eval_n": 256, "patience": 10 ** 6,
+                "run_name": f"tune_{arch}_lr{lr:g}",
+            })
+            print(f"\n=== TUNE {arch} lr={lr:g}", flush=True)
+            t0 = time.time()
+            try:
+                out = train(cfg, smoke=args.smoke)
+            except Exception as e:
+                print(f"!! tune {arch} lr={lr:g} FAILED: {type(e).__name__}: {e}", flush=True)
+                continue
+            evals = out["history"]["eval_acc"]
+            best = max(evals, key=lambda e: e.get("balanced", 0)) if evals else {}
+            bm = best.get("by_mode", {})
+            row = {"arch": arch, "lr": lr, "grad_clip": 1.0, "steps": steps,
+                   "best_step": best.get("step"), "best_balanced": best.get("balanced"),
+                   "assoc": bm.get("assoc_recall"), "state": bm.get("state_track"),
+                   "exact": round(best.get("exact", 0), 4),
+                   "final_balanced": evals[-1].get("balanced") if evals else None,
+                   "seconds": round(time.time() - t0)}
+            new = not os.path.exists(path)
+            with open(path, "a", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=TUNE_FIELDS)
+                if new:
+                    w.writeheader()
+                w.writerow(row)
+            print(f"[tune] {arch} lr={lr:g}: best balanced {row['best_balanced']} "
+                  f"(assoc {row['assoc']}, state {row['state']}) in {row['seconds']}s", flush=True)
+            _publish(args, f"tune:{arch}:{lr:g}")
+
+    if os.path.exists(path):
+        with open(path) as fh:
+            rows = list(csv.DictReader(fh))
+        print(f"\n{'='*72}\n=== TUNE SUMMARY (best lr per arch by balanced score)\n{'='*72}",
+              flush=True)
+        for arch in archs:
+            mine = [r for r in rows if r["arch"] == arch and r["best_balanced"] not in ("", "None")]
+            if mine:
+                b = max(mine, key=lambda r: float(r["best_balanced"]))
+                print(f"  {arch:14s} lr={float(b['lr']):g}  balanced {b['best_balanced']}  "
+                      f"assoc {b['assoc']}  state {b['state']}", flush=True)
+
+
 def _ensure_checkpoints(args) -> None:
     """Pull any checkpoint that isn't usable locally from the Hub (Session B)."""
     for arch in ARCH_ORDER:
@@ -390,8 +475,8 @@ def main() -> int:
 
     ap = argparse.ArgumentParser(description="iota Phase-6 end-to-end driver")
     ap.add_argument("--stage", default="all",
-                    choices=["all", "train", "sanity", "eval", "profile", "plot", "status"])
-    ap.add_argument("--only", choices=ARCH_ORDER, help="train just one architecture")
+                    choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
+    ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
     ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2'")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
@@ -406,6 +491,9 @@ def main() -> int:
                     help="folder name under runs/ on the kaggle-results branch")
     ap.add_argument("--gh-repo", default="RohanBanerjee88/iota")
     ap.add_argument("--no-gh", action="store_true", help="don't publish to GitHub")
+    ap.add_argument("--tune-lrs", default="0.00075,0.0015",
+                    help="lr grid for --stage tune (same grid for every arch)")
+    ap.add_argument("--tune-steps", type=int, default=4000)
     args = ap.parse_args()
 
     if args.smoke:
@@ -440,6 +528,9 @@ def main() -> int:
         finally:
             published.append(_publish(args, label))
 
+    # tune is its own stage; the smoke run exercises it too so it can't rot.
+    if args.stage == "tune" or (args.stage == "all" and args.smoke):
+        stage("tune", stage_tune, "tune")
     if args.stage in ("all", "train"):
         stage("train", stage_train, "train")
     if args.stage in ("all", "sanity"):

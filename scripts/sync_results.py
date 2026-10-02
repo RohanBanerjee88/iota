@@ -186,6 +186,30 @@ def _train_section(run_dir: str) -> List[str]:
     return lines
 
 
+def _tune_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "tune.csv"))
+    if not rows:
+        return []
+    lines = ["## 0. LR probe (identical short budget per arch; pick each arch's best)", "",
+             "| arch | lr | best balanced | assoc | state | exact | best step | final balanced | time |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+    best = {}
+    for r in rows:
+        try:
+            if float(r["best_balanced"]) > float(best.get(r["arch"], {}).get("best_balanced", -1)):
+                best[r["arch"]] = r
+        except (TypeError, ValueError):
+            pass
+    for r in sorted(rows, key=lambda r: (ARCHS.index(r["arch"]) if r["arch"] in ARCHS else 9,
+                                         float(r["lr"]))):
+        star = " ★" if best.get(r["arch"]) is r else ""
+        lines.append(f"| {r['arch']}{star} | {float(r['lr']):g} | {_fmt(r['best_balanced'])} | "
+                     f"{_fmt(r['assoc'])} | {_fmt(r['state'])} | {_fmt(r['exact'])} | "
+                     f"{r['best_step']} | {_fmt(r['final_balanced'])} | {r['seconds']}s |")
+    return lines + ["", f"{rows[0]['steps']} steps each, grad_clip {rows[0]['grad_clip']}. "
+                    "★ = best lr for that arch.", ""]
+
+
 def _sanity_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "sanity_indist.csv"))
     lines = ["## 1b. Sanity gate — each model on its own training distribution", ""]
@@ -269,7 +293,8 @@ def build_summary(run_dir: str, run_id: str) -> str:
     ]
     fig = [f for f in ("money_figure.png",) if os.path.exists(os.path.join(run_dir, f))]
     body = (
-        _train_section(run_dir)
+        _tune_section(run_dir)
+        + _train_section(run_dir)
         + _sanity_section(run_dir)
         + _pass_section(run_dir, "pass1_capacity.csv", "2. Pass 1 — capacity (the headline)",
                         "n_bindings", "n_bindings")

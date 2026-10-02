@@ -16,7 +16,8 @@ from .base import Block, LMBackbone, SeqModel, apply_rope, build_rope_cache
 
 
 class CausalSelfAttention(nn.Module):
-    def __init__(self, d_model: int, n_heads: int, dropout: float = 0.0, rope_base: float = 10000.0):
+    def __init__(self, d_model: int, n_heads: int, dropout: float = 0.0, rope_base: float = 10000.0,
+                 short_conv: int = 0):
         super().__init__()
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
         self.n_heads = n_heads
@@ -28,6 +29,14 @@ class CausalSelfAttention(nn.Module):
         self.rope_base = rope_base
         self._cos = None
         self._sin = None
+        # OPTIONAL short causal depthwise conv on the input (OFF by default), the
+        # same local-mixing knob GatedLinearAttention has. Multi-digit keys
+        # ("SET 1 0 0 = ...") need neighbouring tokens fused before attention can
+        # match them; with this on for EVERY architecture the comparison stays
+        # fair and attention's O(T^2) cost is unchanged.
+        self.short_conv = short_conv
+        self.conv = (nn.Conv1d(d_model, d_model, short_conv, groups=d_model, bias=True)
+                     if short_conv and short_conv > 1 else None)
 
     def _rope(self, T: int, device, dtype):
         if self._cos is None or self._cos.shape[0] < T or self._cos.device != device:
@@ -37,6 +46,8 @@ class CausalSelfAttention(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, T, D = x.shape
+        if self.conv is not None:  # causal: left-pad by kernel-1
+            x = self.conv(F.pad(x.transpose(1, 2), (self.short_conv - 1, 0))).transpose(1, 2)
         q, k, v = self.qkv(x).split(D, dim=-1)
         q = q.view(B, T, self.n_heads, self.head_dim).transpose(1, 2)  # (B,H,T,Dh)
         k = k.view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
@@ -51,10 +62,11 @@ class CausalSelfAttention(nn.Module):
 
 
 class TransformerLM(SeqModel):
-    def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, dropout=0.0, **_):
+    def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, dropout=0.0, short_conv=0, **_):
         super().__init__()
         blocks = [
-            Block(d_model, CausalSelfAttention(d_model, n_heads, dropout), d_ff, dropout)
+            Block(d_model, CausalSelfAttention(d_model, n_heads, dropout, short_conv=short_conv),
+                  d_ff, dropout)
             for _ in range(n_layers)
         ]
         self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout)
@@ -71,4 +83,5 @@ class TransformerLM(SeqModel):
             n_heads=cfg["n_heads"],
             d_ff=cfg["d_ff"],
             dropout=cfg.get("dropout", 0.0),
+            short_conv=cfg.get("short_conv", 0),
         )

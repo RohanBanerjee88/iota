@@ -21,9 +21,9 @@
 | Knob | Value | Why |
 |---|---|---|
 | Params | 2–3M each (2.13 / 2.14 / 2.66M) | tiny, fast, fits free T4 easily |
-| Train task mix | `assoc_recall` (multi-query) + `state_track` | recall is the test, state_track is the control |
-| **Training ceiling `n_bindings ≤ 16`, `n_queries ≤ 6`** | **hard rule** | eval extrapolates to 128 bindings / 16 queries → the curve measures architectural capacity, not memorized difficulty. Raised from 8/3: a 16× binding extrapolation risked flattening *all three* models and erasing the crossover. |
-| Train `seq_len ≤ 640` | hard rule | eval extrapolates to 8192 → measures length-gen. 640 covers the capacity sweep's longest cell (nb=128 ⇒ ~773 tok) at a mild 1.2× RoPE extrapolation, so **capacity is not confounded with length** — the flaw that inverted the first sweep. |
+| Train task mix | `assoc_recall` (multi-query, random shuffled keys from [0,128)) + `state_track` (overwrite ops: `x = 88`) | recall is the test, state_track is the control. r01 showed sequential keys allow a counting shortcut and the add/sub control was an unlearnable arithmetic test. |
+| **Training ceiling `n_bindings ≤ 64`, `n_queries ≤ 16`** | **hard rule** | the capacity pass (2…128 bindings, min(nb,16) queries) is in-distribution up to 64 and only the 128 cell extrapolates. In r01 (ceiling 16) GLA *and* the full-attention hybrid fell off the same cliff right past 16, which is extrapolation, not capacity. |
+| Train `seq_len ≤ 640` | hard rule | eval extrapolates to 8192 → measures length-gen. 640 covers every in-distribution capacity cell (nb=64 ⇒ ~520 tok); the nb=128 cell (~870 tok) is the one extrapolated point, so **capacity is not confounded with length** — the flaw that inverted the first sweep. |
 | Max-steps ceiling | ~8–10k (GLA-sized) | transformer/hybrid early-stop well before; GLA uses it |
 | Early-stop | n≥500 held-out, patience ~5 evals | the fixed-large-n rule that avoids the §0 early-stop artifact |
 | Precision | fp32 first run | correctness over speed; revisit bf16 only if time-bound |
@@ -58,6 +58,7 @@ Use [`notebooks/kaggle_train.ipynb`](notebooks/kaggle_train.ipynb). It is a thin
 | PLAN | does | how to launch | roughly |
 |---|---|---|---|
 | `smoke` | tests + the whole pipeline at toy size; must print `GitHub link: OK` | interactive | ~10 min |
+| `tune` | smoke + the lr probe: every arch × lr {7.5e-4, 1.5e-3} (3e-3 lost for every arch in r02), same 4000-step budget, grad_clip 1.0 → `tune.csv` | *Save & Run All* | ~2–2.5 h |
 | `A` | smoke, train all three, sanity gate, eval passes 1 & 3 | *Save Version → Save & Run All* | hours (GLA is slowest) |
 | `B` | smoke, eval pass 2, cost profile, figure | *Save & Run All* | ~1 h |
 | `all` | A + B in one session, if it fits | *Save & Run All* | — |

@@ -113,3 +113,32 @@ def test_eval_backs_off_batch_instead_of_recording_oom():
     got = _scores_with_backoff(_OOMAbove(base, 2), exs, TOK.pad_id, "cpu", 8)
     assert got == ref  # same scores, just computed at a smaller batch
     assert _scores_with_backoff(_OOMAbove(base, 0), exs, TOK.pad_id, "cpu", 8) is None
+
+
+def test_summary_shows_lr_probe_with_best_marked(tmp_path):
+    (tmp_path / "tune.csv").write_text(
+        "arch,lr,grad_clip,steps,best_step,best_balanced,assoc,state,exact,final_balanced,seconds\n"
+        "transformer,0.00075,1.0,4000,4000,0.40,0.5,0.3,0.2,0.40,600\n"
+        "transformer,0.0015,1.0,4000,3500,0.62,0.7,0.54,0.4,0.60,600\n")
+    s = build_summary(str(tmp_path), "r02")
+    assert "LR probe" in s
+    assert "| transformer ★ | 0.0015 |" in s and "| transformer | 0.00075 |" in s
+
+
+def test_checkpoint_without_conv_is_stale_under_conv_config(tmp_path, monkeypatch):
+    # The fingerprint must cover model keys, not just the curriculum: a checkpoint
+    # trained with short_conv 0 must never be reused for a short_conv 4 config.
+    import yaml
+    import scripts.run_all as ra
+
+    monkeypatch.setattr(ra, "RESULTS_DIR", str(tmp_path))
+    cfg = yaml.safe_load(open("configs/sweep_transformer.yaml"))
+    old = dict(cfg, short_conv=0, vocab_size=99)
+    (tmp_path / "transformer_sweep.safetensors").write_bytes(b"x")
+    hist = {"eval_acc": [{"step": 5000}]}
+    (tmp_path / "transformer_sweep.json").write_text(json.dumps({"config": old, "history": hist}))
+    assert ra.checkpoint_status("transformer")[0] == "stale"
+    same = dict(cfg, vocab_size=99)  # identical model + curriculum, lr changes are fine
+    same["train"] = dict(cfg["train"], lr=0.123)
+    (tmp_path / "transformer_sweep.json").write_text(json.dumps({"config": same, "history": hist}))
+    assert ra.checkpoint_status("transformer")[0] == "ok"

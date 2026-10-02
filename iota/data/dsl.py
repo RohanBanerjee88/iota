@@ -4,9 +4,10 @@ Two task modes (see BUILD_PLAN.md §3). The discriminating axis is *recall load*
 (`n_bindings`), not sequence length alone.
 
   Mode A — `state_track`  (control / sanity)
-      A single accumulator `x` updated step by step with affine ops mod M.
-      Tests whether a model can carry state at all. Linear models are expected
-      to do well here — that is the point of having it as a control.
+      A single accumulator `x` updated step by step. The sweep uses overwrite
+      ops (`x = 88`): hold ONE value across distance, keep the latest. Linear
+      models are expected to match dense here — that is the point of having it
+      as a control. (Affine ops mod M are still available via `ops_kinds`.)
       For this mode, `n_bindings` is interpreted as the number of update ops.
 
   Mode B — `assoc_recall` (the real test — MQAR-style)
@@ -115,15 +116,22 @@ def _gen_state_track(
     val = state
     start_line = ["START", ACC, "=", str(state)]
 
-    # Which update kinds are allowed. Modular MULTIPLICATION is near-unlearnable
-    # for a tiny model, so as a *learnable* control we default the curriculum to
-    # additive state tracking; the full set stays available for completeness.
+    # Which update kinds are allowed. The sweep control uses "set" only: the
+    # accumulator is OVERWRITTEN with a literal (`x = 88`), so the task is purely
+    # "hold one value across distance, keep the latest". Run r01 showed that the
+    # arithmetic kinds (add/sub, let alone mul) make it a silent multi-digit
+    # modular-arithmetic test that no 2M model learned, which cannot serve as a
+    # control. The arithmetic kinds stay available for completeness.
     kinds = list(ops_kinds) if ops_kinds else ["add", "sub", "mul", "affine"]
 
     ops: List[List[str]] = []
     for _ in range(n_ops):
         kind = rng.choice(kinds)
-        if kind == "add":
+        if kind == "set":
+            b = rng.randint(0, MOD - 1)
+            ops.append([ACC, "=", str(b)])
+            val = b
+        elif kind == "add":
             b = rng.randint(0, MOD - 1)
             ops.append([ACC, "=", "(", ACC, "+", str(b), ")", "mod", str(MOD)])
             val = (val + b) % MOD
@@ -194,12 +202,15 @@ def _gen_assoc_recall(
     if query_type == "op":
         raise ValueError("the arithmetic-op variant is unsupported with integer keys")
 
-    # INTEGER keys (0..n-1). Keys are digit-encoded, so eval beyond the training
-    # ceiling (e.g. 128 bindings) is composed of digits the model already trained
-    # on -- the capacity curve then measures architectural capacity, not novel
-    # untrained key tokens. (Atomic key tokens would make every model fail at
-    # high n_bindings for a tokenisation reason, not a capacity reason.)
-    keys = [str(i) for i in range(n)]
+    # INTEGER keys, digit-encoded, drawn as n DISTINCT values from the full key
+    # space [0, MAX_BINDINGS) in RANDOM order. Two things this guarantees:
+    #  * no counting shortcut -- with keys 0..n-1 in order, "GET k" could be
+    #    answered by "the k-th SET line", so a model never had to match the key
+    #    (run r01: GLA and the full-attention hybrid fell off the same cliff at
+    #    the edge of the training range, the signature of a positional trick);
+    #  * every key the eval uses (up to 128 bindings) is one training has seen,
+    #    so the capacity curve measures state capacity, not unseen keys.
+    keys = [str(k) for k in rng.sample(range(MAX_BINDINGS), n)]
     values = [rng.randint(0, MOD - 1) for _ in range(n)]
     set_lines = [["SET", keys[i], "=", str(values[i])] for i in range(n)]
 

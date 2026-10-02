@@ -1,3 +1,4 @@
 arch,lr,grad_clip,steps,best_step,best_balanced,assoc,state,exact,final_balanced,seconds
 transformer,0.00075,1.0,4000,60,0.0013,0.0026,0.0,0.0,0.0013,6
 hybrid,0.00075,1.0,4000,60,0.0065,0.013,0.0,0.0,0.0065,7
+gated_linear,0.00075,1.0,4000,60,0.0078,0.0155,0.0,0.0,0.0078,9

@@ -20,3 +20,12 @@
 [sweep] hybrid step    60 loss 2.264 bal 0.006 [assoc 0.013 state 0.000] exact 0.000 diff 1.00 * (7s)
 [sweep] hybrid BEST plateau_acc = 0.0065 -> experiments/smoke/tune_hybrid_lr0.00075
 [tune] hybrid lr=0.00075: best balanced 0.0065 (assoc 0.013, state 0.0) in 7s
+  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r04-smoke
+
+=== TUNE gated_linear lr=0.00075
+[sweep] model=gated_linear params=2.67M device=cuda max_steps=60 bs=8 patience=1000000
+[sweep] gated_linear step    20 loss 3.333 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (2s)
+[sweep] gated_linear step    40 loss 2.801 bal 0.004 [assoc 0.008 state 0.000] exact 0.000 diff 1.00 * (5s)
+[sweep] gated_linear step    60 loss 2.264 bal 0.008 [assoc 0.016 state 0.000] exact 0.000 diff 1.00 * (9s)
+[sweep] gated_linear BEST plateau_acc = 0.0078 -> experiments/smoke/tune_gated_linear_lr0.00075
+[tune] gated_linear lr=0.00075: best balanced 0.0078 (assoc 0.0155, state 0.0) in 9s

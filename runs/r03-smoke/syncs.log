@@ -20,3 +20,4 @@
 2026-10-02 05:47 UTC  stage=train  code=e048745  files=9
 2026-10-02 05:47 UTC  stage=sanity  code=e048745  files=11
 2026-10-02 05:47 UTC  stage=eval 1,3,2  code=e048745  files=15
+2026-10-02 05:48 UTC  stage=profile  code=e048745  files=17

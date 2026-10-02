@@ -53,15 +53,16 @@
       "batch_size": 64,
       "warmup": 200,
       "weight_decay": 0.01,
-      "max_steps": 12000,
-      "easy_steps": 2000,
-      "ramp_steps": 3000,
+      "max_steps": 15000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
       "eval_every": 500,
       "eval_n": 500,
       "patience": 8,
       "seed": 0,
-      "lr": 0.0015,
-      "run_name": "hybrid_sweep"
+      "lr": 0.00075,
+      "run_name": "hybrid_sweep",
+      "grad_clip": 1.0
     },
     "vocab_size": 99
   },
@@ -69,11 +70,11 @@
     "eval_acc": [
       {
         "step": 20,
-        "per_query": 0.0049261083743842365,
+        "per_query": 0.0,
         "exact": 0.0,
-        "balanced": 0.0026,
+        "balanced": 0.0,
         "by_mode": {
-          "assoc_recall": 0.0052,
+          "assoc_recall": 0.0,
           "state_track": 0.0
         },
         "difficulty": 0.333

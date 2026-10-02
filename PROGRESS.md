@@ -20,7 +20,8 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect | run plan B; then a param-matched check |
+| r04 | — | — | A → B | prepared: 5-layer transformer + GLA (param-matched to hybrid) | — |
+| r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
 | r01-smoke | 2026-09-30 | `1453249` | smoke | ✅ whole pipeline ran on a Kaggle T4 in ~90 s; all 8 publishes landed on `kaggle-results` | link works → launch plan A |
@@ -30,6 +31,30 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-02 — r03 plan B: length generalisation is the strongest result; the cost panel does not measure
+what the thesis needs.**
+
+Pass 2, recall at n_bindings = 8 vs length (trained ≤ 640 tokens):
+
+| tokens | 512 | 1024 | 2048 | 4096 | 8192 |
+|---|---:|---:|---:|---:|---:|
+| transformer | 0.980 | 0.953 | **0.242** | 0.015 | 0.010 |
+| gated_linear | 0.988 | 0.987 | **0.985** | 0.972 | **0.942** |
+| hybrid | 1.000 | 0.996 | **0.384** | 0.026 | 0.010 |
+
+- **GLA keeps ~0.94–0.99 recall out to 12.8× its training length;** both RoPE-attention models collapse
+  between 1024 and 2048 tokens. Same pattern as the Pass-3 control.
+- **The cost panel (forward pass, batch 1) does not show "linear is cheaper".** VRAM is nearly identical
+  (8192 tokens: 105 / 90 / 103 MB), because SDPA's memory-efficient kernel never materialises the T×T matrix.
+  Latency favours dense (72 vs 313 ms), because dense uses a fused CUDA kernel and our GLA is a pure-PyTorch
+  chunk loop. This measures *implementations*, not architectures. Linear attention's real advantage is
+  **decode**: a constant-size state vs a KV cache that grows with context. BUILD_PLAN §6 asked for
+  prefill and decode separately, and we only measure prefill. That is a known gap, now visible.
+
+**2026-10-02 — r04 prepared: depth/param-matched.** Transformer and GLA go from 4 → 5 layers (2.665M / 2.670M
+vs hybrid 2.668M). Data, conv, lr (tuned at 4 layers in r03), schedule and seed are unchanged, so depth/size
+is the only difference from r03.
 
 **2026-10-02 — r03 plan A: the first run to pass the sanity gate. A real (modest) linear-vs-dense gap, a
 dominant hybrid, and a clean length result.**

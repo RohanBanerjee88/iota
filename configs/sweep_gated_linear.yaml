@@ -15,9 +15,13 @@
 #    lr picked per arch from {7.5e-4, 1.5e-3}; grad_clip 1.0, easy 1000 / ramp 2000
 #    (the probe's schedule) and ONE common ceiling of 15000 steps with plateau
 #    early-stop for every arch -- identical budget, each trained to its plateau.
+#  * r04: n_layers 4 -> 5 so transformer, GLA and hybrid are matched in DEPTH and
+#    PARAMS (~2.67M each). In r03 the hybrid (5 layers, 2.67M) beat a smaller
+#    transformer (4 layers, 2.14M) -- this removes that size confound. Everything
+#    else (data, conv, lr, schedule, seed) is identical to r03 on purpose.
 arch: gated_linear
 d_model: 256
-n_layers: 4
+n_layers: 5
 n_heads: 4
 d_ff: 512
 dropout: 0.0

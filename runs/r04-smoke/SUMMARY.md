@@ -1,6 +1,6 @@
 # iota run `r04-smoke`
 
-- **updated:** 2026-10-03 06:16 UTC (last stage: `profile`)
+- **updated:** 2026-10-03 06:16 UTC (last stage: `plot`)
 - **code:** `f6b589e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

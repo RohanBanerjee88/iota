@@ -20,7 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r04 | 2026-10-03 | `c1fadb5` | A ✅ → B | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | run B with passes 2,4 (key-length diagnostic) + decode benchmark |
+| r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | run pass 4 alone; then seeds / write-up |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
@@ -31,6 +31,30 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-03 — r04 plan B: the full four-panel figure. The first complete, defensible result.**
+
+Decode (T4, batch 1; exact memory kept per sequence / median ms per token):
+
+| context | transformer | hybrid | gated_linear |
+|---:|---:|---:|---:|
+| 1024 | 10.4 MB / 5.2 ms | 4.3 MB / 5.5 ms | 0.33 MB / 5.6 ms |
+| 8192 | 80 MB / 8.2 ms | 32 MB / 7.0 ms | 0.33 MB / 5.5 ms |
+| 65536 | 640 MB / 56 ms | 256 MB / 25 ms | 0.33 MB / 5.5 ms |
+
+Below ~4k context every model sits at ~5 ms/token (per-step launch overhead dominates); above it the KV-cache
+models grow linearly and GLA stays flat. Pass 2 confirms r03: GLA 0.95 at 8192, both RoPE models ~0.01.
+
+**Headline (all models ~2.67M params / 5 layers, n=1000 per point):** gated linear attention matches dense up
+to 32 bindings, then degrades faster (64: 0.49 vs 0.62; 128: 0.22 vs 0.35). A hybrid with 2 of 5 attention
+layers holds ≥ 0.99 up to 128 bindings at ~40% of dense decode memory and ~45% of its per-token latency at
+64k context. On the single-value control linear is never worse, it generalises to 12.8× its training length
+where RoPE attention collapses, and it decodes with a constant 0.33 MB state, ~2000× smaller than dense's KV
+cache at 64k context.
+
+Pass 4 (key-length diagnostic) did not run (the notebook copy still had `--passes 2`); run it alone (~15 min).
+Caveats for a write-up: single seed; lr tuned at 4 layers; GLA still creeping up at its 15000-step ceiling;
+the pure transformer plateaus at ~0.81 in-distribution (pass 4 tests the key-resolution hypothesis).
 
 **2026-10-03 — r04 plan A (depth/param-matched, 5 layers each): the size confound is gone; a clean
 crossover at 32–64 bindings; the pure transformer still caps at ~0.81.**

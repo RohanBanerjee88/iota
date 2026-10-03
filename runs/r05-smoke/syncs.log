@@ -1,2 +1,3 @@
 2026-10-03 22:45 UTC  stage=tune:transformer:0.00075  code=e713514  files=3
 2026-10-03 22:45 UTC  stage=tune:hybrid:0.00075  code=e713514  files=4
+2026-10-03 22:45 UTC  stage=tune:gated_linear:0.00075  code=e713514  files=5

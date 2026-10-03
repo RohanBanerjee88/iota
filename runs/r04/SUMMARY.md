@@ -1,7 +1,7 @@
 # iota run `r04`
 
-- **updated:** 2026-10-03 02:34 UTC (last stage: `eval 1,3`)
-- **code:** `c1fadb5` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-03 06:22 UTC (last stage: `eval 2`)
+- **code:** `f6b589e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
@@ -40,7 +40,17 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 
 ## 3. Pass 2 — length generalisation
 
-_`pass2_length.csv` not synced yet._
+Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, paired prompts.
+
+| seq_len | true tokens | transformer | gated_linear | hybrid |
+|---:|---:|---|---|---|
+| 128 | 128 | 0.975 [0.97–0.98] (0.82) | 0.988 [0.99–0.99] (0.91) | 1.000 [1.00–1.00] (1.00) |
+| 256 | 256 | 0.978 [0.97–0.98] (0.84) | 0.989 [0.99–0.99] (0.92) | 1.000 [1.00–1.00] (1.00) |
+| 512 | 512 | 0.977 [0.97–0.98] (0.83) | 0.987 [0.98–0.99] (0.90) | 1.000 [1.00–1.00] (1.00) |
+| 1024 | 1024 | 0.923 [0.92–0.93] (0.55) | 0.989 [0.99–0.99] (0.92) | 0.987 [0.98–0.99] (0.90) |
+| 2048 | 2048 | 0.096 [0.09–0.10] (0.00) | 0.987 [0.98–0.99] (0.90) | 0.331 [0.32–0.34] (0.00) |
+| 4096 | 4096 | 0.011 [0.01–0.01] (0.00) | 0.977 [0.97–0.98] (0.83) | 0.023 [0.02–0.03] (0.00) |
+| 8192 | 8192 | 0.010 [0.01–0.01] (0.00) | 0.954 [0.95–0.96] (0.69) | 0.013 [0.01–0.02] (0.00) |
 
 ## 4. Pass 3 — state_track control
 
@@ -56,9 +66,13 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 | 4096 | 4104 | 0.017 [0.01–0.03] (0.02) | 0.999 [1.00–1.00] (1.00) | 0.011 [0.01–0.02] (0.01) |
 | 8192 | 8200 | 0.020 [0.01–0.03] (0.02) | 0.984 [0.98–0.99] (0.98) | 0.226 [0.20–0.25] (0.23) |
 
-## 5. Cost (forward pass, batch 1)
+## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 
 _`cost_profile.csv` not synced yet._
+
+## 5b. Decode cost (one token at a time, batch 1)
+
+_`decode_profile.csv` not synced yet._
 
 ## 6. Figure
 

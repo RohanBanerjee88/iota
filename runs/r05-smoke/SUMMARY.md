@@ -1,6 +1,6 @@
 # iota run `r05-smoke`
 
-- **updated:** 2026-10-03 22:45 UTC (last stage: `tune`)
+- **updated:** 2026-10-03 22:45 UTC (last stage: `train:hybrid`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -16,7 +16,13 @@
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
 
-_No training runs synced yet._
+| model | best step | balanced | assoc (per-query) | state (control) | exact | lr | verdict |
+|---|---:|---:|---:|---:|---:|---:|---|
+| transformer | – | – | – | – | – | – | not trained yet |
+| gated_linear | – | – | – | – | – | – | not trained yet |
+| hybrid | 60 | 0.006 | 0.013 | 0.000 | 0.000 | 0.00075 | ⚠ control at chance -- figure NOT trustworthy |
+
+Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `logs/train.log` and the `*_sweep.json` files.
 
 ## 1b. Sanity gate — each model on its own training distribution
 

@@ -16,3 +16,4 @@
 2026-10-03 06:15 UTC  stage=tune  code=f6b589e  files=5
 2026-10-03 06:15 UTC  stage=train:hybrid  code=f6b589e  files=7
 2026-10-03 06:15 UTC  stage=train:transformer  code=f6b589e  files=8
+2026-10-03 06:15 UTC  stage=train:gated_linear  code=f6b589e  files=9

@@ -1,0 +1,45 @@
+
+##### eval_p4 started 2026-10-03 22:12:57 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r04
+
+### STAGE eval  (passes [4], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 4500 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 14000 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 4 -> experiments/results/pass4_keylen.csv
+  pass4 hybrid_sweep       nb=16  key_digits=1 acc=1.000 (n_q=1214)
+  pass4 hybrid_sweep       nb=16  key_digits=2 acc=1.000 (n_q=11408)
+  pass4 hybrid_sweep       nb=16  key_digits=3 acc=0.998 (n_q=3378)
+  pass4 transformer_sweep  nb=16  key_digits=1 acc=0.948 (n_q=1214)
+  pass4 transformer_sweep  nb=16  key_digits=2 acc=0.952 (n_q=11408)
+  pass4 transformer_sweep  nb=16  key_digits=3 acc=0.920 (n_q=3378)
+  pass4 gated_linear_sweep nb=16  key_digits=1 acc=0.974 (n_q=1214)
+  pass4 gated_linear_sweep nb=16  key_digits=2 acc=0.960 (n_q=11408)
+  pass4 gated_linear_sweep nb=16  key_digits=3 acc=0.974 (n_q=3378)
+  pass4 hybrid_sweep       nb=32  key_digits=1 acc=0.999 (n_q=1264)
+  pass4 hybrid_sweep       nb=32  key_digits=2 acc=1.000 (n_q=11207)
+  pass4 hybrid_sweep       nb=32  key_digits=3 acc=0.998 (n_q=3529)
+  pass4 transformer_sweep  nb=32  key_digits=1 acc=0.874 (n_q=1264)
+  pass4 transformer_sweep  nb=32  key_digits=2 acc=0.848 (n_q=11207)
+  pass4 transformer_sweep  nb=32  key_digits=3 acc=0.808 (n_q=3529)
+  pass4 gated_linear_sweep nb=32  key_digits=1 acc=0.919 (n_q=1264)
+  pass4 gated_linear_sweep nb=32  key_digits=2 acc=0.871 (n_q=11207)
+  pass4 gated_linear_sweep nb=32  key_digits=3 acc=0.905 (n_q=3529)
+  pass4 hybrid_sweep       nb=64  key_digits=1 acc=0.997 (n_q=1216)
+  pass4 hybrid_sweep       nb=64  key_digits=2 acc=0.997 (n_q=11220)
+  pass4 hybrid_sweep       nb=64  key_digits=3 acc=0.997 (n_q=3564)
+  pass4 transformer_sweep  nb=64  key_digits=1 acc=0.674 (n_q=1216)
+  pass4 transformer_sweep  nb=64  key_digits=2 acc=0.638 (n_q=11220)
+  pass4 transformer_sweep  nb=64  key_digits=3 acc=0.545 (n_q=3564)
+  pass4 gated_linear_sweep nb=64  key_digits=1 acc=0.620 (n_q=1216)
+  pass4 gated_linear_sweep nb=64  key_digits=2 acc=0.454 (n_q=11220)
+  pass4 gated_linear_sweep nb=64  key_digits=3 acc=0.554 (n_q=3564)
+wrote experiments/results/pass4_keylen.csv (27 rows)
+  [hf] pushed pass4_keylen.csv

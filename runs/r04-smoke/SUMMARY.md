@@ -1,6 +1,6 @@
 # iota run `r04-smoke`
 
-- **updated:** 2026-10-03 06:15 UTC (last stage: `eval 1,3,4,2`)
+- **updated:** 2026-10-03 06:16 UTC (last stage: `profile`)
 - **code:** `f6b589e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -98,17 +98,23 @@ Peak VRAM MB / median latency ms.
 
 | seq_len | transformer | gated_linear | hybrid |
 |---:|---|---|---|
-| 128 | 28.8 MB / 5.96 ms | 29.1 MB / 13.25 ms | 29.2 MB / 10.28 ms |
-| 256 | 30.2 MB / 5.97 ms | 30.3 MB / 19.98 ms | 30.4 MB / 14.66 ms |
-| 512 | 33.3 MB / 6.16 ms | 32.5 MB / 38.33 ms | 32.9 MB / 23.38 ms |
-| 1024 | 38.7 MB / 6.85 ms | 37.0 MB / 63.98 ms | 37.9 MB / 41.72 ms |
-| 2048 | 50.7 MB / 10.33 ms | 46.9 MB / 119.58 ms | 49.2 MB / 77.23 ms |
-| 4096 | 72.5 MB / 28.30 ms | 64.2 MB / 236.16 ms | 69.5 MB / 149.25 ms |
-| 8192 | 117.5 MB / 85.62 ms | 100.3 MB / 467.88 ms | 111.5 MB / 297.81 ms |
+| 128 | 28.8 MB / 5.39 ms | 29.1 MB / 12.12 ms | 29.2 MB / 9.46 ms |
+| 256 | 30.2 MB / 5.44 ms | 30.3 MB / 18.64 ms | 30.4 MB / 13.28 ms |
+| 512 | 33.3 MB / 5.52 ms | 32.5 MB / 35.44 ms | 32.9 MB / 22.25 ms |
+| 1024 | 38.7 MB / 9.16 ms | 37.0 MB / 64.42 ms | 37.9 MB / 38.25 ms |
+| 2048 | 50.7 MB / 13.50 ms | 46.9 MB / 119.43 ms | 49.2 MB / 70.66 ms |
+| 4096 | 72.5 MB / 27.85 ms | 64.2 MB / 208.77 ms | 69.5 MB / 134.89 ms |
+| 8192 | 117.5 MB / 85.04 ms | 100.3 MB / 424.63 ms | 111.5 MB / 261.26 ms |
 
 ## 5b. Decode cost (one token at a time, batch 1)
 
-_`decode_profile.csv` not synced yet._
+Memory each model keeps per sequence (exact cache/state size) / median ms per token.
+
+| context | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 1.61 MB / 4.96 ms | 0.33 MB / 5.72 ms | 0.84 MB / 5.40 ms |
+| 512 | 5.36 MB / 5.12 ms | 0.33 MB / 5.56 ms | 2.34 MB / 5.40 ms |
+| 2048 | 20.36 MB / 5.14 ms | 0.33 MB / 5.53 ms | 8.34 MB / 5.43 ms |
 
 ## 6. Figure
 

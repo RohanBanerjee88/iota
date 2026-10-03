@@ -1,0 +1,10 @@
+model,arch,context_len,batch_size,params_m,cache_mb,decode_ms_per_tok,tokens_per_sec,peak_vram_mb,oom,device
+transformer_sweep,transformer,128,1,2.665,1.606,4.965,201.4,29.24,False,cuda
+transformer_sweep,transformer,512,1,2.665,5.356,5.12,195.3,33.46,False,cuda
+transformer_sweep,transformer,2048,1,2.665,20.356,5.142,194.5,50.92,False,cuda
+gated_linear_sweep,gated_linear,128,1,2.67,0.332,5.72,174.8,27.97,False,cuda
+gated_linear_sweep,gated_linear,512,1,2.67,0.332,5.563,179.8,27.97,False,cuda
+gated_linear_sweep,gated_linear,2048,1,2.67,0.332,5.531,180.8,27.97,False,cuda
+hybrid_sweep,hybrid,128,1,2.668,0.842,5.402,185.1,28.55,False,cuda
+hybrid_sweep,hybrid,512,1,2.668,2.342,5.401,185.1,30.24,False,cuda
+hybrid_sweep,hybrid,2048,1,2.668,8.342,5.428,184.2,37.58,False,cuda

@@ -20,3 +20,4 @@
 2026-10-03 06:15 UTC  stage=train  code=f6b589e  files=9
 2026-10-03 06:15 UTC  stage=sanity  code=f6b589e  files=11
 2026-10-03 06:15 UTC  stage=eval 1,3,4,2  code=f6b589e  files=16
+2026-10-03 06:16 UTC  stage=profile  code=f6b589e  files=19

@@ -20,7 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | run pass 4 alone; then seeds / write-up |
+| r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
@@ -31,6 +31,23 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-03 — r04 pass 4 (key-length diagnostic): the key-resolution hypothesis is mostly rejected.**
+
+| n_bindings | transformer 1 / 2 / 3-digit keys | gated_linear 1 / 2 / 3 | hybrid 1 / 2 / 3 |
+|---:|---|---|---|
+| 16 | 0.95 / 0.95 / 0.92 | 0.97 / 0.96 / 0.97 | 1.00 / 1.00 / 1.00 |
+| 32 | 0.87 / 0.85 / 0.81 | 0.92 / 0.87 / 0.90 | 1.00 / 1.00 / 1.00 |
+| 64 | 0.67 / 0.64 / 0.55 | 0.62 / 0.45 / 0.55 | 1.00 / 1.00 / 1.00 |
+
+- 3-digit keys cost the transformer only 6–12 points. Even 1-digit keys, which the conv sees whole, fall
+  from 0.95 → 0.67 with load, so its drop is genuinely load-driven, not a key-resolution artifact.
+- GLA shows no 3-digit penalty; it is worst on 2-digit keys (70% of keys, the most look-alike neighbours).
+  That is consistent with interference between similar keys in a fixed-size state (plausible, not proven).
+- The hybrid is flat at ~1.00 for every key length and load.
+- **Framing for the write-up:** the dense ceiling is a *trainability* observation, not a capability claim.
+  At ~2.7M params and an identical budget, pure attention did not learn high-load recall fully; the hybrid
+  did by step 4500. The literature shows attention *can* solve MQAR, so claim only what we measured.
 
 **2026-10-03 — r04 plan B: the full four-panel figure. The first complete, defensible result.**
 

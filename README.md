@@ -33,7 +33,9 @@ matches dense up to 32 bindings, then degrades faster (64: 0.49 vs 0.62; 128: 0.
 never worse on the single-value control, generalises to 12.8× its training length where RoPE attention
 collapses, and decodes with a constant 0.33 MB state vs a 640 MB KV cache at 64k context.
 Figure: [`runs/r04/money_figure.png`](https://github.com/RohanBanerjee88/iota/blob/kaggle-results/runs/r04/money_figure.png).
-Caveats: single seed; the pure transformer plateaus at ~0.81 in-distribution (under investigation).
+Caveats: single seed; the pure transformer plateaus at ~0.81 in-distribution. A key-length breakdown
+shows that drop is load-driven, so it is a trainability observation at this scale, not a claim that
+attention can't do the task.
 
 Earlier GPU attempts each exposed an experiment-design flaw. The worst was a
 length/capacity confound that made linear *look* better than the transformer, along

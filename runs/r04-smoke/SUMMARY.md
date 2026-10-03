@@ -1,7 +1,7 @@
 # iota run `r04-smoke`
 
-- **updated:** 2026-10-02 20:23 UTC (last stage: `plot`)
-- **code:** `c1fadb5` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-03 06:15 UTC (last stage: `tune:transformer:0.00075`)
+- **code:** `f6b589e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 0. LR probe (identical short budget per arch; pick each arch's best)
@@ -9,8 +9,6 @@
 | arch | lr | best balanced | assoc | state | exact | best step | final balanced | time |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | transformer ★ | 0.00075 | 0.001 | 0.003 | 0.000 | 0.000 | 60 | 0.001 | 6s |
-| gated_linear ★ | 0.00075 | 0.008 | 0.015 | 0.000 | 0.000 | 60 | 0.008 | 9s |
-| hybrid ★ | 0.00075 | 0.006 | 0.013 | 0.000 | 0.000 | 60 | 0.006 | 7s |
 
 4000 steps each, grad_clip 1.0. ★ = best lr for that arch.
 
@@ -76,7 +74,7 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=8 per cell, pai
 | 4096 | 4104 | 0.000 [0.00–0.00] (0.00) | 0.000 [0.00–0.00] (0.00) | 0.000 [0.00–0.00] (0.00) |
 | 8192 | 8200 | 0.000 [0.00–0.00] (0.00) | 0.000 [0.00–0.00] (0.00) | 0.000 [0.00–0.00] (0.00) |
 
-## 5. Cost (forward pass, batch 1)
+## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 
 Peak VRAM MB / median latency ms.
 
@@ -89,6 +87,10 @@ Peak VRAM MB / median latency ms.
 | 2048 | 50.7 MB / 10.33 ms | 46.9 MB / 119.58 ms | 49.2 MB / 77.23 ms |
 | 4096 | 72.5 MB / 28.30 ms | 64.2 MB / 236.16 ms | 69.5 MB / 149.25 ms |
 | 8192 | 117.5 MB / 85.62 ms | 100.3 MB / 467.88 ms | 111.5 MB / 297.81 ms |
+
+## 5b. Decode cost (one token at a time, batch 1)
+
+_`decode_profile.csv` not synced yet._
 
 ## 6. Figure
 

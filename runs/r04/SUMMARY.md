@@ -1,6 +1,6 @@
 # iota run `r04`
 
-- **updated:** 2026-10-03 06:22 UTC (last stage: `eval 2`)
+- **updated:** 2026-10-03 06:22 UTC (last stage: `profile`)
 - **code:** `f6b589e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -68,11 +68,34 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 
-_`cost_profile.csv` not synced yet._
+Peak VRAM MB / median latency ms.
+
+| seq_len | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 20.7 MB / 5.28 ms | 21.0 MB / 11.52 ms | 21.1 MB / 8.98 ms |
+| 256 | 22.1 MB / 5.01 ms | 22.1 MB / 18.11 ms | 22.3 MB / 12.95 ms |
+| 512 | 24.9 MB / 5.62 ms | 24.4 MB / 33.69 ms | 24.6 MB / 20.94 ms |
+| 1024 | 30.6 MB / 8.85 ms | 28.9 MB / 56.42 ms | 29.8 MB / 36.93 ms |
+| 2048 | 41.8 MB / 11.03 ms | 38.0 MB / 115.23 ms | 40.3 MB / 69.76 ms |
+| 4096 | 64.3 MB / 29.61 ms | 56.0 MB / 212.75 ms | 61.3 MB / 135.96 ms |
+| 8192 | 109.3 MB / 89.31 ms | 92.2 MB / 424.22 ms | 103.4 MB / 270.11 ms |
 
 ## 5b. Decode cost (one token at a time, batch 1)
 
-_`decode_profile.csv` not synced yet._
+Memory each model keeps per sequence (exact cache/state size) / median ms per token.
+
+| context | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 1.61 MB / 5.23 ms | 0.33 MB / 5.53 ms | 0.84 MB / 5.42 ms |
+| 256 | 2.86 MB / 5.16 ms | 0.33 MB / 5.63 ms | 1.34 MB / 5.45 ms |
+| 512 | 5.36 MB / 5.23 ms | 0.33 MB / 5.59 ms | 2.34 MB / 5.40 ms |
+| 1024 | 10.36 MB / 5.18 ms | 0.33 MB / 5.64 ms | 4.34 MB / 5.49 ms |
+| 2048 | 20.36 MB / 5.20 ms | 0.33 MB / 5.59 ms | 8.34 MB / 5.88 ms |
+| 4096 | 40.36 MB / 5.36 ms | 0.33 MB / 5.54 ms | 16.34 MB / 6.30 ms |
+| 8192 | 80.36 MB / 8.20 ms | 0.33 MB / 5.51 ms | 32.34 MB / 7.03 ms |
+| 16384 | 160.36 MB / 15.05 ms | 0.33 MB / 5.52 ms | 64.34 MB / 8.74 ms |
+| 32768 | 320.36 MB / 28.73 ms | 0.33 MB / 5.57 ms | 128.34 MB / 14.16 ms |
+| 65536 | 640.36 MB / 56.20 ms | 0.33 MB / 5.51 ms | 256.34 MB / 25.19 ms |
 
 ## 6. Figure
 

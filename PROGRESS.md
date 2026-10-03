@@ -20,7 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r04 | — | — | A → B | prepared: 5-layer transformer + GLA (param-matched to hybrid) | — |
+| r04 | 2026-10-03 | `c1fadb5` | A ✅ → B | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | run B with passes 2,4 (key-length diagnostic) + decode benchmark |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
@@ -31,6 +31,29 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-03 — r04 plan A (depth/param-matched, 5 layers each): the size confound is gone; a clean
+crossover at 32–64 bindings; the pure transformer still caps at ~0.81.**
+
+| n_bindings | transformer r03 (4L) → r04 (5L) | gated_linear r03 → r04 | hybrid r04 |
+|---:|---:|---:|---:|
+| 8 | 0.979 → 0.975 | 0.985 → 0.989 | 1.000 |
+| 16 | 0.952 → 0.945 | 0.958 → 0.964 | 1.000 |
+| 32 | 0.875 → **0.842** | 0.866 → **0.882** | 1.000 |
+| 64 | 0.736 → **0.620** | 0.591 → **0.489** | 0.997 |
+| 128 | 0.521 → 0.347 | 0.255 → 0.222 | 0.990 |
+| sanity (in-dist assoc) | 0.847 → 0.809 | 0.811 → 0.828 | 0.999 |
+
+- **The hybrid's lead is architectural, not size:** a matched-size transformer (2.665M, 5 layers) is no
+  better than the 4-layer one; the hybrid reaches 1.00 by step 4500.
+- **Crossover:** GLA ≥ transformer up to 32 bindings (0.882 vs 0.842), transformer > GLA at 64 (0.62 vs
+  0.49) and 128 (0.35 vs 0.22). Control: GLA 0.98–1.00 at every length; both RoPE models fail past ~1024.
+- **Open:** the pure transformer plateaus at ~0.81–0.85 in-distribution at both sizes, while the
+  literature has attention solving MQAR cleanly. Hypothesis: key resolution. Keys are 1–3 digits; a 4-tap
+  conv cannot see a whole 3-digit key with its value, so partial matches collide more as more look-alike
+  keys share the context. That looks like a capacity drop but isn't memory.
+  **Test:** new pass 4 (`--passes 2,4`) splits Pass-1 recall by key digit count. It needs no retraining and
+  runs with r04 plan B.
 
 **2026-10-02 — Decode benchmark (fills the BUILD_PLAN §6 prefill/decode gap).**
 - Every mixer now has a one-token `step` (attention: preallocated KV cache + RoPE at position t; GLA: one

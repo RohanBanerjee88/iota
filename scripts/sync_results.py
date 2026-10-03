@@ -256,6 +256,26 @@ def _pass_section(run_dir: str, fname: str, title: str, xkey: str, xlabel: str) 
     return lines + [""]
 
 
+def _keylen_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass4_keylen.csv"))
+    if not rows:
+        return []
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    lines = ["## 4b. Diagnostic — recall by key length (digits), same prompts as Pass 1", "",
+             "| n_bindings | key digits | " + " | ".join(models) + " |",
+             "|---:|---:|" + "---:|" * len(models)]
+    for nb in sorted({int(r["n_bindings"]) for r in rows}):
+        for d in sorted({int(r["key_digits"]) for r in rows}):
+            cells = []
+            for m in models:
+                hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb
+                       and int(r["key_digits"]) == d]
+                cells.append(_fmt(hit[0]["accuracy_per_query"]) if hit else "–")
+            lines.append(f"| {nb} | {d} | " + " | ".join(cells) + " |")
+    return lines + ["", "If one model's errors pile up on 3-digit keys, its drop with load is partly "
+                    "key resolution, not memory capacity.", ""]
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -325,6 +345,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
                         "seq_len_nominal", "seq_len")
         + _pass_section(run_dir, "pass3_control.csv", "4. Pass 3 — state_track control",
                         "seq_len_nominal", "seq_len")
+        + _keylen_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

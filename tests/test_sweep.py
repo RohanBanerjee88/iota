@@ -97,3 +97,15 @@ def test_curriculum_sampler_deterministic():
     assert a.tokens == b.tokens  # deterministic per index
     modes = {s.example(i, TRAIN_OFFSET).meta["mode"] for i in range(40)}
     assert modes == {"assoc_recall", "state_track"}  # both components appear
+
+
+def test_keylen_pass_splits_every_query_by_key_digits(tmp_path):
+    from iota.eval import run_keylen_pass
+
+    seed_everything(0)
+    m = build_model({"arch": "transformer", "vocab_size": TOK.vocab_size,
+                     "d_model": 32, "n_layers": 2, "n_heads": 4, "d_ff": 64})
+    rows = run_keylen_pass({"m": m}, n=6, device="cpu", minibatch=3, loads=(16,),
+                           out_csv=str(tmp_path / "p4.csv"))
+    assert {r["key_digits"] for r in rows} <= {1, 2, 3}
+    assert sum(r["n_queries"] for r in rows) == 6 * 16  # every query counted exactly once

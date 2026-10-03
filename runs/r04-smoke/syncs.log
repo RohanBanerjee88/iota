@@ -11,3 +11,4 @@
 2026-10-02 20:23 UTC  stage=profile  code=c1fadb5  files=17
 2026-10-02 20:23 UTC  stage=plot  code=c1fadb5  files=20
 2026-10-03 06:15 UTC  stage=tune:transformer:0.00075  code=f6b589e  files=3
+2026-10-03 06:15 UTC  stage=tune:hybrid:0.00075  code=f6b589e  files=4

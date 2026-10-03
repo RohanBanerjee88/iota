@@ -8,8 +8,11 @@ Three panels, each answering one clause of the thesis:
      is what makes panel A mean something: if linear matches dense on the control but
      not on recall, the gap is specifically ASSOCIATIVE RECALL and not a general
      inability to handle long inputs.
-  C  cost -- peak VRAM vs sequence length, with OOM marked. A hybrid that recovers
-     dense accuracy only matters if it is cheaper.
+  C  decode memory -- what each model must keep per sequence (KV cache vs fixed
+     state) vs context length. A hybrid that recovers dense accuracy only matters
+     if it is cheaper; this is where "cheaper" is real.
+  D  decode latency -- ms per generated token vs context length.
+  (Without decode_profile.csv, C falls back to the prefill forward-pass cost.)
 
 Design rules (from the dataviz method):
   * ONE axis per panel -- cost gets its own panel, never a second y-scale on accuracy.
@@ -161,19 +164,22 @@ def make_figure(
     p2 = load_csv(os.path.join(results_dir, "pass2_length.csv"))
     p3 = load_csv(os.path.join(results_dir, "pass3_control.csv"))
     cost = load_csv(os.path.join(results_dir, "cost_profile.csv"))
+    decode = load_csv(os.path.join(results_dir, "decode_profile.csv"))
 
     panels = []
     if p1:
         panels.append("capacity")
     if p2 or p3:
         panels.append("length")
-    if cost:
+    if decode:  # the real cost axis: what each model must keep, and per-token time
+        panels += ["decode_mem", "decode_lat"]
+    elif cost:  # fallback: prefill forward pass (mostly measures kernel quality)
         panels.append("cost")
     if not panels:
         print(f"no result CSVs in {results_dir}/ -- run the eval and profile stages first")
         return None
     missing = [n for n, d in (("pass1_capacity", p1), ("pass2_length", p2),
-                              ("pass3_control", p3), ("cost_profile", cost)) if not d]
+                              ("pass3_control", p3), ("decode_profile", decode)) if not d]
     if missing:
         print(f"[plot] note: no data for {', '.join(missing)} -- those panels are omitted")
 
@@ -262,6 +268,31 @@ def make_figure(
         ax.set_yscale("log")
         _style_axes(ax, th, "sequence length (tokens, log scale)", ylabel,
                     "C · Cost", "forward pass, batch 1")
+
+    # --- C/D: decode cost -------------------------------------------------------
+    for key, ykey, ylabel, title, sub in (
+        ("decode_mem", "cache_mb", "memory kept per sequence (MB, log)",
+         "C · Decode memory", "KV cache vs fixed state, batch 1"),
+        ("decode_lat", "decode_ms_per_tok", "ms per generated token (log)",
+         "D · Decode latency", "one token at a time, batch 1"),
+    ):
+        if key not in panels:
+            continue
+        ax = ax_of[key]
+        data = _series(decode, "context_len", ykey, "_none", "_none")
+        for arch in ORDER:
+            if arch not in data:
+                continue
+            xs, ys, _, _ = data[arch]
+            spec = SERIES[arch]
+            ax.plot(xs, ys, color=spec[mode], linewidth=2.0, marker=spec["marker"],
+                    markersize=5.5, markeredgecolor=th["surface"], markeredgewidth=1.0,
+                    label=spec["label"], zorder=3)
+            ax.annotate(spec["label"].split(" (")[0], (xs[-1], ys[-1]), textcoords="offset points",
+                        xytext=(6, 0), va="center", fontsize=8, color=th["ink2"], zorder=4)
+        ax.set_xscale("log", base=2)
+        ax.set_yscale("log")
+        _style_axes(ax, th, "context length (tokens, log scale)", ylabel, title, sub)
 
     # Legend: always present for >=2 series, so identity never rests on colour.
     handles = [plt.Line2D([], [], color=SERIES[a][mode], marker=SERIES[a]["marker"],

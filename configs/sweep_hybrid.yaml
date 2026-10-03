@@ -15,6 +15,9 @@
 #    lr picked per arch from {7.5e-4, 1.5e-3}; grad_clip 1.0, easy 1000 / ramp 2000
 #    (the probe's schedule) and ONE common ceiling of 15000 steps with plateau
 #    early-stop for every arch -- identical budget, each trained to its plateau.
+#  * r05: seed 0 -> 1, a REPLICATE of r04 (same everything else). The seed now sets
+#    both the weight init and the training-example stream; the held-out eval set and
+#    every eval pass use the same prompts as r04, so the two runs are directly paired.
 arch: hybrid
 d_model: 256
 n_layers: 5
@@ -62,7 +65,7 @@ train:
   eval_every: 500
   eval_n: 500
   patience: 8
-  seed: 0
+  seed: 1
   lr: 0.00075
   run_name: hybrid_sweep
   grad_clip: 1.0

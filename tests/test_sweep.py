@@ -97,3 +97,30 @@ def test_curriculum_sampler_deterministic():
     assert a.tokens == b.tokens  # deterministic per index
     modes = {s.example(i, TRAIN_OFFSET).meta["mode"] for i in range(40)}
     assert modes == {"assoc_recall", "state_track"}  # both components appear
+
+
+def test_keylen_pass_splits_every_query_by_key_digits(tmp_path):
+    from iota.eval import run_keylen_pass
+
+    seed_everything(0)
+    m = build_model({"arch": "transformer", "vocab_size": TOK.vocab_size,
+                     "d_model": 32, "n_layers": 2, "n_heads": 4, "d_ff": 64})
+    rows = run_keylen_pass({"m": m}, n=6, device="cpu", minibatch=3, loads=(16,),
+                           out_csv=str(tmp_path / "p4.csv"))
+    assert {r["key_digits"] for r in rows} <= {1, 2, 3}
+    assert sum(r["n_queries"] for r in rows) == 6 * 16  # every query counted exactly once
+
+
+def test_seed_picks_training_stream_and_seed0_is_unchanged():
+    from iota.data.dataset import EVAL_OFFSET
+
+    s = CurriculumSampler([
+        {"mode": "assoc_recall", "n_bindings": {"min": 2, "max": 16}, "seq_len": {"min": 64, "max": 128},
+         "n_queries": {"min": 1, "max": 4}, "weight": 1.0},
+    ], TOK)
+    seed0 = [s.example(i, TRAIN_OFFSET + 0 * (1 << 32)).tokens for i in range(8)]
+    legacy = [s.example(i, TRAIN_OFFSET).tokens for i in range(8)]
+    seed1 = [s.example(i, TRAIN_OFFSET + 1 * (1 << 32)).tokens for i in range(8)]
+    assert seed0 == legacy                      # seed 0 reproduces every earlier run
+    assert seed1 != seed0                       # a replicate sees different examples
+    assert 255 * (1 << 32) + 10 ** 7 < EVAL_OFFSET  # streams never reach the eval set

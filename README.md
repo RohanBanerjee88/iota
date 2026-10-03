@@ -24,8 +24,18 @@ being correct, and what is the smallest fix that keeps it correct?*
 | 0–2 | scaffold, task generator, independent oracle + verifier | ✅ 10,000/10,000 agreement |
 | 3–5 | tokenizer (vocab 99), three models, training; transformer hits 98.8% on easy recall | ✅ |
 | 6 §0 | all three architectures learn easy recall (0.95 / 0.94 / 1.00) | ✅ |
-| 6–8 | sweep training, 3 eval passes, cost profiling, figure | 🟡 r01 ran end to end on Kaggle but failed the sanity gate; tasks redesigned, r02 next |
+| 6–8 | sweep training, 3 eval passes, cost profiling, figure | ✅ r04: first complete figure (gate passes, size-matched models, decode cost) |
 | 9 | Gradio demo | ⬜ waits for a trustworthy figure |
+
+**Current result (r04, all models ~2.67M params / 5 layers, n=1000 per point):** gated linear attention
+matches dense up to 32 bindings, then degrades faster (64: 0.49 vs 0.62; 128: 0.22 vs 0.35). A hybrid with
+2 of 5 attention layers holds ≥ 0.99 up to 128 bindings at ~40% of dense decode memory. Linear attention is
+never worse on the single-value control, generalises to 12.8× its training length where RoPE attention
+collapses, and decodes with a constant 0.33 MB state vs a 640 MB KV cache at 64k context.
+Figure: [`runs/r04/money_figure.png`](https://github.com/RohanBanerjee88/iota/blob/kaggle-results/runs/r04/money_figure.png).
+Caveats: single seed; the pure transformer plateaus at ~0.81 in-distribution. A key-length breakdown
+shows that drop is load-driven, so it is a trainability observation at this scale, not a claim that
+attention can't do the task.
 
 Earlier GPU attempts each exposed an experiment-design flaw. The worst was a
 length/capacity confound that made linear *look* better than the transformer, along
@@ -83,7 +93,7 @@ hand-written labels.
 
 ```bash
 pip install -r requirements.txt pytest
-python -m pytest -q                                   # 64 tests, ~20s
+python -m pytest -q                                   # 66 tests, ~20s
 python tasks.py report                                # Phase 2 data gate (10k examples)
 python -m scripts.run_all --stage all --smoke --no-gh # whole pipeline, tiny, ~4 min CPU
 ```
@@ -101,7 +111,7 @@ Details in [`KAGGLE_RUN_PLAN.md`](KAGGLE_RUN_PLAN.md).
 ```
 iota/data/      dsl.py (generator) · oracle.py · verifier.py · tokenizer.py · dataset.py
 iota/models/    base.py (SeqModel) · transformer.py · gated_linear.py · hybrid.py
-iota/           train.py · eval.py (passes 1-3) · profile.py (cost) · plot.py (figure)
+iota/           train.py · eval.py (passes 1-3) · profile.py (prefill + decode cost) · plot.py (figure)
 scripts/        run_all.py (resumable driver) · sync_results.py (→ kaggle-results)
                 sanity_indist.py (per-mode gate) · push_to_hf.py · retrain_all.py (legacy)
 configs/        sweep_*.yaml (the real run) · milestone_*.yaml (§0 gate) · tune_*.yaml (lr probes)

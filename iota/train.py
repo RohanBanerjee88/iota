@@ -114,8 +114,15 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     grad_clip = float(tcfg.get("grad_clip", 1.0))
     run_name = tcfg.get("run_name", f"{cfg['arch']}_sweep")
 
-    # Fixed held-out eval set at FULL difficulty (disjoint stream), built once.
+    # Fixed held-out eval set at FULL difficulty (disjoint stream), built once. It is
+    # the SAME for every seed, so replicate runs are scored on an identical yardstick.
     eval_examples = sampler.batch(list(range(eval_n)), EVAL_OFFSET, difficulty=1.0)
+    # The seed also picks the TRAINING stream (not only the weight init), so a seed
+    # replicate sees different examples. Seed 0 keeps offset 0 -> byte-identical to
+    # every run before this change. Streams are 2**32 apart; a run uses ~1e6 indices
+    # and EVAL_OFFSET is 2**40, so seeds < 256 can never overlap each other or eval.
+    assert 0 <= seed < 256, "seed must be in [0, 256) to keep train streams disjoint from eval"
+    train_offset = TRAIN_OFFSET + seed * (1 << 32)
     opt = torch.optim.AdamW(model.parameters(), lr=base_lr, weight_decay=wd, betas=(0.9, 0.95))
 
     print(f"[sweep] model={cfg['arch']} params={model.num_params()/1e6:.2f}M device={device} "
@@ -129,7 +136,7 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
         for g in opt.param_groups:
             g["lr"] = lr
         difficulty = min(1.0, max(0.0, (step + 1 - easy_steps) / ramp_steps))
-        ex = sampler.batch(list(range(cursor, cursor + batch_size)), TRAIN_OFFSET, difficulty)
+        ex = sampler.batch(list(range(cursor, cursor + batch_size)), train_offset, difficulty)
         cursor += batch_size
         inp, tgt, mask = collate_sweep(ex, tok.pad_id)
         inp, tgt, mask = inp.to(device), tgt.to(device), mask.to(device)

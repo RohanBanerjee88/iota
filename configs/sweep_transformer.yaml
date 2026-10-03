@@ -19,6 +19,9 @@
 #    PARAMS (~2.67M each). In r03 the hybrid (5 layers, 2.67M) beat a smaller
 #    transformer (4 layers, 2.14M) -- this removes that size confound. Everything
 #    else (data, conv, lr, schedule, seed) is identical to r03 on purpose.
+#  * r05: seed 0 -> 1, a REPLICATE of r04 (same everything else). The seed now sets
+#    both the weight init and the training-example stream; the held-out eval set and
+#    every eval pass use the same prompts as r04, so the two runs are directly paired.
 arch: transformer
 d_model: 256
 n_layers: 5
@@ -61,7 +64,7 @@ train:
   eval_every: 500
   eval_n: 500
   patience: 8
-  seed: 0
+  seed: 1
   lr: 0.0015
   run_name: transformer_sweep
   grad_clip: 1.0

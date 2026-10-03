@@ -20,7 +20,8 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r04 | — | — | A → B | prepared: 5-layer transformer + GLA (param-matched to hybrid) | — |
+| r05 | — | — | A → B (passes 2,4) | prepared: seed-1 replicate of r04 | — |
+| r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
 | r01 | 2026-09-30 | `7e1b8ef` | A (train + sanity + pass 1, 3) | ❌ gate failed: control at chance for all 3; transformer recall 0.30 in-distribution vs 0.998 GLA / 0.98 hybrid | don't run B; fix the 3 design flaws below, CPU-validate, then r02 |
@@ -31,6 +32,89 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-03 — r05 prepared: seed replicate of r04.** `seed: 1` in all three configs; nothing else changes.
+The seed now picks the training-example stream as well as the weight init (before, every run read the same
+examples, so a seed only changed the init). Seed 0 is byte-identical to before (tested), so r01–r04 stay
+reproducible. The held-out eval set and every eval pass keep the same prompts, so r04 and r05 are paired.
+
+**2026-10-03 — r04 pass 4 (key-length diagnostic): the key-resolution hypothesis is mostly rejected.**
+
+| n_bindings | transformer 1 / 2 / 3-digit keys | gated_linear 1 / 2 / 3 | hybrid 1 / 2 / 3 |
+|---:|---|---|---|
+| 16 | 0.95 / 0.95 / 0.92 | 0.97 / 0.96 / 0.97 | 1.00 / 1.00 / 1.00 |
+| 32 | 0.87 / 0.85 / 0.81 | 0.92 / 0.87 / 0.90 | 1.00 / 1.00 / 1.00 |
+| 64 | 0.67 / 0.64 / 0.55 | 0.62 / 0.45 / 0.55 | 1.00 / 1.00 / 1.00 |
+
+- 3-digit keys cost the transformer only 6–12 points. Even 1-digit keys, which the conv sees whole, fall
+  from 0.95 → 0.67 with load, so its drop is genuinely load-driven, not a key-resolution artifact.
+- GLA shows no 3-digit penalty; it is worst on 2-digit keys (70% of keys, the most look-alike neighbours).
+  That is consistent with interference between similar keys in a fixed-size state (plausible, not proven).
+- The hybrid is flat at ~1.00 for every key length and load.
+- **Framing for the write-up:** the dense ceiling is a *trainability* observation, not a capability claim.
+  At ~2.7M params and an identical budget, pure attention did not learn high-load recall fully; the hybrid
+  did by step 4500. The literature shows attention *can* solve MQAR, so claim only what we measured.
+
+**2026-10-03 — r04 plan B: the full four-panel figure. The first complete, defensible result.**
+
+Decode (T4, batch 1; exact memory kept per sequence / median ms per token):
+
+| context | transformer | hybrid | gated_linear |
+|---:|---:|---:|---:|
+| 1024 | 10.4 MB / 5.2 ms | 4.3 MB / 5.5 ms | 0.33 MB / 5.6 ms |
+| 8192 | 80 MB / 8.2 ms | 32 MB / 7.0 ms | 0.33 MB / 5.5 ms |
+| 65536 | 640 MB / 56 ms | 256 MB / 25 ms | 0.33 MB / 5.5 ms |
+
+Below ~4k context every model sits at ~5 ms/token (per-step launch overhead dominates); above it the KV-cache
+models grow linearly and GLA stays flat. Pass 2 confirms r03: GLA 0.95 at 8192, both RoPE models ~0.01.
+
+**Headline (all models ~2.67M params / 5 layers, n=1000 per point):** gated linear attention matches dense up
+to 32 bindings, then degrades faster (64: 0.49 vs 0.62; 128: 0.22 vs 0.35). A hybrid with 2 of 5 attention
+layers holds ≥ 0.99 up to 128 bindings at ~40% of dense decode memory and ~45% of its per-token latency at
+64k context. On the single-value control linear is never worse, it generalises to 12.8× its training length
+where RoPE attention collapses, and it decodes with a constant 0.33 MB state, ~2000× smaller than dense's KV
+cache at 64k context.
+
+Pass 4 (key-length diagnostic) did not run (the notebook copy still had `--passes 2`); run it alone (~15 min).
+Caveats for a write-up: single seed; lr tuned at 4 layers; GLA still creeping up at its 15000-step ceiling;
+the pure transformer plateaus at ~0.81 in-distribution (pass 4 tests the key-resolution hypothesis).
+
+**2026-10-03 — r04 plan A (depth/param-matched, 5 layers each): the size confound is gone; a clean
+crossover at 32–64 bindings; the pure transformer still caps at ~0.81.**
+
+| n_bindings | transformer r03 (4L) → r04 (5L) | gated_linear r03 → r04 | hybrid r04 |
+|---:|---:|---:|---:|
+| 8 | 0.979 → 0.975 | 0.985 → 0.989 | 1.000 |
+| 16 | 0.952 → 0.945 | 0.958 → 0.964 | 1.000 |
+| 32 | 0.875 → **0.842** | 0.866 → **0.882** | 1.000 |
+| 64 | 0.736 → **0.620** | 0.591 → **0.489** | 0.997 |
+| 128 | 0.521 → 0.347 | 0.255 → 0.222 | 0.990 |
+| sanity (in-dist assoc) | 0.847 → 0.809 | 0.811 → 0.828 | 0.999 |
+
+- **The hybrid's lead is architectural, not size:** a matched-size transformer (2.665M, 5 layers) is no
+  better than the 4-layer one; the hybrid reaches 1.00 by step 4500.
+- **Crossover:** GLA ≥ transformer up to 32 bindings (0.882 vs 0.842), transformer > GLA at 64 (0.62 vs
+  0.49) and 128 (0.35 vs 0.22). Control: GLA 0.98–1.00 at every length; both RoPE models fail past ~1024.
+- **Open:** the pure transformer plateaus at ~0.81–0.85 in-distribution at both sizes, while the
+  literature has attention solving MQAR cleanly. Hypothesis: key resolution. Keys are 1–3 digits; a 4-tap
+  conv cannot see a whole 3-digit key with its value, so partial matches collide more as more look-alike
+  keys share the context. That looks like a capacity drop but isn't memory.
+  **Test:** new pass 4 (`--passes 2,4`) splits Pass-1 recall by key digit count. It needs no retraining and
+  runs with r04 plan B.
+
+**2026-10-02 — Decode benchmark (fills the BUILD_PLAN §6 prefill/decode gap).**
+- Every mixer now has a one-token `step` (attention: preallocated KV cache + RoPE at position t; GLA: one
+  update of the (S, z) state; both: a rolling buffer for the short conv), plus `init_decode_cache` /
+  `decode_step` on every model. No new weights or buffers, so existing checkpoints load unchanged. A test
+  checks that token-by-token decoding reproduces the full forward to 1e-5 for all archs, with and without
+  the conv (measured: ≤ 3e-7).
+- `run_decode_profile` → `decode_profile.csv`: the exact bytes each model must keep, and the median ms per
+  generated token, at context 128 … 65536 (synthetic context; cost depends on size, not contents). It runs
+  inside the profile stage, so r04 plan B picks it up.
+- CPU numbers (5-layer configs): at 32768 context, transformer 320 MB of KV cache, hybrid 128 MB (2 attention
+  layers), **GLA 0.33 MB at every length**.
+- Figure: panels C/D are now decode memory and decode latency (the old prefill panel is the fallback, and
+  its numbers stay in SUMMARY.md).
 
 **2026-10-02 — r03 plan B: length generalisation is the strongest result; the cost panel does not measure
 what the thesis needs.**
@@ -241,8 +325,7 @@ patience only counts after the ramp.
 
 ## Known gaps / open questions
 
-- **Cost panel is forward-pass only.** The spec asks for prefill and decode latency
-  separately; `profile.py` measures one forward pass.
+- ~~Cost panel is forward-pass only~~ → fixed: decode benchmark (2026-10-02).
 - **One seed per model.** CIs cover eval sampling, not training variance. If the crossover
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but

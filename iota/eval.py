@@ -278,6 +278,58 @@ def cells_for_pass(pass_id: int) -> List[Dict]:
     raise ValueError(f"unknown pass {pass_id}")
 
 
+KEYLEN_FIELDS = ["model", "n_bindings", "key_digits", "accuracy_per_query", "ci_low", "ci_high",
+                 "n_queries", "seed"]
+
+
+def run_keylen_pass(
+    models: Dict[str, object], n: int = 1000, seed: int = 0, device: str = "cpu",
+    out_csv: Optional[str] = None, tok: Tokenizer = None, minibatch: int = 32,
+    loads=(16, 32, 64),
+) -> List[Dict]:
+    """Diagnostic (pass 4): recall accuracy split by how many DIGITS the queried key has.
+
+    Keys are 1-3 digit numbers in [0,128). A short causal conv can fuse only a few
+    neighbouring tokens, so if a model's errors pile up on 3-digit keys -- and get
+    worse as more look-alike keys share the context -- the "capacity" drop is
+    partly a key-resolution problem, not a memory limit. Same cells and seeds as
+    Pass 1, so the prompts are identical to the headline curve's.
+    """
+    tok = tok or get_tokenizer()
+    pass1 = {c["n_bindings"]: (ci, c) for ci, c in enumerate(cells_for_pass(1))}
+    rows: List[Dict] = []
+    for nb in loads:
+        ci, cell = pass1[nb]
+        examples = _cell_examples(tok, cell, n, EVAL_OFFSET + seed * 1_000_000 + ci * 10_000)
+        for name, model in models.items():
+            scores = _scores_with_backoff(model, examples, tok.pad_id, device, minibatch, name)
+            if scores is None:
+                continue
+            hit: Dict[int, int] = defaultdict(int)
+            tot: Dict[int, int] = defaultdict(int)
+            for sc, ex in zip(scores, examples):
+                for ok, key in zip(sc, ex.meta["query_keys"]):
+                    d = len(str(key))
+                    hit[d] += int(ok)
+                    tot[d] += 1
+            for d in sorted(tot):
+                lo, hi = wilson_ci(hit[d], tot[d])  # per-query (approximate: queries share prompts)
+                rows.append({"model": name, "n_bindings": nb, "key_digits": d,
+                             "accuracy_per_query": round(hit[d] / tot[d], 4),
+                             "ci_low": round(lo, 4), "ci_high": round(hi, 4),
+                             "n_queries": tot[d], "seed": seed})
+                print(f"  pass4 {name:18s} nb={nb:<3} key_digits={d} acc={hit[d]/tot[d]:.3f} "
+                      f"(n_q={tot[d]})", flush=True)
+    if out_csv:
+        os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
+        with open(out_csv, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=KEYLEN_FIELDS)
+            w.writeheader()
+            w.writerows(rows)
+        print(f"wrote {out_csv} ({len(rows)} rows)", flush=True)
+    return rows
+
+
 CSV_FIELDS = [
     "model", "mode", "pass", "seq_len_nominal", "seq_len_true_tokens",
     "n_bindings", "n_queries", "distractor_density",

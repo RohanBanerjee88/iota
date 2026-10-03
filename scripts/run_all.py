@@ -380,12 +380,17 @@ def stage_eval(args) -> None:
         print(f"WARNING: evaluating {len(models)}/{len(ARCH_ORDER)} models -- the "
               f"comparison is incomplete", flush=True)
 
-    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control"}
+    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen"}
     for p in passes:
         out_csv = os.path.join(RESULTS_DIR, f"{names.get(p, f'pass{p}')}.csv")
         print(f"\n--- pass {p} -> {out_csv}", flush=True)
-        run_pass(p, models, n=args.n, device=device, out_csv=out_csv,
-                 minibatch=args.minibatch)
+        if p == 4:  # diagnostic: recall split by key digit count (same prompts as pass 1)
+            from iota.eval import run_keylen_pass
+            run_keylen_pass(models, n=args.n, device=device, out_csv=out_csv,
+                            minibatch=args.minibatch)
+        else:
+            run_pass(p, models, n=args.n, device=device, out_csv=out_csv,
+                     minibatch=args.minibatch)
         if not args.no_hf:
             try:
                 hf_push_results(args.repo, args.token)
@@ -394,11 +399,16 @@ def stage_eval(args) -> None:
 
 
 def stage_profile(args) -> None:
-    from iota.profile import run_profile
+    from iota.profile import run_decode_profile, run_profile
 
     print("\n### STAGE profile\n", flush=True)
     run_profile(out_csv=os.path.join(RESULTS_DIR, "cost_profile.csv"),
                 device=args.device)
+    # decode: the cost axis that matters for linear attention (KV cache vs state)
+    lens = (128, 512, 2048) if args.smoke else None
+    kw = {"context_lens": lens} if lens else {}
+    run_decode_profile(out_csv=os.path.join(RESULTS_DIR, "decode_profile.csv"),
+                       device=args.device, **kw)
     if not args.no_hf:
         try:
             hf_push_results(args.repo, args.token)
@@ -477,7 +487,7 @@ def main() -> int:
     ap.add_argument("--stage", default="all",
                     choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
-    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2'")
+    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic)")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")
@@ -537,7 +547,7 @@ def main() -> int:
         stage("sanity", stage_sanity, "sanity")
     if args.stage in ("all", "eval"):
         if args.stage == "all":
-            args.passes = "1,3,2"  # cheap+decisive first, expensive last
+            args.passes = "1,3,4,2"  # cheap+decisive first, expensive last
         stage(f"eval_p{args.passes.replace(',', '')}", stage_eval, f"eval {args.passes}")
     if args.stage in ("all", "profile"):
         stage("profile", stage_profile, "profile")

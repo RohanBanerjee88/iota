@@ -256,9 +256,29 @@ def _pass_section(run_dir: str, fname: str, title: str, xkey: str, xlabel: str) 
     return lines + [""]
 
 
+def _keylen_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass4_keylen.csv"))
+    if not rows:
+        return []
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    lines = ["## 4b. Diagnostic — recall by key length (digits), same prompts as Pass 1", "",
+             "| n_bindings | key digits | " + " | ".join(models) + " |",
+             "|---:|---:|" + "---:|" * len(models)]
+    for nb in sorted({int(r["n_bindings"]) for r in rows}):
+        for d in sorted({int(r["key_digits"]) for r in rows}):
+            cells = []
+            for m in models:
+                hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb
+                       and int(r["key_digits"]) == d]
+                cells.append(_fmt(hit[0]["accuracy_per_query"]) if hit else "–")
+            lines.append(f"| {nb} | {d} | " + " | ".join(cells) + " |")
+    return lines + ["", "If one model's errors pile up on 3-digit keys, its drop with load is partly "
+                    "key resolution, not memory capacity.", ""]
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
-    lines = ["## 5. Cost (forward pass, batch 1)", ""]
+    lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
     if not rows:
         return lines + ["_`cost_profile.csv` not synced yet._", ""]
     models = [a for a in ARCHS if any(r.get("arch") == a for r in rows)]
@@ -276,6 +296,29 @@ def _cost_section(run_dir: str) -> List[str]:
                 cells.append(f"{_fmt(hit[0].get('peak_vram_mb'), 1)} MB / "
                              f"{_fmt(hit[0].get('latency_ms'), 2)} ms")
         lines.append(f"| {sl} | " + " | ".join(cells) + " |")
+    return lines + [""]
+
+
+def _decode_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "decode_profile.csv"))
+    lines = ["## 5b. Decode cost (one token at a time, batch 1)", ""]
+    if not rows:
+        return lines + ["_`decode_profile.csv` not synced yet._", ""]
+    models = [a for a in ARCHS if any(r.get("arch") == a for r in rows)]
+    lines += ["Memory each model keeps per sequence (exact cache/state size) / median ms per token.", "",
+              "| context | " + " | ".join(models) + " |", "|---:|" + "---|" * len(models)]
+    for L in sorted({int(r["context_len"]) for r in rows}):
+        cells = []
+        for m in models:
+            hit = [r for r in rows if r.get("arch") == m and int(r["context_len"]) == L]
+            if not hit:
+                cells.append("–")
+            elif str(hit[0].get("oom")).lower() in ("true", "1"):
+                cells.append("OOM")
+            else:
+                cells.append(f"{_fmt(hit[0].get('cache_mb'), 2)} MB / "
+                             f"{_fmt(hit[0].get('decode_ms_per_tok'), 2)} ms")
+        lines.append(f"| {L} | " + " | ".join(cells) + " |")
     return lines + [""]
 
 
@@ -302,7 +345,9 @@ def build_summary(run_dir: str, run_id: str) -> str:
                         "seq_len_nominal", "seq_len")
         + _pass_section(run_dir, "pass3_control.csv", "4. Pass 3 — state_track control",
                         "seq_len_nominal", "seq_len")
+        + _keylen_section(run_dir)
         + _cost_section(run_dir)
+        + _decode_section(run_dir)
     )
     tail = ["## 6. Figure", ""]
     tail += [f"![money figure]({fig[0]})", ""] if fig else ["_Not plotted yet._", ""]

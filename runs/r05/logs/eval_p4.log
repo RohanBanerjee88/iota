@@ -1,0 +1,45 @@
+
+##### eval_p4 started 2026-10-04 04:34:53 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r05
+
+### STAGE eval  (passes [4], device=cuda)
+
+  loaded hybrid_sweep (trained 4000 steps)
+  loaded transformer_sweep (trained 12500 steps)
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 4 -> experiments/results/pass4_keylen.csv
+  pass4 hybrid_sweep       nb=16  key_digits=1 acc=1.000 (n_q=1214)
+  pass4 hybrid_sweep       nb=16  key_digits=2 acc=1.000 (n_q=11408)
+  pass4 hybrid_sweep       nb=16  key_digits=3 acc=1.000 (n_q=3378)
+  pass4 transformer_sweep  nb=16  key_digits=1 acc=0.954 (n_q=1214)
+  pass4 transformer_sweep  nb=16  key_digits=2 acc=0.953 (n_q=11408)
+  pass4 transformer_sweep  nb=16  key_digits=3 acc=0.937 (n_q=3378)
+  pass4 gated_linear_sweep nb=16  key_digits=1 acc=0.991 (n_q=1214)
+  pass4 gated_linear_sweep nb=16  key_digits=2 acc=0.980 (n_q=11408)
+  pass4 gated_linear_sweep nb=16  key_digits=3 acc=0.989 (n_q=3378)
+  pass4 hybrid_sweep       nb=32  key_digits=1 acc=1.000 (n_q=1264)
+  pass4 hybrid_sweep       nb=32  key_digits=2 acc=1.000 (n_q=11207)
+  pass4 hybrid_sweep       nb=32  key_digits=3 acc=1.000 (n_q=3529)
+  pass4 transformer_sweep  nb=32  key_digits=1 acc=0.894 (n_q=1264)
+  pass4 transformer_sweep  nb=32  key_digits=2 acc=0.877 (n_q=11207)
+  pass4 transformer_sweep  nb=32  key_digits=3 acc=0.844 (n_q=3529)
+  pass4 gated_linear_sweep nb=32  key_digits=1 acc=0.956 (n_q=1264)
+  pass4 gated_linear_sweep nb=32  key_digits=2 acc=0.928 (n_q=11207)
+  pass4 gated_linear_sweep nb=32  key_digits=3 acc=0.950 (n_q=3529)
+  pass4 hybrid_sweep       nb=64  key_digits=1 acc=0.982 (n_q=1216)
+  pass4 hybrid_sweep       nb=64  key_digits=2 acc=0.980 (n_q=11220)
+  pass4 hybrid_sweep       nb=64  key_digits=3 acc=0.987 (n_q=3564)
+  pass4 transformer_sweep  nb=64  key_digits=1 acc=0.777 (n_q=1216)
+  pass4 transformer_sweep  nb=64  key_digits=2 acc=0.745 (n_q=11220)
+  pass4 transformer_sweep  nb=64  key_digits=3 acc=0.660 (n_q=3564)
+  pass4 gated_linear_sweep nb=64  key_digits=1 acc=0.811 (n_q=1216)
+  pass4 gated_linear_sweep nb=64  key_digits=2 acc=0.734 (n_q=11220)
+  pass4 gated_linear_sweep nb=64  key_digits=3 acc=0.798 (n_q=3564)
+wrote experiments/results/pass4_keylen.csv (27 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass3_control.csv
+  [hf] pushed pass4_keylen.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv

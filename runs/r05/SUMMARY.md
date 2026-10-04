@@ -1,6 +1,6 @@
 # iota run `r05`
 
-- **updated:** 2026-10-04 04:34 UTC (last stage: `eval 1,3`)
+- **updated:** 2026-10-04 04:35 UTC (last stage: `eval 4`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -55,6 +55,22 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 | 2048 | 2056 | 0.111 [0.09–0.13] (0.11) | 0.981 [0.97–0.99] (0.98) | 0.062 [0.05–0.08] (0.06) |
 | 4096 | 4104 | 0.011 [0.01–0.02] (0.01) | 0.802 [0.78–0.83] (0.80) | 0.011 [0.01–0.02] (0.01) |
 | 8192 | 8200 | 0.161 [0.14–0.18] (0.16) | 0.495 [0.47–0.53] (0.49) | 0.072 [0.06–0.09] (0.07) |
+
+## 4b. Diagnostic — recall by key length (digits), same prompts as Pass 1
+
+| n_bindings | key digits | transformer | gated_linear | hybrid |
+|---:|---:|---:|---:|---:|
+| 16 | 1 | 0.954 | 0.991 | 1.000 |
+| 16 | 2 | 0.953 | 0.980 | 1.000 |
+| 16 | 3 | 0.937 | 0.989 | 1.000 |
+| 32 | 1 | 0.894 | 0.957 | 1.000 |
+| 32 | 2 | 0.877 | 0.928 | 1.000 |
+| 32 | 3 | 0.844 | 0.950 | 1.000 |
+| 64 | 1 | 0.777 | 0.811 | 0.982 |
+| 64 | 2 | 0.745 | 0.734 | 0.981 |
+| 64 | 3 | 0.660 | 0.798 | 0.987 |
+
+If one model's errors pile up on 3-digit keys, its drop with load is partly key resolution, not memory capacity.
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

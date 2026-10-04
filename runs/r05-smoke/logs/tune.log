@@ -29,3 +29,11 @@
 [sweep] gated_linear step    60 loss 2.124 bal 0.004 [assoc 0.008 state 0.000] exact 0.000 diff 1.00  (7s)
 [sweep] gated_linear BEST plateau_acc = 0.0052 -> experiments/smoke/tune_gated_linear_lr0.00075
 [tune] gated_linear lr=0.00075: best balanced 0.0052 (assoc 0.0104, state 0.0) in 7s
+  [sync] published 5 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r05-smoke
+
+========================================================================
+=== TUNE SUMMARY (best lr per arch by balanced score)
+========================================================================
+  transformer    lr=0.00075  balanced 0.0065  assoc 0.013  state 0.0
+  hybrid         lr=0.00075  balanced 0.0065  assoc 0.013  state 0.0
+  gated_linear   lr=0.00075  balanced 0.0052  assoc 0.0104  state 0.0

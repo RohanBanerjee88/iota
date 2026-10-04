@@ -1,6 +1,6 @@
 # iota run `r05`
 
-- **updated:** 2026-10-04 06:33 UTC (last stage: `profile`)
+- **updated:** 2026-10-04 06:33 UTC (last stage: `plot`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -115,4 +115,4 @@ Memory each model keeps per sequence (exact cache/state size) / median ms per to
 
 ## 6. Figure
 
-_Not plotted yet._
+![money figure](money_figure.png)

@@ -27,15 +27,22 @@ being correct, and what is the smallest fix that keeps it correct?*
 | 6–8 | sweep training, 3 eval passes, cost profiling, figure | ✅ r04: first complete figure (gate passes, size-matched models, decode cost) |
 | 9 | Gradio demo | ⬜ waits for a trustworthy figure |
 
-**Current result (r04, all models ~2.67M params / 5 layers, n=1000 per point):** gated linear attention
-matches dense up to 32 bindings, then degrades faster (64: 0.49 vs 0.62; 128: 0.22 vs 0.35). A hybrid with
-2 of 5 attention layers holds ≥ 0.99 up to 128 bindings at ~40% of dense decode memory. Linear attention is
-never worse on the single-value control, generalises to 12.8× its training length where RoPE attention
-collapses, and decodes with a constant 0.33 MB state vs a 640 MB KV cache at 64k context.
-Figure: [`runs/r04/money_figure.png`](https://github.com/RohanBanerjee88/iota/blob/kaggle-results/runs/r04/money_figure.png).
-Caveats: single seed; the pure transformer plateaus at ~0.81 in-distribution. A key-length breakdown
-shows that drop is load-driven, so it is a trainability observation at this scale, not a claim that
-attention can't do the task.
+**Current result (two seeds, r04 + r05; all models ~2.67M params / 5 layers, n=1000 per point per seed):**
+- **The hybrid** (2 of 5 layers attention) holds **≥ 0.97 recall at every load up to 128 bindings** in both
+  seeds. That is the most robust finding.
+- **Pure gated linear vs pure dense** are close and both degrade with load:
+  - linear ≥ dense up to 32 bindings in both seeds
+  - at 64 the order flips with the seed (0.49 vs 0.62; 0.75 vs 0.73)
+  - dense is modestly ahead at 128
+  - seed-to-seed swings reach 0.26 at high load, so a third seed is running before any finer claim
+- **Length:** linear stays at ≥ 0.98 at 2× training length where RoPE attention collapses (≤ 0.2), in both seeds;
+  further out (8192) it varies by seed (0.98 / 0.50).
+- **Decode cost** (seed-independent): linear keeps a constant 0.33 MB state at 5.5 ms/token; dense keeps a
+  640 MB KV cache at 56 ms/token at 64k context; the hybrid sits at ~40% of dense.
+
+Figure (seed 0): [`runs/r04/money_figure.png`](https://github.com/RohanBanerjee88/iota/blob/kaggle-results/runs/r04/money_figure.png).
+The pure transformer plateaus at ~0.81–0.85 in-distribution. A key-length breakdown shows that drop is load-driven,
+so it is a trainability observation at this scale, not a claim that attention can't do the task.
 
 Earlier GPU attempts each exposed an experiment-design flaw. The worst was a
 length/capacity confound that made linear *look* better than the transformer, along

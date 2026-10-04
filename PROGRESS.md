@@ -20,7 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r05 | — | — | A → B (passes 2,4) | prepared: seed-1 replicate of r04 | — |
+| r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
@@ -32,6 +32,33 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-04 — r05 plan A (seed-1 replicate of r04): seed variance is large; the headline must narrow.**
+
+Paired with r04 (seed 0), same prompts, per-query recall:
+
+| n_bindings | transformer s0 / s1 | gated_linear s0 / s1 | hybrid s0 / s1 |
+|---:|---:|---:|---:|
+| 16 | 0.945 / 0.949 | 0.964 / 0.983 | 1.00 / 1.00 |
+| 32 | 0.842 / 0.871 | 0.882 / 0.935 | 1.00 / 1.00 |
+| 64 | 0.620 / 0.728 | **0.489 / 0.754** | 0.997 / 0.982 |
+| 128 | 0.347 / 0.512 | 0.222 / 0.456 | 0.990 / 0.973 |
+
+Control vs length: GLA 1.00 / 0.98 at 2048 in both seeds, but 0.98 → **0.50** at 8192. Both attention models
+collapse past ~1024 in both seeds (transformer at 1024: 0.955 / 0.214).
+
+- **Seed swings reach 0.26 at high load** (GLA @ 64), bigger than the GLA-vs-dense gap. At 64 the order
+  flips with the seed (s0: dense ahead by 0.13; s1: GLA ahead by 0.03).
+- **Robust across both seeds:**
+  - the hybrid holds ≥ 0.97 at every load
+  - GLA ≥ dense up to 32 bindings
+  - dense modestly ahead at 128
+  - GLA ≫ attention at 2× training length
+  - decode memory/latency (architecture-only, seed-independent)
+- **Not robust:** "linear degrades faster than dense at 64", and "GLA length-generalises perfectly to 8192".
+- Key-length (pass 4) pattern repeats: transformer ~10 points worse on 3-digit keys; GLA shows no 3-digit penalty.
+- Next: a third seed (r06) to put a real spread on the 64/128 cells, and r05 plan B (pass 2) for paired length
+  numbers. Decode cost does not need re-running (it depends on architecture only).
 
 **2026-10-03 — r05 prepared: seed replicate of r04.** `seed: 1` in all three configs; nothing else changes.
 The seed now picks the training-example stream as well as the weight init (before, every run read the same

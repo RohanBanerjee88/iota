@@ -11,3 +11,4 @@
 2026-10-03 22:46 UTC  stage=profile  code=e713514  files=19
 2026-10-03 22:46 UTC  stage=plot  code=e713514  files=22
 2026-10-04 06:25 UTC  stage=tune:transformer:0.00075  code=e713514  files=3
+2026-10-04 06:25 UTC  stage=tune:hybrid:0.00075  code=e713514  files=4

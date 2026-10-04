@@ -154,6 +154,7 @@ def make_figure(
     results_dir: str = "experiments/results",
     out_png: Optional[str] = None,
     dark: bool = False,
+    note: Optional[str] = None,
 ) -> Optional[str]:
     """Build the figure from whatever passes exist; skip panels with no data."""
     mode = "dark" if dark else "light"
@@ -300,7 +301,9 @@ def make_figure(
                for a in ORDER]
     fig.legend(handles=handles, loc="lower center", ncol=len(ORDER), frameon=False,
                fontsize=9, labelcolor=th["ink2"], bbox_to_anchor=(0.5, -0.01))
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    if note:  # e.g. "mean of 3 seeds · bands = min-max across seeds"
+        fig.suptitle(note, x=0.01, ha="left", fontsize=9, color=th["ink2"])
+    fig.tight_layout(rect=(0, 0.06, 1, 0.95 if note else 1))
 
     out_png = out_png or os.path.join(results_dir, f"money_figure{'_dark' if dark else ''}.png")
     os.makedirs(os.path.dirname(out_png) or ".", exist_ok=True)

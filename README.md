@@ -100,7 +100,7 @@ hand-written labels.
 
 ```bash
 pip install -r requirements.txt pytest
-python -m pytest -q                                   # 66 tests, ~20s
+python -m pytest -q                                   # 69 tests, ~20s
 python tasks.py report                                # Phase 2 data gate (10k examples)
 python -m scripts.run_all --stage all --smoke --no-gh # whole pipeline, tiny, ~4 min CPU
 ```
@@ -120,7 +120,8 @@ iota/data/      dsl.py (generator) · oracle.py · verifier.py · tokenizer.py �
 iota/models/    base.py (SeqModel) · transformer.py · gated_linear.py · hybrid.py
 iota/           train.py · eval.py (passes 1-3) · profile.py (prefill + decode cost) · plot.py (figure)
 scripts/        run_all.py (resumable driver) · sync_results.py (→ kaggle-results)
-                sanity_indist.py (per-mode gate) · push_to_hf.py · retrain_all.py (legacy)
+                sanity_indist.py (per-mode gate) · aggregate_seeds.py (multi-seed figure)
+                push_to_hf.py · retrain_all.py (legacy)
 configs/        sweep_*.yaml (the real run) · milestone_*.yaml (§0 gate) · tune_*.yaml (lr probes)
 notebooks/      kaggle_train.ipynb
 ```

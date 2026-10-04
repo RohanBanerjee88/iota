@@ -20,6 +20,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r06 | — | — | A → B | prepared: seed-2 replicate | — |
 | r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
@@ -32,6 +33,15 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-04 — r06 prepared (seed 2) + multi-seed figure.**
+- `seed: 2` in all three configs: a third replicate (r04 = 0, r05 = 1, r06 = 2). Nothing else changes.
+- `scripts/aggregate_seeds.py --runs r04 r05 r06` pulls each run's CSVs from `kaggle-results`, averages
+  every eval cell across seeds, and draws the money figure with **bands = min–max across seeds**. The caption
+  states the seed count per panel; decode cost is copied, not averaged (it is architecture-only). `SEEDS.md`
+  lists every per-seed value next to the mean, so a disagreement is never hidden.
+- Preview on r04 + r05: at 64 bindings the transformer [0.62–0.73] and GLA [0.49–0.75] bands overlap; the
+  hybrid stays at [0.98–1.00].
 
 **2026-10-04 — r05 plan A (seed-1 replicate of r04): seed variance is large; the headline must narrow.**
 

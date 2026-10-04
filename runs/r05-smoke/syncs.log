@@ -14,3 +14,4 @@
 2026-10-04 06:25 UTC  stage=tune:hybrid:0.00075  code=e713514  files=4
 2026-10-04 06:25 UTC  stage=tune:gated_linear:0.00075  code=e713514  files=5
 2026-10-04 06:25 UTC  stage=tune  code=e713514  files=5
+2026-10-04 06:25 UTC  stage=train:hybrid  code=e713514  files=7

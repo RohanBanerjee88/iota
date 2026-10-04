@@ -1,6 +1,6 @@
 # iota run `r05-smoke`
 
-- **updated:** 2026-10-04 06:25 UTC (last stage: `tune`)
+- **updated:** 2026-10-04 06:25 UTC (last stage: `train:hybrid`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

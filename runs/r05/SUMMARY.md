@@ -1,6 +1,6 @@
 # iota run `r05`
 
-- **updated:** 2026-10-04 06:32 UTC (last stage: `eval 2`)
+- **updated:** 2026-10-04 06:32 UTC (last stage: `eval 4`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

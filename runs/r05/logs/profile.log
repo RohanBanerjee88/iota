@@ -1,0 +1,65 @@
+
+##### profile started 2026-10-04 06:32:36 UTC argv=--stage profile --repo BanerjeeRohan44/iota-r05
+
+### STAGE profile
+
+  transformer   seq=128       20.7MB     4.70ms (36.75 ms/1k tok)
+  transformer   seq=256       22.1MB     4.99ms (19.47 ms/1k tok)
+  transformer   seq=512       24.9MB     5.05ms (9.86 ms/1k tok)
+  transformer   seq=1024      30.5MB     7.24ms (7.07 ms/1k tok)
+  transformer   seq=2048      41.8MB    12.26ms (5.99 ms/1k tok)
+  transformer   seq=4096      64.3MB    28.62ms (6.99 ms/1k tok)
+  transformer   seq=8192     109.4MB    87.18ms (10.64 ms/1k tok)
+  gated_linear  seq=128       21.0MB    10.94ms (85.44 ms/1k tok)
+  gated_linear  seq=256       22.1MB    16.24ms (63.42 ms/1k tok)
+  gated_linear  seq=512       24.4MB    28.83ms (56.30 ms/1k tok)
+  gated_linear  seq=1024      28.9MB    51.68ms (50.47 ms/1k tok)
+  gated_linear  seq=2048      38.0MB   100.67ms (49.15 ms/1k tok)
+  gated_linear  seq=4096      56.0MB   191.21ms (46.68 ms/1k tok)
+  gated_linear  seq=8192      92.2MB   377.74ms (46.11 ms/1k tok)
+  hybrid        seq=128       21.1MB     8.36ms (65.32 ms/1k tok)
+  hybrid        seq=256       22.3MB    11.81ms (46.12 ms/1k tok)
+  hybrid        seq=512       24.6MB    18.94ms (36.99 ms/1k tok)
+  hybrid        seq=1024      29.8MB    33.19ms (32.41 ms/1k tok)
+  hybrid        seq=2048      40.3MB    62.66ms (30.60 ms/1k tok)
+  hybrid        seq=4096      61.3MB   131.36ms (32.07 ms/1k tok)
+  hybrid        seq=8192     103.4MB   242.87ms (29.65 ms/1k tok)
+wrote experiments/results/cost_profile.csv (21 rows)
+[decode] per-token decode cost, batch 1, device cuda
+  transformer   ctx=128    cache     1.606 MB    4.869 ms/tok
+  transformer   ctx=256    cache     2.856 MB    4.664 ms/tok
+  transformer   ctx=512    cache     5.356 MB    4.583 ms/tok
+  transformer   ctx=1024   cache    10.356 MB    4.713 ms/tok
+  transformer   ctx=2048   cache    20.356 MB    4.636 ms/tok
+  transformer   ctx=4096   cache    40.356 MB    4.850 ms/tok
+  transformer   ctx=8192   cache    80.356 MB    8.019 ms/tok
+  transformer   ctx=16384  cache   160.356 MB   14.827 ms/tok
+  transformer   ctx=32768  cache   320.356 MB   28.428 ms/tok
+  transformer   ctx=65536  cache   640.356 MB   55.630 ms/tok
+  gated_linear  ctx=128    cache     0.332 MB    4.882 ms/tok
+  gated_linear  ctx=256    cache     0.332 MB    4.956 ms/tok
+  gated_linear  ctx=512    cache     0.332 MB    4.869 ms/tok
+  gated_linear  ctx=1024   cache     0.332 MB    4.853 ms/tok
+  gated_linear  ctx=2048   cache     0.332 MB    4.895 ms/tok
+  gated_linear  ctx=4096   cache     0.332 MB    4.863 ms/tok
+  gated_linear  ctx=8192   cache     0.332 MB    4.946 ms/tok
+  gated_linear  ctx=16384  cache     0.332 MB    4.880 ms/tok
+  gated_linear  ctx=32768  cache     0.332 MB    4.827 ms/tok
+  gated_linear  ctx=65536  cache     0.332 MB    4.912 ms/tok
+  hybrid        ctx=128    cache     0.842 MB    4.748 ms/tok
+  hybrid        ctx=256    cache     1.342 MB    4.744 ms/tok
+  hybrid        ctx=512    cache     2.342 MB    4.816 ms/tok
+  hybrid        ctx=1024   cache     4.342 MB    4.848 ms/tok
+  hybrid        ctx=2048   cache     8.342 MB    5.166 ms/tok
+  hybrid        ctx=4096   cache    16.342 MB    5.811 ms/tok
+  hybrid        ctx=8192   cache    32.342 MB    6.319 ms/tok
+  hybrid        ctx=16384  cache    64.342 MB    8.418 ms/tok
+  hybrid        ctx=32768  cache   128.342 MB   13.762 ms/tok
+  hybrid        ctx=65536  cache   256.342 MB   24.673 ms/tok
+wrote experiments/results/decode_profile.csv (30 rows)
+  [hf] pushed cost_profile.csv
+  [hf] pushed decode_profile.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass2_length.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass4_keylen.csv

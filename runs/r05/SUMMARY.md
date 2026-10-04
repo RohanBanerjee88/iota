@@ -1,6 +1,6 @@
 # iota run `r05`
 
-- **updated:** 2026-10-04 06:32 UTC (last stage: `eval 4`)
+- **updated:** 2026-10-04 06:33 UTC (last stage: `profile`)
 - **code:** `e713514` on `main`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -84,11 +84,34 @@ If one model's errors pile up on 3-digit keys, its drop with load is partly key 
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 
-_`cost_profile.csv` not synced yet._
+Peak VRAM MB / median latency ms.
+
+| seq_len | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 20.7 MB / 4.71 ms | 21.0 MB / 10.94 ms | 21.1 MB / 8.36 ms |
+| 256 | 22.1 MB / 4.99 ms | 22.1 MB / 16.24 ms | 22.3 MB / 11.81 ms |
+| 512 | 24.9 MB / 5.05 ms | 24.4 MB / 28.83 ms | 24.6 MB / 18.94 ms |
+| 1024 | 30.6 MB / 7.24 ms | 28.9 MB / 51.68 ms | 29.8 MB / 33.19 ms |
+| 2048 | 41.8 MB / 12.26 ms | 38.0 MB / 100.67 ms | 40.3 MB / 62.66 ms |
+| 4096 | 64.3 MB / 28.62 ms | 56.0 MB / 191.21 ms | 61.3 MB / 131.36 ms |
+| 8192 | 109.3 MB / 87.18 ms | 92.2 MB / 377.74 ms | 103.4 MB / 242.87 ms |
 
 ## 5b. Decode cost (one token at a time, batch 1)
 
-_`decode_profile.csv` not synced yet._
+Memory each model keeps per sequence (exact cache/state size) / median ms per token.
+
+| context | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 1.61 MB / 4.87 ms | 0.33 MB / 4.88 ms | 0.84 MB / 4.75 ms |
+| 256 | 2.86 MB / 4.66 ms | 0.33 MB / 4.96 ms | 1.34 MB / 4.74 ms |
+| 512 | 5.36 MB / 4.58 ms | 0.33 MB / 4.87 ms | 2.34 MB / 4.82 ms |
+| 1024 | 10.36 MB / 4.71 ms | 0.33 MB / 4.85 ms | 4.34 MB / 4.85 ms |
+| 2048 | 20.36 MB / 4.64 ms | 0.33 MB / 4.89 ms | 8.34 MB / 5.17 ms |
+| 4096 | 40.36 MB / 4.85 ms | 0.33 MB / 4.86 ms | 16.34 MB / 5.81 ms |
+| 8192 | 80.36 MB / 8.02 ms | 0.33 MB / 4.95 ms | 32.34 MB / 6.32 ms |
+| 16384 | 160.36 MB / 14.83 ms | 0.33 MB / 4.88 ms | 64.34 MB / 8.42 ms |
+| 32768 | 320.36 MB / 28.43 ms | 0.33 MB / 4.83 ms | 128.34 MB / 13.76 ms |
+| 65536 | 640.36 MB / 55.63 ms | 0.33 MB / 4.91 ms | 256.34 MB / 24.67 ms |
 
 ## 6. Figure
 

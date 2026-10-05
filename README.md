@@ -24,8 +24,8 @@ being correct, and what is the smallest fix that keeps it correct?*
 | 0–2 | scaffold, task generator, independent oracle + verifier | ✅ 10,000/10,000 agreement |
 | 3–5 | tokenizer (vocab 99), three models, training; transformer hits 98.8% on easy recall | ✅ |
 | 6 §0 | all three architectures learn easy recall (0.95 / 0.94 / 1.00) | ✅ |
-| 6–8 | sweep training, 3 eval passes, cost profiling, figure | ✅ r04: first complete figure (gate passes, size-matched models, decode cost) |
-| 9 | Gradio demo | ⬜ waits for a trustworthy figure |
+| 6–8 | sweep training, 3 eval passes, cost profiling, figure | ✅ final: three-seed figure (r04–r06), gate passes on every run |
+| 9 | Gradio demo | ⬜ next (the figure is now trustworthy) |
 
 **Current result (three seeds, r04–r06; all models ~2.67M params / 5 layers, n=1000 per point per seed):**
 - **The hybrid** (2 of 5 layers attention) holds **≥ 0.97 recall at every load up to 128 bindings in every
@@ -35,13 +35,15 @@ being correct, and what is the smallest fix that keeps it correct?*
   - dense beats linear at 128 in every seed (0.39 vs 0.33 mean, margin 0.01–0.13)
   - 64 is the crossover zone (2 of 3 seeds favour dense)
   - seed-to-seed swings reach 0.26 at high load, so the figure plots the seed range
-- **Length:** on recall, linear keeps **0.97 [0.95–0.99] at 8192 tokens** (12.8× training length) in both
-  seeds, while both RoPE-attention models collapse past ~1024 (≤ 0.06 at 2048). On the single-value control it
-  is ≥ 0.98 at 2048 in both seeds but varies further out (0.98 / 0.50 at 8192).
+- **Length:** on recall, linear keeps **0.95 [0.92–0.99] at 8192 tokens** (12.8× training length) in all three
+  seeds, while both RoPE-attention models collapse past ~1024 (≤ 0.22 at 2048, ~0.01 at 8192). On the
+  single-value control it is ≥ 0.98 at 2048 in every seed, but varies further out (0.50–0.98 at 8192).
 - **Decode cost** (seed-independent): linear keeps a constant 0.33 MB state at 5.5 ms/token; dense keeps a
   640 MB KV cache at 56 ms/token at 64k context; the hybrid sits at ~40% of dense.
 
-Figure (seed 0): [`runs/r04/money_figure.png`](https://github.com/RohanBanerjee88/iota/blob/kaggle-results/runs/r04/money_figure.png).
+**Figure (mean of 3 seeds, bands = seed range):** [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png) · every per-seed number: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md).
+
+![iota results across three seeds](figures/seeds/money_figure_seeds.png)
 The pure transformer plateaus at ~0.81–0.85 in-distribution. A key-length breakdown shows that drop is load-driven,
 so it is a trainability observation at this scale, not a claim that attention can't do the task.
 

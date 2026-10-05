@@ -5,22 +5,21 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-09-30)
+## Where we are (2026-10-05)
 
-All code for the deliverable is built and CPU-verified: data, verifier, three models,
-training, the three eval passes, cost profiling and the figure. Earlier GPU attempts
-(June–July) each exposed a flaw in the *experiment design*, not the code, and every one
-has been fixed (see the timeline). **No trustworthy figure exists yet.** The next step is a
-clean run `r01` from scratch on Kaggle, with results published automatically to the
-`kaggle-results` branch.
+**Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
+[`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
+[`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md). The final-result entry (2026-10-05) below states what it shows
+and its caveats.
 
-**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). The three flaws are fixed and CPU-validated. Run r02 with `PLAN="tune"` first.
+**Next (optional):** Phase 9 demo; a second model scale to test whether the crossover point moves; a short
+write-up.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r06 | 2026-10-05 | `a66cc35` | A ✅ (+ pass 4) → B | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | run r06 B → final 3-seed figure |
+| r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
 | r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
@@ -33,6 +32,26 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-05 — r06 plan B + the final three-seed figure (`figures/seeds/`).**
+Pass 2 with three seeds: GLA recall **0.953 [0.92–0.99] at 8192**, 0.991 at 2048; transformer 0.111 / 0.010;
+hybrid 0.316 / 0.012. Every run (r04, r05, r06) passed the sanity gate. `scripts/aggregate_seeds.py --runs r04
+r05 r06` → `figures/seeds/` (committed): money_figure_seeds.png/pdf (mean, bands = seed range), SEEDS.md
+(every per-seed value), aggregated CSVs.
+
+**Final result (three seeds, ~2.67M params / 5 layers each):**
+1. **Hybrid (2 of 5 attention layers) ≥ 0.97 recall at every load up to 128 bindings, in every seed**, at ~40%
+   of dense decode memory/latency at 64k context.
+2. **Linear vs dense cross over:** linear > dense up to 32 bindings in every seed; dense > linear at 128 in every
+   seed (margin 0.01–0.13); 64 is the crossover zone.
+3. **Length:** linear recall 0.95 at 12.8× training length in every seed; both RoPE-attention models collapse
+   past ~1024.
+4. **Decode cost:** linear keeps a constant 0.33 MB state at ~5.5 ms/token; dense keeps a 640 MB KV cache at
+   56 ms/token at 64k context.
+
+**Caveats:** single scale (~2.7M); the pure transformer plateaus at ~0.80–0.85 in-distribution (load-driven,
+not key length, so a trainability observation at this scale); lr tuned at 4 layers; GLA still creeping up at
+its 15000-step ceiling; the control's far-length behaviour (8192) is seed-dependent.
 
 **2026-10-05 — r06 plan A (seed 2): with three seeds the capacity crossover is real.**
 Gate passes (in-dist assoc: hybrid 1.00, GLA 0.946, transformer 0.797; control 1.00 for all).

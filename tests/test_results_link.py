@@ -163,3 +163,66 @@ def test_aggregate_seeds_means_ranges_and_keeps_every_seed(tmp_path):
     assert (row["ci_low_pq"], row["ci_high_pq"]) == (0.489, 0.754)  # band = seed range
     assert "r04=0.489" in row["per_seed"] and "r06=OOM" in row["per_seed"]
     assert "r05=0.754" in (out / "SEEDS.md").read_text()
+
+
+def test_fixinit_configs_change_only_the_gate_init(monkeypatch):
+    # r07 = r04 with the intended gate init: same seed/lr/data/size, one flag flipped.
+    # The transformer has no gate, so its fixinit config must match r04's exactly
+    # (that is what lets --reuse take r04's checkpoint instead of retraining it).
+    import yaml
+    import scripts.run_all as ra
+    from iota.util import sweep_config_path
+
+    assert sweep_config_path("hybrid") == os.path.join("configs", "sweep_hybrid.yaml")
+    monkeypatch.setenv("IOTA_CONFIG_DIR", "configs/fixinit")
+    assert sweep_config_path("hybrid") == os.path.join("configs/fixinit", "sweep_hybrid.yaml")
+    assert ra._cfg_path("hybrid") == sweep_config_path("hybrid")
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        main = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        fix = yaml.safe_load(open(f"configs/fixinit/sweep_{arch}.yaml"))
+        assert fix["train"] == dict(main["train"], seed=0), arch   # r04's seed, nothing else
+        fm, ff = ra._fingerprint(main), ra._fingerprint(fix)
+        diff = {k for k in set(fm) | set(ff) if fm.get(k) != ff.get(k)}
+        assert diff == (set() if arch == "transformer" else {"legacy_gate_init"}), arch
+        assert ff["legacy_gate_init"] is (arch == "transformer")
+
+
+def _fake_ckpt(d, cfg, steps=5000):
+    (d / "transformer_sweep.safetensors").write_bytes(b"x")
+    (d / "transformer_sweep.json").write_text(
+        json.dumps({"config": cfg, "history": {"eval_acc": [{"step": steps}]}}))
+
+
+def test_train_reuse_takes_a_matching_checkpoint_and_rejects_a_stale_one(tmp_path, monkeypatch):
+    import argparse
+    import yaml
+    import scripts.run_all as ra
+
+    monkeypatch.setattr(ra, "RESULTS_DIR", str(tmp_path))
+    monkeypatch.setattr(ra, "_publish", lambda *a: True)
+    cfg = dict(yaml.safe_load(open("configs/sweep_transformer.yaml")), vocab_size=99)
+    pushed, trained = [], []
+    remote = {"r07": None, "r04": cfg}
+
+    def pull(run_name, repo, token):
+        if remote[repo] is None:
+            return False
+        _fake_ckpt(tmp_path, remote[repo])
+        return True
+
+    monkeypatch.setattr(ra, "hf_pull", pull)
+    monkeypatch.setattr(ra, "hf_push", lambda run_name, repo, token: pushed.append(repo))
+    import iota.train
+    monkeypatch.setattr(iota.train, "train", lambda c, smoke=False: trained.append(c) or {"best_acc": 1.0})
+    args = argparse.Namespace(only="transformer", no_hf=False, repo="r07", token=None, force=False,
+                              smoke=False, reuse="transformer=r04")
+    ra.stage_train(args)
+    assert trained == [] and pushed == ["r07"]          # reused, and copied to the new repo
+    assert ra.checkpoint_status("transformer")[0] == "ok"
+
+    for f in tmp_path.iterdir():
+        f.unlink()
+    pushed.clear()
+    remote["r04"] = dict(cfg, short_conv=0)              # a different model: must not be reused
+    ra.stage_train(args)
+    assert len(trained) == 1 and pushed == ["r07"]      # trained from scratch, then backed up

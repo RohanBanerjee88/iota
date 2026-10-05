@@ -13,6 +13,10 @@ the whole run.
     python -m scripts.run_all --stage all      --repo <user>/iota-sweep
     python -m scripts.run_all --stage all      --smoke     # whole pipeline in minutes
 
+Ablations select another config folder with IOTA_CONFIG_DIR (default `configs`), e.g.
+    IOTA_CONFIG_DIR=configs/fixinit python -m scripts.run_all --stage train \
+        --repo <user>/iota-r07 --reuse transformer=<user>/iota-r04
+
 Every stage tees its output to experiments/results/logs/<stage>.log and, when
 GH_TOKEN is set, publishes the run's small artifacts (CSVs, run jsons, logs, the
 figure, a SUMMARY.md) to the `kaggle-results` branch under runs/<run_id>/ -- that
@@ -56,7 +60,8 @@ MIN_REAL_STEPS = 1000  # below this it's a smoke run, not a trained model
 # checkpoint bookkeeping
 # ---------------------------------------------------------------------------
 def _cfg_path(arch: str) -> str:
-    return f"configs/sweep_{arch}.yaml"
+    from iota.util import sweep_config_path
+    return sweep_config_path(arch)
 
 
 def _run_name(cfg: dict, arch: str) -> str:
@@ -217,12 +222,29 @@ def stage_train(args) -> None:
 
     archs = [args.only] if args.only else ARCH_ORDER
     print(f"\n### STAGE train  ({', '.join(archs)})\n", flush=True)
+    reuse = dict(r.split("=", 1) for r in args.reuse.split(",") if r.strip()) if args.reuse else {}
     for arch in archs:
         status, run_name, detail = checkpoint_status(arch)
         if status == "missing" and not args.no_hf:
             print(f"[{arch}] no local checkpoint -> trying the Hub", flush=True)
             if hf_pull(run_name, args.repo, args.token):
                 status, run_name, detail = checkpoint_status(arch)
+        if status == "missing" and arch in reuse and not args.no_hf:
+            # An ablation that leaves this arch untouched reuses an earlier run's
+            # checkpoint -- but only if it is EXACTLY the current config (fingerprint).
+            print(f"[{arch}] reusing the checkpoint from {reuse[arch]}", flush=True)
+            if hf_pull(run_name, reuse[arch], args.token):
+                status, run_name, detail = checkpoint_status(arch)
+                if status == "ok":
+                    hf_push(run_name, args.repo, args.token)  # later sessions pull it from --repo
+                else:
+                    print(f"!! [{arch}] {reuse[arch]} checkpoint is {status} ({detail}) -- "
+                          f"NOT reusing it; training from scratch", flush=True)
+                    for ext in ("safetensors", "json"):
+                        p = os.path.join(RESULTS_DIR, f"{run_name}.{ext}")
+                        if os.path.exists(p):
+                            os.remove(p)
+                    status, run_name, detail = checkpoint_status(arch)
         if status == "ok" and not args.force:
             print(f"[{arch}] SKIP -- {detail}", flush=True)
             continue
@@ -504,6 +526,9 @@ def main() -> int:
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")
+    ap.add_argument("--reuse", default="",
+                    help="train: ARCH=HF_REPO[,...] -- take an unchanged arch's checkpoint from an "
+                         "earlier run (must match the current config) instead of retraining it")
     ap.add_argument("--token", default=os.environ.get("HF_TOKEN"))
     ap.add_argument("--n", type=int, default=1000, help="examples per eval cell")
     ap.add_argument("--minibatch", type=int, default=32)

@@ -10,15 +10,17 @@ under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 **Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
 [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
 [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md). The final-result entry (2026-10-05) below states what it shows
-and its caveats.
+and its caveats. The paper audit (passes 5 and 6, three seeds) is in: the linear model's failure is load, not
+distance, and teacher forcing does not inflate any headline number.
 
-**Next (optional):** Phase 9 demo; a second model scale to test whether the crossover point moves; a short
-write-up.
+**Next:** pass 7 (matched histories) on r04–r06, then r07 (the gate-init ablation, paired with r04).
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r07 | — | `configs/fixinit/` | prepared | r04 (seed 0) with the intended GLA gate init (`legacy_gate_init: false`); transformer reused from r04 | run after pass 7 |
+| audit | 2026-10-05 | `28c0e1e` | passes 5, 6 on r04–r06 | GLA: load costs 0.55, 8× distance costs ≤0.05; dense/hybrid collapse past 1024 at any load; free-running ≈ teacher-forced (max gap 0.038, dense) | headline numbers stand; pass 7 next |
 | r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
 | r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
@@ -33,7 +35,61 @@ the figure is not trustworthy.
 
 ## Timeline
 
-**2026-10-06 — Pass 7 built: matched histories (paper direction, Stage 1 screen).**
+**2026-10-05 — Audit results: passes 5 + 6 on r04–r06 (three seeds, n = 500 per cell).**
+Every number: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md), `figures/seeds/pass5_grid.csv`,
+`figures/seeds/pass6_freerun.csv`. Mean per-query accuracy [min–max over seeds].
+
+*Pass 5, joint load × distance grid (8 queries, true length within ±11 tokens of the column):*
+
+| bindings | GLA 1024 → 8192 | dense 1024 → 2048 | hybrid 1024 → 2048 |
+|---:|---|---|---|
+| 8 | 0.994 → 0.959 | 0.931 → 0.110 | 0.992 → 0.316 |
+| 32 | 0.923 → 0.870 | 0.763 → 0.061 | 0.970 → 0.178 |
+| 64 | 0.759 → 0.706 | 0.581 → 0.049 | 0.878 → 0.149 |
+| 128 | 0.447 [0.34–0.54] → 0.412 | 0.379 [0.29–0.51] → 0.064 | 0.856 → 0.220 |
+
+- **GLA: load and distance are nearly separable, and load dominates.** Going 8 → 128 bindings at 1024 tokens costs
+  0.55. Going 1024 → 8192 tokens costs 0.035–0.053 at *every* load. What breaks the linear model is how many facts
+  it holds, not how far back they are.
+- **Dense and hybrid fail on length at every load.** Both are still fine at 1024 tokens (past the 640 they trained
+  on), drop to 0.05–0.32 at 2048 and to ≤ 0.03 at 4096 and beyond. This is pass 2's result, now shown not to depend
+  on load. The hybrid's recurrent layers do not rescue it: its attention layers set its length limit.
+- **Caveat:** even the shortest column (1024) is past the training length, so every attention cell in this grid
+  extrapolates. That is why the hybrid scores 0.856 at 128 bindings here but 0.984 in pass 1. At 1024 tokens and
+  128 bindings, GLA (0.447) and dense (0.379) overlap across seeds, so the grid does **not** flip pass 1's
+  "dense > GLA at 128". For an in-distribution load × distance panel we would need a ≤ 640 column (128 bindings
+  alone take ~770 tokens, so that column could only go to 64 bindings).
+
+*Pass 6, free-running vs teacher-forced (pass 1's prompts; the model's own answers stay in the context):*
+- **Hybrid:** identical (gap 0.000 on every seed).
+- **GLA:** gap ≤ 0.012 on any seed.
+- **Dense:** loses the most: 0.949 → 0.913 at 16 bindings (worst single seed 0.038).
+- So teacher forcing does not inflate any headline number, and the GLA is barely hurt by its own mistakes staying
+  in context. That is a first hint for pass 7's *generated* condition: earlier errors are unlikely to be what
+  damages linear recall.
+
+*A hint that pass 7 tests properly:* at 64 bindings the GLA scores 0.60 in pass 1 (386 tokens, 16 queries) but
+0.76 in pass 5 (1024 tokens, 8 queries), so it does better on a prompt 2.6× longer. Two things differ: the
+number of queries and how densely the facts are packed. Pass 7 holds both fixed and varies only the history.
+
+**Decision:** the paper's capacity and length claims stand as measured; describe the grid as an extrapolation
+grid. Next: pass 7 on r04–r06 (notebook `PLAN="audit"`, `AUDIT_PASSES = "7"`), then r07.
+
+**2026-10-05 — r07 prepared: the gate-init ablation, paired with r04.**
+- `configs/fixinit/sweep_*.yaml` are r04's configs (seed 0, same lr, data, schedule and size) with one change:
+  `legacy_gate_init: false` for GLA and hybrid. A test checks that the train block and fingerprint differ from
+  the main configs in exactly that way. With the same seed every other weight starts identical and the data
+  stream is the same, so r07 − r04 is a paired comparison.
+- `IOTA_CONFIG_DIR=configs/fixinit` selects them (training, eval fallback, profile). The main configs are
+  untouched, so the r04–r06 checkpoints stay valid for pass 7.
+- The transformer has no gate, so its fixinit config matches r04's exactly, and `--reuse
+  transformer=BanerjeeRohan44/iota-r04` copies r04's checkpoint into the r07 repo instead of retraining. Reuse refuses any checkpoint whose fingerprint doesn't match (tested).
+- lr stays at the legacy-init tuned values: this is a one-factor ablation, not a re-tune. If the fixed init trains
+  much worse at that lr, that is itself the finding, and a re-tune is the follow-up.
+- Plan B now runs passes 2, 4 (n = 1000, as r04) and 5, 6, 7 (n = 500, as the audit), so every r04 number has an
+  r07 partner.
+
+**2026-10-05 — Pass 7 built: matched histories (paper direction, Stage 1 screen).**
 Question: does answering earlier questions change later recall? Every query/answer token also updates a
 recurrent state, so a "read" is a write. Design (`iota/history.py`): per item, a fixed fact prefix
 (SET lines + distractors, exactly 512 tokens), a held-out target key, and a history region of exactly T
@@ -52,7 +108,7 @@ reordered is a permutation; neutral has no questions; generated differs only ins
 `aggregate_seeds` reports per-seed Δ and how many seeds' CIs exclude 0. Decision rule (from the draft): if
 oracle-clean histories don't hurt beyond matched filler, drop the "query writes damage memory" hypothesis.
 
-**2026-10-06 — Correction: the GLA decay-gate init never took effect (found in the paper-draft audit).**
+**2026-10-05 — Correction: the GLA decay-gate init never took effect (found in the paper-draft audit).**
 - `GatedLinearAttention.__init__` sets the gate bias to `decay_bias_init` (6.0 → γ ≈ 0.9975) with zero weight.
   `LMBackbone` then applies its generic init to *every* linear layer, which overwrites that with **bias 0 and
   random weight (γ = 0.5 at init)**. Confirmed by building the r04–r06 configs: every gate bias is 0.0.
@@ -68,7 +124,7 @@ oracle-clean histories don't hurt beyond matched filler, drop the "query writes 
 - Planned ablation: retrain GLA and hybrid with `legacy_gate_init: false` (3 seeds) to measure whether γ₀
   changes the load/distance trade-off or the seed lottery.
 
-**2026-10-06 — Audit evals for the paper, no retraining needed.**
+**2026-10-05 — Audit evals for the paper, no retraining needed.**
 - **Pass 5, joint load × distance grid:** {8, 32, 64, 128} bindings × {1024, 2048, 4096, 8192} tokens, with 8
   queries in every cell. Building it exposed a bookkeeping bias: `seq_len` budgets whitespace *words*, but numbers
   split into digit tokens, so more bindings mean more tokens (128 bindings at "1024" was ~1270 real tokens).
@@ -458,5 +514,5 @@ patience only counts after the ramp.
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but
   we need to state how each was tuned.
-- **GLA gate init** (2026-10-06): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation pending.
+- **GLA gate init** (2026-10-05): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation = r07 (prepared).
 - **Phase 9 (Gradio demo)** not started. It waits for a trustworthy figure.

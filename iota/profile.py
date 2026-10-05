@@ -32,6 +32,7 @@ import torch
 import yaml
 
 from .data.tokenizer import get_tokenizer
+from .util import sweep_config_path
 from .models import build_model
 
 ARCHS = ["transformer", "gated_linear", "hybrid"]
@@ -108,7 +109,7 @@ def run_profile(
               "is CPU latency, which is not the cost axis the figure wants.", flush=True)
 
     for arch in archs:
-        cfg = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        cfg = yaml.safe_load(open(sweep_config_path(arch)))
         cfg["vocab_size"] = tok.vocab_size
         run_name = cfg.get("train", {}).get("run_name", f"{arch}_sweep")
         model = build_model(cfg).to(device)
@@ -217,7 +218,7 @@ def run_decode_profile(
     rows: List[Dict] = []
     print(f"[decode] per-token decode cost, batch {batch_size}, device {device}", flush=True)
     for arch in archs:
-        cfg = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        cfg = yaml.safe_load(open(sweep_config_path(arch)))
         cfg["vocab_size"] = tok.vocab_size
         run_name = cfg.get("train", {}).get("run_name", f"{arch}_sweep")
         model = build_model(cfg).to(device)

@@ -97,7 +97,7 @@ def load_checkpoint(run_name: str, results_dir: str = "experiments/results", dev
     """Rebuild a model from a saved run json + weights (safetensors or .pt).
 
     Robust to a missing run json: if `{run_name}.json` isn't there but the weights
-    are, reconstruct the config from `configs/sweep_{arch}.yaml` (the arch is the
+    are, reconstruct the config from `configs/sweep_{arch}.yaml` ($IOTA_CONFIG_DIR) (the arch is the
     run_name minus its trailing `_sweep`/`_milestone` suffix).
     """
     import json
@@ -121,7 +121,8 @@ def load_checkpoint(run_name: str, results_dir: str = "experiments/results", dev
             if arch.endswith(suffix):
                 arch = arch[: -len(suffix)]
                 break
-        cfg_path = f"configs/sweep_{arch}.yaml"
+        from .util import sweep_config_path
+        cfg_path = sweep_config_path(arch)
         if not os.path.exists(cfg_path):
             raise FileNotFoundError(
                 f"no {run_name}.json and no {cfg_path} to reconstruct config from"

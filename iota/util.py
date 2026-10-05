@@ -27,3 +27,12 @@ def seed_everything(seed: int = 0) -> int:
     except Exception:
         pass
     return seed
+
+
+def sweep_config_path(arch: str) -> str:
+    """configs/sweep_<arch>.yaml, or the same file under $IOTA_CONFIG_DIR.
+
+    Lets an ablation (e.g. configs/fixinit/) train and evaluate without editing the
+    main sweep configs, so the checkpoints of earlier runs stay valid for re-eval.
+    """
+    return os.path.join(os.environ.get("IOTA_CONFIG_DIR", "configs"), f"sweep_{arch}.yaml")

@@ -1,7 +1,7 @@
 # iota run `r06-smoke`
 
-- **updated:** 2026-10-05 03:57 UTC (last stage: `plot`)
-- **code:** `a66cc35` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-05 17:29 UTC (last stage: `tune:transformer:0.00075`)
+- **code:** `5026708` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 0. LR probe (identical short budget per arch; pick each arch's best)
@@ -9,8 +9,6 @@
 | arch | lr | best balanced | assoc | state | exact | best step | final balanced | time |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | transformer ★ | 0.00075 | 0.001 | 0.003 | 0.000 | 0.000 | 40 | 0.000 | 5s |
-| gated_linear ★ | 0.00075 | 0.006 | 0.013 | 0.000 | 0.000 | 40 | 0.006 | 8s |
-| hybrid ★ | 0.00075 | 0.005 | 0.010 | 0.000 | 0.000 | 40 | 0.004 | 6s |
 
 4000 steps each, grad_clip 1.0. ★ = best lr for that arch.
 

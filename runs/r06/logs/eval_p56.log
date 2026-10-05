@@ -1,0 +1,93 @@
+
+##### eval_p56 started 2026-10-05 21:40:27 UTC argv=--stage eval --passes 5,6 --n 500 --repo BanerjeeRohan44/iota-r06 --run-id r06
+
+### STAGE eval  (passes [5, 6], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 6000 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 12500 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 12500 steps)
+
+--- pass 5 -> experiments/results/pass5_grid.csv
+  pass5 hybrid_sweep  sweep=8x1024 true_len=  1024 exact=0.974 per_q=0.997 CI_pq=[0.995,0.998]
+  pass5 transformer_sweep sweep=8x1024 true_len=  1024 exact=0.656 per_q=0.948 CI_pq=[0.941,0.955]
+  pass5 gated_linear_sweep sweep=8x1024 true_len=  1024 exact=0.992 per_q=0.999 CI_pq=[0.997,1.000]
+  pass5 hybrid_sweep  sweep=8x2048 true_len=  2048 exact=0.000 per_q=0.386 CI_pq=[0.371,0.399]
+  pass5 transformer_sweep sweep=8x2048 true_len=  2048 exact=0.000 per_q=0.219 CI_pq=[0.207,0.233]
+  pass5 gated_linear_sweep sweep=8x2048 true_len=  2048 exact=0.954 per_q=0.994 CI_pq=[0.992,0.996]
+  pass5 hybrid_sweep  sweep=8x4096 true_len=  4096 exact=0.000 per_q=0.024 CI_pq=[0.019,0.029]
+  pass5 transformer_sweep sweep=8x4096 true_len=  4096 exact=0.000 per_q=0.022 CI_pq=[0.018,0.027]
+  pass5 gated_linear_sweep sweep=8x4096 true_len=  4096 exact=0.780 per_q=0.971 CI_pq=[0.966,0.976]
+  pass5 hybrid_sweep  sweep=8x8192 true_len=  8192 exact=0.000 per_q=0.013 CI_pq=[0.009,0.017]
+  pass5 transformer_sweep sweep=8x8192 true_len=  8192 exact=0.000 per_q=0.010 CI_pq=[0.007,0.013]
+  pass5 gated_linear_sweep sweep=8x8192 true_len=  8192 exact=0.536 per_q=0.928 CI_pq=[0.920,0.936]
+  pass5 hybrid_sweep  sweep=32x1024 true_len=  1024 exact=0.772 per_q=0.969 CI_pq=[0.963,0.974]
+  pass5 transformer_sweep sweep=32x1024 true_len=  1024 exact=0.088 per_q=0.732 CI_pq=[0.718,0.746]
+  pass5 gated_linear_sweep sweep=32x1024 true_len=  1024 exact=0.770 per_q=0.968 CI_pq=[0.963,0.974]
+  pass5 hybrid_sweep  sweep=32x2048 true_len=  2048 exact=0.000 per_q=0.194 CI_pq=[0.183,0.206]
+  pass5 transformer_sweep sweep=32x2048 true_len=  2048 exact=0.000 per_q=0.111 CI_pq=[0.101,0.122]
+  pass5 gated_linear_sweep sweep=32x2048 true_len=  2048 exact=0.770 per_q=0.969 CI_pq=[0.964,0.975]
+  pass5 hybrid_sweep  sweep=32x4096 true_len=  4096 exact=0.000 per_q=0.015 CI_pq=[0.011,0.018]
+  pass5 transformer_sweep sweep=32x4096 true_len=  4096 exact=0.000 per_q=0.013 CI_pq=[0.010,0.017]
+  pass5 gated_linear_sweep sweep=32x4096 true_len=  4096 exact=0.640 per_q=0.944 CI_pq=[0.936,0.951]
+  pass5 hybrid_sweep  sweep=32x8192 true_len=  8192 exact=0.000 per_q=0.009 CI_pq=[0.007,0.012]
+  pass5 transformer_sweep sweep=32x8192 true_len=  8192 exact=0.000 per_q=0.014 CI_pq=[0.011,0.018]
+  pass5 gated_linear_sweep sweep=32x8192 true_len=  8192 exact=0.378 per_q=0.881 CI_pq=[0.872,0.891]
+  pass5 hybrid_sweep  sweep=64x1024 true_len=  1024 exact=0.290 per_q=0.856 CI_pq=[0.845,0.866]
+  pass5 transformer_sweep sweep=64x1024 true_len=  1024 exact=0.004 per_q=0.508 CI_pq=[0.494,0.523]
+  pass5 gated_linear_sweep sweep=64x1024 true_len=  1024 exact=0.278 per_q=0.857 CI_pq=[0.846,0.867]
+  pass5 hybrid_sweep  sweep=64x2048 true_len=  2048 exact=0.000 per_q=0.167 CI_pq=[0.155,0.179]
+  pass5 transformer_sweep sweep=64x2048 true_len=  2048 exact=0.000 per_q=0.073 CI_pq=[0.066,0.081]
+  pass5 gated_linear_sweep sweep=64x2048 true_len=  2048 exact=0.236 per_q=0.839 CI_pq=[0.827,0.850]
+  pass5 hybrid_sweep  sweep=64x4096 true_len=  4096 exact=0.000 per_q=0.009 CI_pq=[0.006,0.011]
+  pass5 transformer_sweep sweep=64x4096 true_len=  4096 exact=0.000 per_q=0.013 CI_pq=[0.010,0.017]
+  pass5 gated_linear_sweep sweep=64x4096 true_len=  4096 exact=0.168 per_q=0.802 CI_pq=[0.790,0.815]
+  pass5 hybrid_sweep  sweep=64x8192 true_len=  8192 exact=0.000 per_q=0.010 CI_pq=[0.007,0.013]
+  pass5 transformer_sweep sweep=64x8192 true_len=  8192 exact=0.000 per_q=0.011 CI_pq=[0.007,0.014]
+  pass5 gated_linear_sweep sweep=64x8192 true_len=  8192 exact=0.104 per_q=0.746 CI_pq=[0.732,0.760]
+  pass5 hybrid_sweep  sweep=128x1024 true_len=  1024 exact=0.258 per_q=0.847 CI_pq=[0.835,0.857]
+  pass5 transformer_sweep sweep=128x1024 true_len=  1024 exact=0.000 per_q=0.289 CI_pq=[0.275,0.302]
+  pass5 gated_linear_sweep sweep=128x1024 true_len=  1024 exact=0.008 per_q=0.541 CI_pq=[0.526,0.556]
+  pass5 hybrid_sweep  sweep=128x2048 true_len=  2048 exact=0.000 per_q=0.257 CI_pq=[0.243,0.271]
+  pass5 transformer_sweep sweep=128x2048 true_len=  2048 exact=0.000 per_q=0.065 CI_pq=[0.058,0.073]
+  pass5 gated_linear_sweep sweep=128x2048 true_len=  2048 exact=0.008 per_q=0.547 CI_pq=[0.532,0.562]
+  pass5 hybrid_sweep  sweep=128x4096 true_len=  4096 exact=0.000 per_q=0.009 CI_pq=[0.006,0.012]
+  pass5 transformer_sweep sweep=128x4096 true_len=  4096 exact=0.000 per_q=0.013 CI_pq=[0.010,0.017]
+  pass5 gated_linear_sweep sweep=128x4096 true_len=  4096 exact=0.002 per_q=0.505 CI_pq=[0.491,0.519]
+  pass5 hybrid_sweep  sweep=128x8192 true_len=  8192 exact=0.000 per_q=0.009 CI_pq=[0.007,0.013]
+  pass5 transformer_sweep sweep=128x8192 true_len=  8192 exact=0.000 per_q=0.011 CI_pq=[0.008,0.014]
+  pass5 gated_linear_sweep sweep=128x8192 true_len=  8192 exact=0.004 per_q=0.474 CI_pq=[0.458,0.490]
+wrote experiments/results/pass5_grid.csv (48 rows)
+  [hf] pushed pass5_grid.csv
+
+--- pass 6 -> experiments/results/pass6_freerun.csv
+  pass6 hybrid_sweep       nb=2    teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 transformer_sweep  nb=2    teacher-forced=0.998 free-running=0.996 flipped=2
+  pass6 gated_linear_sweep nb=2    teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 hybrid_sweep       nb=4    teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 transformer_sweep  nb=4    teacher-forced=0.993 free-running=0.986 flipped=14
+  pass6 gated_linear_sweep nb=4    teacher-forced=0.999 free-running=0.999 flipped=0
+  pass6 hybrid_sweep       nb=8    teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 transformer_sweep  nb=8    teacher-forced=0.980 free-running=0.962 flipped=70
+  pass6 gated_linear_sweep nb=8    teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 hybrid_sweep       nb=16   teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 transformer_sweep  nb=16   teacher-forced=0.951 free-running=0.914 flipped=329
+  pass6 gated_linear_sweep nb=16   teacher-forced=0.995 free-running=0.994 flipped=7
+  pass6 hybrid_sweep       nb=32   teacher-forced=1.000 free-running=1.000 flipped=0
+  pass6 transformer_sweep  nb=32   teacher-forced=0.844 free-running=0.811 flipped=402
+  pass6 gated_linear_sweep nb=32   teacher-forced=0.971 free-running=0.969 flipped=24
+  pass6 hybrid_sweep       nb=64   teacher-forced=0.991 free-running=0.991 flipped=0
+  pass6 transformer_sweep  nb=64   teacher-forced=0.611 free-running=0.589 flipped=588
+  pass6 gated_linear_sweep nb=64   teacher-forced=0.552 free-running=0.551 flipped=367
+  pass6 hybrid_sweep       nb=128  teacher-forced=0.988 free-running=0.988 flipped=2
+  pass6 transformer_sweep  nb=128  teacher-forced=0.314 free-running=0.306 flipped=650
+  pass6 gated_linear_sweep nb=128  teacher-forced=0.306 free-running=0.303 flipped=330
+wrote experiments/results/pass6_freerun.csv (21 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass5_grid.csv
+  [hf] pushed pass6_freerun.csv

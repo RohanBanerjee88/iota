@@ -1,6 +1,6 @@
 # iota run `r06`
 
-- **updated:** 2026-10-05 20:59 UTC (last stage: `eval 4`)
+- **updated:** 2026-10-05 22:00 UTC (last stage: `eval 5,6`)
 - **code:** `28c0e1e` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -81,6 +81,49 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 | 64 | 3 | 0.545 | 0.466 | 0.996 |
 
 If one model's errors pile up on 3-digit keys, its drop with load is partly key resolution, not memory capacity.
+
+## 4c. Joint load × distance grid (8 queries per cell; true length held per column)
+
+**transformer** — per-query recall
+
+| bindings \ tokens | 1024 | 2048 | 4096 | 8192 |
+|---:|---:|---:|---:|---:|
+| 8 | 0.948 | 0.219 | 0.022 | 0.010 |
+| 32 | 0.732 | 0.111 | 0.013 | 0.014 |
+| 64 | 0.508 | 0.073 | 0.013 | 0.011 |
+| 128 | 0.289 | 0.065 | 0.013 | 0.011 |
+
+**gated_linear** — per-query recall
+
+| bindings \ tokens | 1024 | 2048 | 4096 | 8192 |
+|---:|---:|---:|---:|---:|
+| 8 | 0.999 | 0.994 | 0.971 | 0.928 |
+| 32 | 0.968 | 0.969 | 0.944 | 0.881 |
+| 64 | 0.857 | 0.839 | 0.802 | 0.746 |
+| 128 | 0.541 | 0.547 | 0.505 | 0.474 |
+
+**hybrid** — per-query recall
+
+| bindings \ tokens | 1024 | 2048 | 4096 | 8192 |
+|---:|---:|---:|---:|---:|
+| 8 | 0.997 | 0.386 | 0.024 | 0.013 |
+| 32 | 0.969 | 0.194 | 0.015 | 0.009 |
+| 64 | 0.856 | 0.167 | 0.009 | 0.010 |
+| 128 | 0.847 | 0.257 | 0.009 | 0.009 |
+
+## 4d. Free-running vs teacher-forced (Pass 1 prompts)
+
+Per-query recall: teacher-forced → free-running (queries whose verdict changed).
+
+| n_bindings | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 2 | 0.998 → 0.996 (2) | 1.000 → 1.000 (0) | 1.000 → 1.000 (0) |
+| 4 | 0.993 → 0.986 (14) | 0.999 → 0.999 (0) | 1.000 → 1.000 (0) |
+| 8 | 0.980 → 0.962 (70) | 1.000 → 1.000 (0) | 1.000 → 1.000 (0) |
+| 16 | 0.951 → 0.914 (329) | 0.995 → 0.994 (7) | 1.000 → 1.000 (0) |
+| 32 | 0.844 → 0.811 (402) | 0.971 → 0.969 (24) | 1.000 → 1.000 (0) |
+| 64 | 0.611 → 0.589 (588) | 0.552 → 0.551 (367) | 0.991 → 0.991 (0) |
+| 128 | 0.314 → 0.306 (650) | 0.306 → 0.303 (330) | 0.988 → 0.988 (2) |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

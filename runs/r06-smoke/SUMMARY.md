@@ -1,6 +1,6 @@
 # iota run `r06-smoke`
 
-- **updated:** 2026-10-05 03:56 UTC (last stage: `tune:gated_linear:0.00075`)
+- **updated:** 2026-10-05 03:56 UTC (last stage: `tune`)
 - **code:** `a66cc35` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

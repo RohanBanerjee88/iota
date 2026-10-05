@@ -1,0 +1,63 @@
+
+##### train started 2026-10-05 03:57:14 UTC argv=--stage train --repo BanerjeeRohan44/iota-r06
+
+### STAGE train  (hybrid, transformer, gated_linear)
+
+[hybrid] no local checkpoint -> trying the Hub
+
+========================================================================
+=== TRAIN hybrid -> hybrid_sweep
+========================================================================
+[sweep] model=hybrid params=2.67M device=cuda max_steps=15000 bs=64 patience=8
+[sweep] hybrid step   500 loss 0.175 bal 0.337 [assoc 0.028 state 0.647] exact 0.220 diff 0.00 * (30s)
+[sweep] hybrid step  1000 loss 0.007 bal 0.347 [assoc 0.048 state 0.647] exact 0.224 diff 0.00 * (60s)
+[sweep] hybrid step  1500 loss 0.016 bal 0.720 [assoc 0.518 state 0.922] exact 0.446 diff 0.25 * (124s)
+[sweep] hybrid step  2000 loss 0.003 bal 0.886 [assoc 0.843 state 0.928] exact 0.682 diff 0.50 * (258s)
+[sweep] hybrid step  2500 loss 0.003 bal 0.973 [assoc 0.970 state 0.976] exact 0.902 diff 0.75 * (471s)
+[sweep] hybrid step  3000 loss 0.013 bal 0.997 [assoc 0.995 state 1.000] exact 0.976 diff 1.00 * (771s)
+[sweep] hybrid step  3500 loss 0.001 bal 0.999 [assoc 0.998 state 1.000] exact 0.992 diff 1.00 * (1117s)
+[sweep] hybrid step  4000 loss 0.000 bal 0.998 [assoc 0.997 state 1.000] exact 0.984 diff 1.00  (1460s)
+[sweep] hybrid step  4500 loss 0.000 bal 0.999 [assoc 0.998 state 1.000] exact 0.992 diff 1.00  (1806s)
+[sweep] hybrid step  5000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00 * (2152s)
+[sweep] hybrid step  5500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00  (2498s)
+[sweep] hybrid step  6000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00 * (2843s)
+[sweep] hybrid step  6500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (3187s)
+[sweep] hybrid step  7000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00  (3533s)
+[sweep] hybrid step  7500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (3878s)
+[sweep] hybrid step  8000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (4225s)
+[sweep] hybrid step  8500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (4571s)
+[sweep] hybrid step  9000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (4916s)
+[sweep] hybrid step  9500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (5262s)
+[sweep] hybrid step 10000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (5606s)
+[sweep] hybrid plateaued (patience 8) -> stop
+[sweep] hybrid BEST plateau_acc = 1.0000 -> experiments/results/hybrid_sweep
+=== hybrid done, best balanced acc = 1.0000
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  .../hybrid_sweep.safetensors:   5%|▌         |  554kB / 10.8MB            [A[A
+
+  .../hybrid_sweep.safetensors:   5%|▌         |  554kB / 10.8MB            [A[AProcessing Files (0 / 1)      :   5%|▌         |  554kB / 10.8MB, 1.39MB/s  
+New Data Upload               :   5%|▌         |  551kB / 10.7MB, 1.38MB/s  [A
+
+  .../hybrid_sweep.safetensors:  31%|███       | 3.33MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  31%|███       | 3.33MB / 10.8MB, 5.54MB/s  
+New Data Upload               :  31%|███       | 3.31MB / 10.7MB, 5.51MB/s  [A
+
+  .../hybrid_sweep.safetensors:  72%|███████▏  | 7.76MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  72%|███████▏  | 7.76MB / 10.8MB, 9.70MB/s  
+New Data Upload               :  72%|███████▏  | 7.72MB / 10.7MB, 9.64MB/s  [A
+
+  .../hybrid_sweep.safetensors:  98%|█████████▊| 10.5MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  98%|█████████▊| 10.5MB / 10.8MB, 10.5MB/s  
+New Data Upload               :  98%|█████████▊| 10.5MB / 10.7MB, 10.5MB/s  [A
+
+  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 8.98MB/s  
+New Data Upload               : 100%|██████████| 10.7MB / 10.7MB, 8.93MB/s  [A
+
+  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
+
+  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
+
+  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 6.74MB/s  
+New Data Upload               : 100%|██████████| 10.7MB / 10.7MB, 6.70MB/s  
+  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
+  [hf] pushed hybrid_sweep.safetensors
+  [hf] pushed hybrid_sweep.json

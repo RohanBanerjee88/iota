@@ -4,6 +4,7 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
+| [r06](runs/r06/SUMMARY.md) | 2026-10-05 05:30 UTC | train:hybrid | Tesla T4 | `a66cc35` |
 | [r06-smoke](runs/r06-smoke/SUMMARY.md) | 2026-10-05 03:57 UTC | plot | Tesla T4 | `a66cc35` |
 | [r05](runs/r05/SUMMARY.md) | 2026-10-04 06:33 UTC | plot | Tesla T4 | `e713514` |
 | [r05-smoke](runs/r05-smoke/SUMMARY.md) | 2026-10-04 06:26 UTC | plot | Tesla T4 | `e713514` |

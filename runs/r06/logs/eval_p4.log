@@ -1,5 +1,5 @@
 
-##### eval_p4 started 2026-10-05 10:35:10 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r06
+##### eval_p4 started 2026-10-05 17:36:45 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r06
 
 ### STAGE eval  (passes [4], device=cuda)
 
@@ -37,9 +37,6 @@
   pass4 gated_linear_sweep nb=64  key_digits=3 acc=0.466 (n_q=3564)
 wrote experiments/results/pass4_keylen.csv (27 rows)
 No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed pass1_capacity.csv
+  [hf] pushed pass2_length.csv
 No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed pass3_control.csv
   [hf] pushed pass4_keylen.csv
-No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed sanity_indist.csv

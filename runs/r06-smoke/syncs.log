@@ -15,3 +15,4 @@
 2026-10-05 17:29 UTC  stage=tune:gated_linear:0.00075  code=5026708  files=5
 2026-10-05 17:29 UTC  stage=tune  code=5026708  files=5
 2026-10-05 17:29 UTC  stage=train:hybrid  code=5026708  files=7
+2026-10-05 17:29 UTC  stage=train:transformer  code=5026708  files=8

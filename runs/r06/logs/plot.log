@@ -1,0 +1,41 @@
+
+##### plot started 2026-10-05 17:37:39 UTC argv=--stage plot --repo BanerjeeRohan44/iota-r06
+
+### STAGE plot
+
+  [hf] pulled pass1_capacity.csv
+  [hf] pulled pass3_control.csv
+  [hf] pulled sanity_indist.csv
+wrote experiments/results/money_figure.png
+wrote experiments/results/money_figure.pdf
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed cost_profile.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed decode_profile.csv
+  [hf] pushed money_figure.pdf
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  .../results/money_figure.png:  10%|▉         | 32.7kB /  330kB            [A[A
+
+  .../results/money_figure.png:  10%|▉         | 32.7kB /  330kB            [A[AProcessing Files (0 / 1)      :  10%|▉         | 32.7kB /  330kB,   ???B/s  
+
+  .../results/money_figure.png: 100%|██████████|  330kB /  330kB            [A[AProcessing Files (1 / 1)      : 100%|██████████|  330kB /  330kB, 1.49MB/s  
+New Data Upload               : 100%|██████████|  297kB /  297kB, 1.49MB/s  [A
+
+  .../results/money_figure.png: 100%|██████████|  330kB /  330kB            [A[A
+
+  .../results/money_figure.png: 100%|██████████|  330kB /  330kB            [A[AProcessing Files (1 / 1)      : 100%|██████████|  330kB /  330kB,  742kB/s  
+New Data Upload               : 100%|██████████|  297kB /  297kB,  742kB/s  
+  .../results/money_figure.png: 100%|██████████|  330kB /  330kB            
+  [hf] pushed money_figure.png
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass2_length.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass3_control.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass4_keylen.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv

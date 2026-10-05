@@ -1,6 +1,6 @@
 # iota run `r06-smoke`
 
-- **updated:** 2026-10-05 03:56 UTC (last stage: `train`)
+- **updated:** 2026-10-05 03:56 UTC (last stage: `sanity`)
 - **code:** `a66cc35` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -26,7 +26,13 @@ Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curv
 
 ## 1b. Sanity gate — each model on its own training distribution
 
-_`sanity_indist.csv` not synced yet._
+| model | assoc per-query | assoc exact | state per-query | state exact | gate |
+|---|---:|---:|---:|---:|---|
+| hybrid | 0.018 | 0.000 | 0.000 | 0.000 | ⚠ FAIL — a task is at chance |
+| transformer | 0.000 | 0.000 | 0.000 | 0.000 | ⚠ FAIL — a task is at chance |
+| gated_linear | 0.018 | 0.000 | 0.000 | 0.000 | ⚠ FAIL — a task is at chance |
+
+n=8 per mode. Both per-query columns must be well above chance (~0.01) before any sweep number means anything.
 
 ## 2. Pass 1 — capacity (the headline)
 

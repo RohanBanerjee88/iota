@@ -11,3 +11,4 @@
 2026-10-05 03:57 UTC  stage=profile  code=a66cc35  files=19
 2026-10-05 03:57 UTC  stage=plot  code=a66cc35  files=22
 2026-10-05 17:29 UTC  stage=tune:transformer:0.00075  code=5026708  files=3
+2026-10-05 17:29 UTC  stage=tune:hybrid:0.00075  code=5026708  files=4

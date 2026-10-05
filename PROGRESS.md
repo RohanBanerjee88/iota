@@ -5,22 +5,22 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-09-30)
+## Where we are (2026-10-05)
 
-All code for the deliverable is built and CPU-verified: data, verifier, three models,
-training, the three eval passes, cost profiling and the figure. Earlier GPU attempts
-(June–July) each exposed a flaw in the *experiment design*, not the code, and every one
-has been fixed (see the timeline). **No trustworthy figure exists yet.** The next step is a
-clean run `r01` from scratch on Kaggle, with results published automatically to the
-`kaggle-results` branch.
+**Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
+[`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
+[`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md). The final-result entry (2026-10-05) below states what it shows
+and its caveats.
 
-**Next action:** r01 failed the sanity gate (see the 2026-09-30 r01 entry). The three flaws are fixed and CPU-validated. Run r02 with `PLAN="tune"` first.
+**Next (optional):** Phase 9 demo; a second model scale to test whether the crossover point moves; a short
+write-up.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r05 | — | — | A → B (passes 2,4) | prepared: seed-1 replicate of r04 | — |
+| r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
+| r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
@@ -32,6 +32,85 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-05 — r06 plan B + the final three-seed figure (`figures/seeds/`).**
+Pass 2 with three seeds: GLA recall **0.953 [0.92–0.99] at 8192**, 0.991 at 2048; transformer 0.111 / 0.010;
+hybrid 0.316 / 0.012. Every run (r04, r05, r06) passed the sanity gate. `scripts/aggregate_seeds.py --runs r04
+r05 r06` → `figures/seeds/` (committed): money_figure_seeds.png/pdf (mean, bands = seed range), SEEDS.md
+(every per-seed value), aggregated CSVs.
+
+**Final result (three seeds, ~2.67M params / 5 layers each):**
+1. **Hybrid (2 of 5 attention layers) ≥ 0.97 recall at every load up to 128 bindings, in every seed**, at ~40%
+   of dense decode memory/latency at 64k context.
+2. **Linear vs dense cross over:** linear > dense up to 32 bindings in every seed; dense > linear at 128 in every
+   seed (margin 0.01–0.13); 64 is the crossover zone.
+3. **Length:** linear recall 0.95 at 12.8× training length in every seed; both RoPE-attention models collapse
+   past ~1024.
+4. **Decode cost:** linear keeps a constant 0.33 MB state at ~5.5 ms/token; dense keeps a 640 MB KV cache at
+   56 ms/token at 64k context.
+
+**Caveats:** single scale (~2.7M); the pure transformer plateaus at ~0.80–0.85 in-distribution (load-driven,
+not key length, so a trainability observation at this scale); lr tuned at 4 layers; GLA still creeping up at
+its 15000-step ceiling; the control's far-length behaviour (8192) is seed-dependent.
+
+**2026-10-05 — r06 plan A (seed 2): with three seeds the capacity crossover is real.**
+Gate passes (in-dist assoc: hybrid 1.00, GLA 0.946, transformer 0.797; control 1.00 for all).
+Per-seed paired difference (GLA − transformer, per-query recall, same prompts):
+
+| n_bindings | s0 | s1 | s2 | mean T / GLA / hybrid |
+|---:|---:|---:|---:|---|
+| 32 | +0.04 | +0.06 | +0.13 | 0.851 / 0.929 / 1.000 |
+| 64 | −0.13 | +0.03 | −0.06 | 0.653 / 0.600 / 0.990 |
+| 128 | −0.13 | −0.06 | −0.01 | 0.393 / 0.329 / 0.983 |
+
+- **GLA > dense up to 32 bindings in every seed; dense > GLA at 128 in every seed (margin 0.01–0.13); 64 is
+  the crossover zone (2 of 3 seeds favour dense).**
+- **Hybrid ≥ 0.97 at every load in every seed.**
+- **Control:** GLA ≥ 0.98 at 2048 in every seed vs ≤ 0.21 for both attention models; beyond that GLA varies
+  (8192: 0.98 / 0.50 / 0.59).
+- Pending: r06 plan B (pass 2), then the final three-seed figure.
+
+**2026-10-05 — r05 plan B: recall length-generalisation holds on both seeds.**
+Pass 2 (recall at 8 bindings), mean [range] over r04 + r05: GLA 0.991 [0.99–0.99] at 2048 and **0.970
+[0.95–0.99] at 8192**; transformer 0.057 / 0.011, hybrid 0.278 / 0.013. Both RoPE models collapse past ~1024
+in both seeds. The seed-dependence seen at 8192 (0.98 vs 0.50) is specific to the single-value *control*;
+recall itself generalises in both seeds. Pass 4 repeats on seed 1. Decode cost is identical (architecture-only).
+
+**2026-10-04 — r06 prepared (seed 2) + multi-seed figure.**
+- `seed: 2` in all three configs: a third replicate (r04 = 0, r05 = 1, r06 = 2). Nothing else changes.
+- `scripts/aggregate_seeds.py --runs r04 r05 r06` pulls each run's CSVs from `kaggle-results`, averages
+  every eval cell across seeds, and draws the money figure with **bands = min–max across seeds**. The caption
+  states the seed count per panel; decode cost is copied, not averaged (it is architecture-only). `SEEDS.md`
+  lists every per-seed value next to the mean, so a disagreement is never hidden.
+- Preview on r04 + r05: at 64 bindings the transformer [0.62–0.73] and GLA [0.49–0.75] bands overlap; the
+  hybrid stays at [0.98–1.00].
+
+**2026-10-04 — r05 plan A (seed-1 replicate of r04): seed variance is large; the headline must narrow.**
+
+Paired with r04 (seed 0), same prompts, per-query recall:
+
+| n_bindings | transformer s0 / s1 | gated_linear s0 / s1 | hybrid s0 / s1 |
+|---:|---:|---:|---:|
+| 16 | 0.945 / 0.949 | 0.964 / 0.983 | 1.00 / 1.00 |
+| 32 | 0.842 / 0.871 | 0.882 / 0.935 | 1.00 / 1.00 |
+| 64 | 0.620 / 0.728 | **0.489 / 0.754** | 0.997 / 0.982 |
+| 128 | 0.347 / 0.512 | 0.222 / 0.456 | 0.990 / 0.973 |
+
+Control vs length: GLA 1.00 / 0.98 at 2048 in both seeds, but 0.98 → **0.50** at 8192. Both attention models
+collapse past ~1024 in both seeds (transformer at 1024: 0.955 / 0.214).
+
+- **Seed swings reach 0.26 at high load** (GLA @ 64), bigger than the GLA-vs-dense gap. At 64 the order
+  flips with the seed (s0: dense ahead by 0.13; s1: GLA ahead by 0.03).
+- **Robust across both seeds:**
+  - the hybrid holds ≥ 0.97 at every load
+  - GLA ≥ dense up to 32 bindings
+  - dense modestly ahead at 128
+  - GLA ≫ attention at 2× training length
+  - decode memory/latency (architecture-only, seed-independent)
+- **Not robust:** "linear degrades faster than dense at 64", and "GLA length-generalises perfectly to 8192".
+- Key-length (pass 4) pattern repeats: transformer ~10 points worse on 3-digit keys; GLA shows no 3-digit penalty.
+- Next: a third seed (r06) to put a real spread on the 64/128 cells, and r05 plan B (pass 2) for paired length
+  numbers. Decode cost does not need re-running (it depends on architecture only).
 
 **2026-10-03 — r05 prepared: seed replicate of r04.** `seed: 1` in all three configs; nothing else changes.
 The seed now picks the training-example stream as well as the weight init (before, every run read the same

@@ -142,3 +142,24 @@ def test_checkpoint_without_conv_is_stale_under_conv_config(tmp_path, monkeypatc
     same["train"] = dict(cfg["train"], lr=0.123)
     (tmp_path / "transformer_sweep.json").write_text(json.dumps({"config": same, "history": hist}))
     assert ra.checkpoint_status("transformer")[0] == "ok"
+
+
+def test_aggregate_seeds_means_ranges_and_keeps_every_seed(tmp_path):
+    from scripts.aggregate_seeds import aggregate
+
+    hdr = ("model,mode,pass,seq_len_nominal,seq_len_true_tokens,n_bindings,n_queries,distractor_density,"
+           "accuracy_exact,accuracy_per_query,ci_low,ci_high,ci_low_pq,ci_high_pq,n,seed\n")
+    for run, v, oom in (("r04", 0.489, False), ("r05", 0.754, False), ("r06", None, True)):
+        d = tmp_path / run
+        d.mkdir()
+        cell = "" if oom else f"{v}"
+        (d / "pass1_capacity.csv").write_text(
+            hdr + f"gated_linear_sweep,assoc_recall,1,256,386,64,16,0.0,0.0,{cell},,,,,1000,0\n")
+    out = tmp_path / "agg"
+    res = aggregate({r: str(tmp_path / r) for r in ("r04", "r05", "r06")}, str(out), make_plot=False)
+    row = res["pass1_capacity.csv"][0]
+    assert row["n_seeds"] == 2                                   # the OOM seed is not averaged in
+    assert abs(row["accuracy_per_query"] - (0.489 + 0.754) / 2) < 1e-4
+    assert (row["ci_low_pq"], row["ci_high_pq"]) == (0.489, 0.754)  # band = seed range
+    assert "r04=0.489" in row["per_seed"] and "r06=OOM" in row["per_seed"]
+    assert "r05=0.754" in (out / "SEEDS.md").read_text()

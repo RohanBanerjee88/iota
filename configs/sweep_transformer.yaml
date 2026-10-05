@@ -22,6 +22,8 @@
 #  * r05: seed 0 -> 1, a REPLICATE of r04 (same everything else). The seed now sets
 #    both the weight init and the training-example stream; the held-out eval set and
 #    every eval pass use the same prompts as r04, so the two runs are directly paired.
+#  * r06: seed 1 -> 2, a third replicate (r04 = seed 0, r05 = seed 1), so the high-load
+#    cells (64/128 bindings), where seeds disagree by up to 0.26, get a real spread.
 arch: transformer
 d_model: 256
 n_layers: 5
@@ -64,7 +66,7 @@ train:
   eval_every: 500
   eval_n: 500
   patience: 8
-  seed: 1
+  seed: 2
   lr: 0.0015
   run_name: transformer_sweep
   grad_clip: 1.0

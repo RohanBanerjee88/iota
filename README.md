@@ -4,7 +4,7 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
-| [r06-smoke](runs/r06-smoke/SUMMARY.md) | 2026-10-05 03:56 UTC | train:transformer | Tesla T4 | `a66cc35` |
+| [r06-smoke](runs/r06-smoke/SUMMARY.md) | 2026-10-05 03:56 UTC | train:gated_linear | Tesla T4 | `a66cc35` |
 | [r05](runs/r05/SUMMARY.md) | 2026-10-04 06:33 UTC | plot | Tesla T4 | `e713514` |
 | [r05-smoke](runs/r05-smoke/SUMMARY.md) | 2026-10-04 06:26 UTC | plot | Tesla T4 | `e713514` |
 | [r04](runs/r04/SUMMARY.md) | 2026-10-03 22:13 UTC | eval 4 | Tesla T4 | `5a453bd` |

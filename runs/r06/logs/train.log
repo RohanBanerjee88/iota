@@ -61,3 +61,71 @@
   .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
   [hf] pushed hybrid_sweep.safetensors
   [hf] pushed hybrid_sweep.json
+  [sync] published 2 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r06
+[transformer] no local checkpoint -> trying the Hub
+
+========================================================================
+=== TRAIN transformer -> transformer_sweep
+========================================================================
+[sweep] model=transformer params=2.66M device=cuda max_steps=15000 bs=64 patience=8
+[sweep] transformer step   500 loss 0.106 bal 0.301 [assoc 0.056 state 0.545] exact 0.188 diff 0.00 * (27s)
+[sweep] transformer step  1000 loss 0.062 bal 0.296 [assoc 0.059 state 0.533] exact 0.186 diff 0.00  (54s)
+[sweep] transformer step  1500 loss 0.193 bal 0.600 [assoc 0.349 state 0.850] exact 0.370 diff 0.25 * (109s)
+[sweep] transformer step  2000 loss 0.184 bal 0.773 [assoc 0.559 state 0.988] exact 0.462 diff 0.50 * (227s)
+[sweep] transformer step  2500 loss 0.257 bal 0.819 [assoc 0.645 state 0.994] exact 0.490 diff 0.75 * (417s)
+[sweep] transformer step  3000 loss 0.265 bal 0.844 [assoc 0.688 state 1.000] exact 0.524 diff 1.00 * (688s)
+[sweep] transformer step  3500 loss 0.287 bal 0.852 [assoc 0.704 state 1.000] exact 0.534 diff 1.00 * (1001s)
+[sweep] transformer step  4000 loss 0.260 bal 0.858 [assoc 0.717 state 1.000] exact 0.546 diff 1.00 * (1313s)
+[sweep] transformer step  4500 loss 0.274 bal 0.863 [assoc 0.726 state 1.000] exact 0.540 diff 1.00 * (1626s)
+[sweep] transformer step  5000 loss 0.256 bal 0.866 [assoc 0.733 state 1.000] exact 0.550 diff 1.00 * (1939s)
+[sweep] transformer step  5500 loss 0.236 bal 0.865 [assoc 0.730 state 1.000] exact 0.548 diff 1.00  (2253s)
+[sweep] transformer step  6000 loss 0.302 bal 0.870 [assoc 0.740 state 1.000] exact 0.550 diff 1.00 * (2567s)
+[sweep] transformer step  6500 loss 0.203 bal 0.874 [assoc 0.748 state 1.000] exact 0.556 diff 1.00 * (2879s)
+[sweep] transformer step  7000 loss 0.183 bal 0.879 [assoc 0.758 state 1.000] exact 0.566 diff 1.00 * (3193s)
+[sweep] transformer step  7500 loss 0.190 bal 0.882 [assoc 0.764 state 1.000] exact 0.562 diff 1.00 * (3506s)
+[sweep] transformer step  8000 loss 0.239 bal 0.889 [assoc 0.778 state 1.000] exact 0.566 diff 1.00 * (3821s)
+[sweep] transformer step  8500 loss 0.178 bal 0.887 [assoc 0.774 state 1.000] exact 0.576 diff 1.00  (4134s)
+[sweep] transformer step  9000 loss 0.189 bal 0.892 [assoc 0.790 state 0.994] exact 0.582 diff 1.00 * (4449s)
+[sweep] transformer step  9500 loss 0.245 bal 0.896 [assoc 0.792 state 1.000] exact 0.570 diff 1.00 * (4763s)
+[sweep] transformer step 10000 loss 0.175 bal 0.892 [assoc 0.783 state 1.000] exact 0.574 diff 1.00  (5076s)
+[sweep] transformer step 10500 loss 0.174 bal 0.897 [assoc 0.800 state 0.994] exact 0.580 diff 1.00 * (5390s)
+[sweep] transformer step 11000 loss 0.169 bal 0.896 [assoc 0.797 state 0.994] exact 0.578 diff 1.00  (5704s)
+[sweep] transformer step 11500 loss 0.116 bal 0.895 [assoc 0.797 state 0.994] exact 0.582 diff 1.00  (6017s)
+[sweep] transformer step 12000 loss 0.143 bal 0.894 [assoc 0.793 state 0.994] exact 0.578 diff 1.00  (6330s)
+[sweep] transformer step 12500 loss 0.156 bal 0.901 [assoc 0.802 state 1.000] exact 0.602 diff 1.00 * (6643s)
+[sweep] transformer step 13000 loss 0.171 bal 0.896 [assoc 0.799 state 0.994] exact 0.592 diff 1.00  (6957s)
+[sweep] transformer step 13500 loss 0.194 bal 0.898 [assoc 0.802 state 0.994] exact 0.590 diff 1.00  (7270s)
+[sweep] transformer step 14000 loss 0.158 bal 0.897 [assoc 0.799 state 0.994] exact 0.582 diff 1.00  (7583s)
+[sweep] transformer step 14500 loss 0.211 bal 0.900 [assoc 0.805 state 0.994] exact 0.584 diff 1.00  (7896s)
+[sweep] transformer step 15000 loss 0.148 bal 0.899 [assoc 0.804 state 0.994] exact 0.584 diff 1.00  (8209s)
+[sweep] transformer BEST plateau_acc = 0.9010 -> experiments/results/transformer_sweep
+=== transformer done, best balanced acc = 0.9010
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ...sformer_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[A
+
+  ...sformer_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[AProcessing Files (0 / 1)      :   5%|▌         |  553kB / 10.8MB, 2.77MB/s  
+New Data Upload               :   5%|▌         |  553kB / 10.8MB, 2.77MB/s  [A
+
+  ...sformer_sweep.safetensors:  21%|██        | 2.21MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  21%|██        | 2.21MB / 10.8MB, 5.54MB/s  
+New Data Upload               :  21%|██        | 2.21MB / 10.8MB, 5.54MB/s  [A
+
+  ...sformer_sweep.safetensors:  62%|██████▏   | 6.64MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  62%|██████▏   | 6.64MB / 10.8MB, 11.1MB/s  
+New Data Upload               :  62%|██████▏   | 6.64MB / 10.8MB, 11.1MB/s  [A
+
+  ...sformer_sweep.safetensors:  98%|█████████▊| 10.5MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  98%|█████████▊| 10.5MB / 10.8MB, 13.1MB/s  
+New Data Upload               :  98%|█████████▊| 10.5MB / 10.8MB, 13.1MB/s  [A
+
+  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 10.8MB/s  
+New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 10.8MB/s  [A
+
+  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
+
+  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
+
+  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 7.69MB/s  
+New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 7.69MB/s  
+  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
+  [hf] pushed transformer_sweep.safetensors
+  [hf] pushed transformer_sweep.json

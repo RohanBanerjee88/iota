@@ -27,8 +27,10 @@ from typing import Dict, List, Optional
 
 PASS_FILES = ["pass1_capacity.csv", "pass2_length.csv", "pass3_control.csv"]
 KEYLEN_FILE = "pass4_keylen.csv"
+GRID_FILE = "pass5_grid.csv"
+FREERUN_FILE = "pass6_freerun.csv"
 COST_FILES = ["decode_profile.csv", "cost_profile.csv"]
-ALL_FILES = PASS_FILES + [KEYLEN_FILE] + COST_FILES
+ALL_FILES = PASS_FILES + [KEYLEN_FILE, GRID_FILE, FREERUN_FILE] + COST_FILES
 ARCHS = ["transformer", "gated_linear", "hybrid"]
 
 
@@ -171,6 +173,50 @@ def aggregate(run_dirs: Dict[str, str], out_dir: str, make_plot: bool = True) ->
         rows = aggregate_keylen(by_run)
         _write(os.path.join(out_dir, KEYLEN_FILE), rows)
         result[KEYLEN_FILE] = rows
+    by_run = {run: _read(os.path.join(d, GRID_FILE)) for run, d in run_dirs.items()}
+    by_run = {r: rows for r, rows in by_run.items() if rows}
+    if by_run:  # same key fields as passes 1-3, so the same aggregation applies
+        rows = aggregate_pass(by_run)
+        _write(os.path.join(out_dir, GRID_FILE), rows)
+        result[GRID_FILE] = rows
+        md += [f"## Joint load × distance grid (Pass 5) — {len(by_run)} seed(s): {', '.join(by_run)}", ""]
+        lens = sorted({int(float(r["seq_len_nominal"])) for r in rows})
+        for m in [a for a in ARCHS if any(_arch(r["model"]) == a for r in rows)]:
+            md += [f"**{m}**", "", "| bindings \\ tokens | " + " | ".join(map(str, lens)) + " |",
+                   "|---:|" + "---|" * len(lens)]
+            for nb in sorted({int(r["n_bindings"]) for r in rows}):
+                cells = []
+                for L in lens:
+                    h = [r for r in rows if _arch(r["model"]) == m and int(r["n_bindings"]) == nb
+                         and int(float(r["seq_len_nominal"])) == L]
+                    cells.append("–" if not h or h[0]["accuracy_per_query"] is None else
+                                 f"{h[0]['accuracy_per_query']:.3f} [{h[0]['ci_low_pq']:.2f}–{h[0]['ci_high_pq']:.2f}]")
+                md.append(f"| {nb} | " + " | ".join(cells) + " |")
+            md.append("")
+    by_run = {run: _read(os.path.join(d, FREERUN_FILE)) for run, d in run_dirs.items()}
+    by_run = {r: rows for r, rows in by_run.items() if rows}
+    if by_run:
+        cells = defaultdict(list)
+        for run, rows in by_run.items():
+            for r in rows:
+                cells[(r["model"], int(r["n_bindings"]))].append(
+                    (run, float(r["per_query_teacher_forced"]), float(r["per_query_free_running"])))
+        agg = []
+        for (model, nb), items in sorted(cells.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+            agg.append({"model": model, "n_bindings": nb,
+                        "teacher_forced_mean": round(statistics.fmean(t for _, t, _ in items), 4),
+                        "free_running_mean": round(statistics.fmean(f for _, _, f in items), 4),
+                        "max_abs_gap": round(max(abs(t - f) for _, t, f in items), 4),
+                        "n_seeds": len(items),
+                        "per_seed": " ".join(f"{r}={t:.3f}/{f:.3f}" for r, t, f in items)})
+        _write(os.path.join(out_dir, FREERUN_FILE), agg)
+        result[FREERUN_FILE] = agg
+        md += [f"## Free-running vs teacher-forced (Pass 6) — {len(by_run)} seed(s)", "",
+               "| model | n_bindings | teacher-forced | free-running | max per-seed gap |",
+               "|---|---:|---:|---:|---:|"]
+        md += [f"| {_arch(r['model'])} | {r['n_bindings']} | {r['teacher_forced_mean']:.3f} | "
+               f"{r['free_running_mean']:.3f} | {r['max_abs_gap']:.3f} |" for r in agg]
+        md.append("")
     for f in COST_FILES:  # architecture-only: copy from the first run that has it
         for run, d in run_dirs.items():
             rows = _read(os.path.join(d, f))

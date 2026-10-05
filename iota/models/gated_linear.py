@@ -64,7 +64,15 @@ class GatedLinearAttention(nn.Module):
         # bindings are written early and queried at the end, so a low-gamma init
         # (e.g. sigmoid(2)=0.88 -> gamma^100 ~ 1e-6) forgets the answer before
         # readout and the model never learns to recall. sigmoid(6)=0.9975.
-        nn.init.constant_(self.g_proj.bias, decay_bias_init)
+        self.decay_bias_init = decay_bias_init
+        self.init_gate()
+
+    def init_gate(self) -> None:
+        """Intended gate init: bias decay_bias_init, zero weight (gamma ~ sigmoid(bias)).
+
+        NOTE: LMBackbone's generic init runs after this and overwrites it unless the
+        model is built with legacy_gate_init=False (see LMBackbone)."""
+        nn.init.constant_(self.g_proj.bias, self.decay_bias_init)
         nn.init.zeros_(self.g_proj.weight)
 
     # -- shared projections --------------------------------------------------
@@ -203,7 +211,7 @@ class GatedLinearAttention(nn.Module):
 
 class GatedLinearLM(SeqModel):
     def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, chunk_size=64, dropout=0.0,
-                 decay_bias_init=6.0, short_conv=0, **_):
+                 decay_bias_init=6.0, short_conv=0, legacy_gate_init=True, **_):
         super().__init__()
         blocks = [
             Block(d_model,
@@ -211,7 +219,7 @@ class GatedLinearLM(SeqModel):
                   d_ff, dropout)
             for _ in range(n_layers)
         ]
-        self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout)
+        self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout, legacy_gate_init)
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
         return self.backbone(tokens)
@@ -228,4 +236,5 @@ class GatedLinearLM(SeqModel):
             dropout=cfg.get("dropout", 0.0),
             decay_bias_init=cfg.get("decay_bias_init", 6.0),
             short_conv=cfg.get("short_conv", 0),
+            legacy_gate_init=cfg.get("legacy_gate_init", True),
         )

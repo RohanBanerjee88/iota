@@ -33,6 +33,36 @@ the figure is not trustworthy.
 
 ## Timeline
 
+**2026-10-06 — Correction: the GLA decay-gate init never took effect (found in the paper-draft audit).**
+- `GatedLinearAttention.__init__` sets the gate bias to `decay_bias_init` (6.0 → γ ≈ 0.9975) with zero weight.
+  `LMBackbone` then applies its generic init to *every* linear layer, which overwrites that with **bias 0 and
+  random weight (γ = 0.5 at init)**. Confirmed by building the r04–r06 configs: every gate bias is 0.0.
+- So **every linear and hybrid model in r01–r06 trained with γ₀ = 0.5**, not the configured 0.9975. The
+  2026-06-19 entry's "decay-gate init fix" only ever reached the standalone layer that the unit test checks,
+  never a full model. Whatever made GLA learn recall in June, it was not that init.
+- The results stand as measurements, but must be described with the init they actually used. Configs and the
+  paper's method section must not claim γ₀ ≈ 0.9975.
+- **Fix, without rewriting history:** a new model key `legacy_gate_init`, defaulting to `true` (also when the key
+  is absent), reproduces the historical behaviour bit-for-bit (verified: same seed → identical weights to old
+  `main` for all three archs). `legacy_gate_init: false` applies the intended init. The checkpoint fingerprint
+  treats a missing key as `true`, so r01–r06 checkpoints stay valid. Tests cover both paths.
+- Planned ablation: retrain GLA and hybrid with `legacy_gate_init: false` (3 seeds) to measure whether γ₀
+  changes the load/distance trade-off or the seed lottery.
+
+**2026-10-06 — Audit evals for the paper, no retraining needed.**
+- **Pass 5, joint load × distance grid:** {8, 32, 64, 128} bindings × {1024, 2048, 4096, 8192} tokens, with 8
+  queries in every cell. Building it exposed a bookkeeping bias: `seq_len` budgets whitespace *words*, but numbers
+  split into digit tokens, so more bindings mean more tokens (128 bindings at "1024" was ~1270 real tokens).
+  Grid cells now regenerate until the true length is within ±11 tokens of target. (Pass 1's existing cells are
+  unchanged and keep their recorded true lengths.)
+- **Pass 6, free-running vs teacher-forced:** on Pass 1's prompts, the model's own answers stay in the context for
+  later queries. Query 0 is identical under both protocols (tested); a model that memorised its data scores the
+  same either way (tested).
+- Notebook `PLAN="audit"` runs passes 5+6 on r04, r05, r06 in turn (wiping local checkpoints between runs).
+  `aggregate_seeds` and `SUMMARY.md` tabulate both.
+- Also verified for the draft: validation prompts, eval prompts and 60k sampled training prompts do not overlap
+  (val∩eval = 0, train∩eval = 0).
+
 **2026-10-05 — r06 plan B + the final three-seed figure (`figures/seeds/`).**
 Pass 2 with three seeds: GLA recall **0.953 [0.92–0.99] at 8192**, 0.991 at 2048; transformer 0.111 / 0.010;
 hybrid 0.316 / 0.012. Every run (r04, r05, r06) passed the sanity gate. `scripts/aggregate_seeds.py --runs r04
@@ -409,4 +439,5 @@ patience only counts after the ramp.
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but
   we need to state how each was tuned.
+- **GLA gate init** (2026-10-06): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation pending.
 - **Phase 9 (Gradio demo)** not started. It waits for a trustworthy figure.

@@ -71,7 +71,11 @@ def _fingerprint(cfg: dict) -> dict:
     shouldn't invalidate a finished checkpoint, but changing the architecture or the
     task distribution must. (vocab_size is filled in at train time, so it's ignored.)
     """
-    return {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
+    fp = {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
+    # legacy_gate_init absent == True (every run before the key existed used the
+    # overwritten gate init), so old checkpoints match configs that state it.
+    fp.setdefault("legacy_gate_init", True)
+    return fp
 
 
 def checkpoint_status(arch: str) -> tuple:
@@ -380,7 +384,8 @@ def stage_eval(args) -> None:
         print(f"WARNING: evaluating {len(models)}/{len(ARCH_ORDER)} models -- the "
               f"comparison is incomplete", flush=True)
 
-    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen"}
+    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen",
+             5: "pass5_grid", 6: "pass6_freerun"}
     for p in passes:
         out_csv = os.path.join(RESULTS_DIR, f"{names.get(p, f'pass{p}')}.csv")
         print(f"\n--- pass {p} -> {out_csv}", flush=True)
@@ -388,6 +393,10 @@ def stage_eval(args) -> None:
             from iota.eval import run_keylen_pass
             run_keylen_pass(models, n=args.n, device=device, out_csv=out_csv,
                             minibatch=args.minibatch)
+        elif p == 6:  # free-running vs teacher-forced on pass 1's prompts
+            from iota.eval import run_freerun_pass
+            run_freerun_pass(models, n=args.n, device=device, out_csv=out_csv,
+                             minibatch=args.minibatch)
         else:
             run_pass(p, models, n=args.n, device=device, out_csv=out_csv,
                      minibatch=args.minibatch)
@@ -487,7 +496,7 @@ def main() -> int:
     ap.add_argument("--stage", default="all",
                     choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
-    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic)")
+    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running)")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")

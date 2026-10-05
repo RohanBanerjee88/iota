@@ -227,21 +227,135 @@ def teacher_forced_scores(
     return out
 
 
+@torch.no_grad()
+def free_running_scores(
+    model, examples: List[SweepExample], pad_id: int, device: str, minibatch: int = 32
+) -> List[List[bool]]:
+    """Per-query correctness when the model's OWN answers stay in the context.
+
+    Teacher forcing scores query q with the CORRECT earlier answers in the
+    context. Here the harness still supplies each query ("GET k ="), but the
+    answer digits are generated greedily and kept, so an early mistake can
+    affect later queries. Query 0 is identical under both protocols.
+    """
+    model.eval()
+    out: List[List[bool]] = []
+    for start in range(0, len(examples), minibatch):
+        chunk = examples[start: start + minibatch]
+        # per example: the harness text between answers, and the true answers
+        prefixes, pieces, truths = [], [], []
+        for e in chunk:
+            spans = e.answer_spans
+            prefixes.append(list(e.tokens[: spans[0][0]]))
+            pieces.append([list(e.tokens[spans[i][1]: spans[i + 1][0]]) for i in range(len(spans) - 1)])
+            truths.append([e.tokens[s:en] for s, en in spans])
+        cur = prefixes
+        ok: List[List[bool]] = [[] for _ in chunk]
+        n_q = max(len(t) for t in truths)
+        for q in range(n_q):
+            active = [i for i in range(len(chunk)) if q < len(truths[i])]
+            gen = {i: [] for i in active}
+            width = len(truths[active[0]][q])
+            for _ in range(width):
+                L = max(len(cur[i]) for i in active)
+                batch = torch.full((len(active), L), pad_id, dtype=torch.long)
+                for r, i in enumerate(active):
+                    batch[r, : len(cur[i])] = torch.tensor(cur[i])
+                logits = model(batch.to(device))
+                for r, i in enumerate(active):
+                    tok_id = int(logits[r, len(cur[i]) - 1].argmax())
+                    gen[i].append(tok_id)
+                    cur[i] = cur[i] + [tok_id]
+            for i in active:
+                ok[i].append(gen[i] == list(truths[i][q]))
+                if q + 1 < len(truths[i]):
+                    cur[i] = cur[i] + pieces[i][q]
+        out.extend(ok)
+    return out
+
+
+FREERUN_FIELDS = ["model", "n_bindings", "n_queries", "per_query_teacher_forced", "per_query_free_running",
+                  "exact_teacher_forced", "exact_free_running", "queries_flipped", "n", "seed"]
+
+
+def run_freerun_pass(
+    models: Dict[str, object], n: int = 500, seed: int = 0, device: str = "cpu",
+    out_csv: Optional[str] = None, tok: Tokenizer = None, minibatch: int = 32,
+) -> List[Dict]:
+    """Pass 6: free-running vs teacher-forced scoring on Pass 1's prompts (first n per cell)."""
+    tok = tok or get_tokenizer()
+    rows: List[Dict] = []
+    for ci, cell in enumerate(cells_for_pass(1)):
+        examples = _cell_examples(tok, cell, n, EVAL_OFFSET + seed * 1_000_000 + ci * 10_000)
+        for name, model in models.items():
+            tf = _scores_with_backoff(model, examples, tok.pad_id, device, minibatch, name)
+            mb = minibatch
+            fr = None
+            while fr is None:
+                try:
+                    fr = free_running_scores(model, examples, tok.pad_id, device, mb)
+                except torch.cuda.OutOfMemoryError:
+                    if device.startswith("cuda"):
+                        torch.cuda.empty_cache()
+                    if mb == 1:
+                        break
+                    mb = max(1, mb // 2)
+            if tf is None or fr is None:
+                continue
+            pq = lambda sc: sum(q for s in sc for q in s) / max(1, sum(len(s) for s in sc))
+            ex = lambda sc: sum(1 for s in sc if all(s)) / max(1, len(sc))
+            flipped = sum(1 for a, b in zip(tf, fr) for x, y in zip(a, b) if x != y)
+            rows.append({"model": name, "n_bindings": cell["n_bindings"], "n_queries": cell["n_queries"],
+                         "per_query_teacher_forced": round(pq(tf), 4), "per_query_free_running": round(pq(fr), 4),
+                         "exact_teacher_forced": round(ex(tf), 4), "exact_free_running": round(ex(fr), 4),
+                         "queries_flipped": flipped, "n": n, "seed": seed})
+            print(f"  pass6 {name:18s} nb={cell['n_bindings']:<4} teacher-forced={pq(tf):.3f} "
+                  f"free-running={pq(fr):.3f} flipped={flipped}", flush=True)
+    if out_csv:
+        os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
+        with open(out_csv, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=FREERUN_FIELDS)
+            w.writeheader()
+            w.writerows(rows)
+        print(f"wrote {out_csv} ({len(rows)} rows)", flush=True)
+    return rows
+
+
 def _cell_examples(tok, cell: Dict, n: int, seed_base: int) -> List[SweepExample]:
-    """Build n PAIRED examples for a cell (identical across models)."""
-    exs = []
-    for idx in range(n):
-        exs.append(make_sweep_example(
+    """Build n PAIRED examples for a cell (identical across models).
+
+    The generator budgets length in whitespace WORDS, but numbers split into one
+    token per digit, so more bindings mean more tokens than the nominal seq_len
+    (128 bindings at "1024" is ~1270 real tokens). Cells with exact_true_len
+    re-generate with a corrected nominal length until the true prompt length is
+    within a few tokens of seq_len, so a grid column really holds length fixed.
+    """
+    def make(seq_len, seed):
+        return make_sweep_example(
             tok,
             mode=cell["mode"],
             n_bindings=cell["n_bindings"],
             distractor_density=cell.get("distractor_density", 0.0),
-            seq_len=cell["seq_len"],
-            seed=seed_base + idx,
+            seq_len=seq_len,
+            seed=seed,
             n_queries=cell.get("n_queries", 1),
             query_pos=cell.get("query_pos", "uniform"),
             ops_kinds=cell.get("ops_kinds"),
-        ))
+        )
+
+    exs = []
+    for idx in range(n):
+        target = cell["seq_len"]
+        e = make(target, seed_base + idx)
+        if cell.get("exact_true_len"):
+            nominal = target
+            for _ in range(4):
+                gap = e.true_len - target
+                if abs(gap) <= 8:
+                    break
+                nominal = max(1, nominal - gap)
+                e = make(nominal, seed_base + idx)
+        exs.append(e)
     return exs
 
 
@@ -274,6 +388,16 @@ def cells_for_pass(pass_id: int) -> List[Dict]:
             {"mode": "state_track", "seq_len": sl, "n_bindings": 8,
              "n_queries": 1, "ops_kinds": ["set"], "sweep": sl}
             for sl in (128, 256, 512, 1024, 2048, 4096, 8192)
+        ]
+    if pass_id == 5:  # JOINT load x distance grid: both axes at once, 8 queries every cell
+        # Passes 1 and 2 vary load and distance separately; a model can pass both
+        # and still fail where they meet. Every cell asks the same number of
+        # questions (8), and 1024 tokens already fits the 128-binding definitions,
+        # so within a column the context length is held fixed.
+        return [
+            {"mode": "assoc_recall", "seq_len": sl, "n_bindings": nb, "n_queries": 8,
+             "query_pos": "uniform", "exact_true_len": True, "sweep": f"{nb}x{sl}"}
+            for nb in (8, 32, 64, 128) for sl in (1024, 2048, 4096, 8192)
         ]
     raise ValueError(f"unknown pass {pass_id}")
 

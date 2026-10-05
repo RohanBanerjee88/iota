@@ -276,6 +276,45 @@ def _keylen_section(run_dir: str) -> List[str]:
                     "key resolution, not memory capacity.", ""]
 
 
+def _grid_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass5_grid.csv"))
+    if not rows:
+        return []
+    lines = ["## 4c. Joint load × distance grid (8 queries per cell; true length held per column)", ""]
+    lens = sorted({int(float(r["seq_len_nominal"])) for r in rows})
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        lines += [f"**{m}** — per-query recall", "",
+                  "| bindings \\ tokens | " + " | ".join(str(L) for L in lens) + " |",
+                  "|---:|" + "---:|" * len(lens)]
+        for nb in sorted({int(r["n_bindings"]) for r in rows}):
+            cells = []
+            for L in lens:
+                hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb
+                       and int(float(r["seq_len_nominal"])) == L]
+                cells.append(_fmt(hit[0]["accuracy_per_query"]) if hit else "–")
+            lines.append(f"| {nb} | " + " | ".join(cells) + " |")
+        lines.append("")
+    return lines
+
+
+def _freerun_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass6_freerun.csv"))
+    if not rows:
+        return []
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    lines = ["## 4d. Free-running vs teacher-forced (Pass 1 prompts)", "",
+             "Per-query recall: teacher-forced → free-running (queries whose verdict changed).", "",
+             "| n_bindings | " + " | ".join(models) + " |", "|---:|" + "---|" * len(models)]
+    for nb in sorted({int(r["n_bindings"]) for r in rows}):
+        cells = []
+        for m in models:
+            hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb]
+            cells.append(f"{_fmt(hit[0]['per_query_teacher_forced'])} → {_fmt(hit[0]['per_query_free_running'])} "
+                         f"({hit[0]['queries_flipped']})" if hit else "–")
+        lines.append(f"| {nb} | " + " | ".join(cells) + " |")
+    return lines + [""]
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -346,6 +385,8 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _pass_section(run_dir, "pass3_control.csv", "4. Pass 3 — state_track control",
                         "seq_len_nominal", "seq_len")
         + _keylen_section(run_dir)
+        + _grid_section(run_dir)
+        + _freerun_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

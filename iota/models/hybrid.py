@@ -26,6 +26,7 @@ class HybridLM(SeqModel):
         dropout=0.0,
         decay_bias_init=6.0,
         short_conv=0,
+        legacy_gate_init=True,
         **_,
     ):
         super().__init__()
@@ -39,7 +40,7 @@ class HybridLM(SeqModel):
                 mixer = GatedLinearAttention(d_model, n_heads, chunk_size, dropout, decay_bias_init,
                                              short_conv)
             blocks.append(Block(d_model, mixer, d_ff, dropout))
-        self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout)
+        self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout, legacy_gate_init)
 
     def forward(self, tokens):
         return self.backbone(tokens)
@@ -57,4 +58,5 @@ class HybridLM(SeqModel):
             dropout=cfg.get("dropout", 0.0),
             decay_bias_init=cfg.get("decay_bias_init", 6.0),
             short_conv=cfg.get("short_conv", 0),
+            legacy_gate_init=cfg.get("legacy_gate_init", True),
         )

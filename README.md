@@ -27,14 +27,14 @@ being correct, and what is the smallest fix that keeps it correct?*
 | 6–8 | sweep training, 3 eval passes, cost profiling, figure | ✅ r04: first complete figure (gate passes, size-matched models, decode cost) |
 | 9 | Gradio demo | ⬜ waits for a trustworthy figure |
 
-**Current result (two seeds, r04 + r05; all models ~2.67M params / 5 layers, n=1000 per point per seed):**
-- **The hybrid** (2 of 5 layers attention) holds **≥ 0.97 recall at every load up to 128 bindings** in both
-  seeds. That is the most robust finding.
-- **Pure gated linear vs pure dense** are close and both degrade with load:
-  - linear ≥ dense up to 32 bindings in both seeds
-  - at 64 the order flips with the seed (0.49 vs 0.62; 0.75 vs 0.73)
-  - dense is modestly ahead at 128
-  - seed-to-seed swings reach 0.26 at high load, so a third seed is running before any finer claim
+**Current result (three seeds, r04–r06; all models ~2.67M params / 5 layers, n=1000 per point per seed):**
+- **The hybrid** (2 of 5 layers attention) holds **≥ 0.97 recall at every load up to 128 bindings in every
+  seed**. That is the most robust finding.
+- **Pure gated linear vs pure dense cross over:**
+  - linear beats dense up to 32 bindings in every seed (32: 0.93 vs 0.85 mean)
+  - dense beats linear at 128 in every seed (0.39 vs 0.33 mean, margin 0.01–0.13)
+  - 64 is the crossover zone (2 of 3 seeds favour dense)
+  - seed-to-seed swings reach 0.26 at high load, so the figure plots the seed range
 - **Length:** on recall, linear keeps **0.97 [0.95–0.99] at 8192 tokens** (12.8× training length) in both
   seeds, while both RoPE-attention models collapse past ~1024 (≤ 0.06 at 2048). On the single-value control it
   is ≥ 0.98 at 2048 in both seeds but varies further out (0.98 / 0.50 at 8192).

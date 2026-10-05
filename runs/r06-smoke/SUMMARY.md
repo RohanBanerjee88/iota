@@ -1,6 +1,6 @@
 # iota run `r06-smoke`
 
-- **updated:** 2026-10-05 03:56 UTC (last stage: `eval 1,3,4,2`)
+- **updated:** 2026-10-05 03:57 UTC (last stage: `profile`)
 - **code:** `a66cc35` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -94,11 +94,27 @@ If one model's errors pile up on 3-digit keys, its drop with load is partly key 
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 
-_`cost_profile.csv` not synced yet._
+Peak VRAM MB / median latency ms.
+
+| seq_len | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 28.8 MB / 5.08 ms | 29.1 MB / 11.42 ms | 29.2 MB / 8.83 ms |
+| 256 | 30.2 MB / 5.39 ms | 30.3 MB / 20.08 ms | 30.4 MB / 12.83 ms |
+| 512 | 33.3 MB / 5.58 ms | 32.5 MB / 33.81 ms | 32.9 MB / 20.50 ms |
+| 1024 | 38.7 MB / 8.30 ms | 37.0 MB / 57.41 ms | 37.9 MB / 35.82 ms |
+| 2048 | 50.7 MB / 11.80 ms | 46.9 MB / 105.08 ms | 49.2 MB / 68.65 ms |
+| 4096 | 72.5 MB / 27.28 ms | 64.2 MB / 210.25 ms | 69.5 MB / 134.69 ms |
+| 8192 | 117.5 MB / 83.33 ms | 100.3 MB / 408.48 ms | 111.5 MB / 259.33 ms |
 
 ## 5b. Decode cost (one token at a time, batch 1)
 
-_`decode_profile.csv` not synced yet._
+Memory each model keeps per sequence (exact cache/state size) / median ms per token.
+
+| context | transformer | gated_linear | hybrid |
+|---:|---|---|---|
+| 128 | 1.61 MB / 4.92 ms | 0.33 MB / 5.35 ms | 0.84 MB / 5.28 ms |
+| 512 | 5.36 MB / 4.90 ms | 0.33 MB / 5.34 ms | 2.34 MB / 5.32 ms |
+| 2048 | 20.36 MB / 5.03 ms | 0.33 MB / 5.33 ms | 8.34 MB / 5.40 ms |
 
 ## 6. Figure
 

@@ -35,8 +35,9 @@ being correct, and what is the smallest fix that keeps it correct?*
   - at 64 the order flips with the seed (0.49 vs 0.62; 0.75 vs 0.73)
   - dense is modestly ahead at 128
   - seed-to-seed swings reach 0.26 at high load, so a third seed is running before any finer claim
-- **Length:** linear stays at ≥ 0.98 at 2× training length where RoPE attention collapses (≤ 0.2), in both seeds;
-  further out (8192) it varies by seed (0.98 / 0.50).
+- **Length:** on recall, linear keeps **0.97 [0.95–0.99] at 8192 tokens** (12.8× training length) in both
+  seeds, while both RoPE-attention models collapse past ~1024 (≤ 0.06 at 2048). On the single-value control it
+  is ≥ 0.98 at 2048 in both seeds but varies further out (0.98 / 0.50 at 8192).
 - **Decode cost** (seed-independent): linear keeps a constant 0.33 MB state at 5.5 ms/token; dense keeps a
   640 MB KV cache at 56 ms/token at 64k context; the hybrid sits at ~40% of dense.
 

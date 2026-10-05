@@ -21,7 +21,7 @@ clean run `r01` from scratch on Kaggle, with results published automatically to 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
 | r06 | — | — | A → B | prepared: seed-2 replicate | — |
-| r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
+| r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
 | r03 | 2026-10-02 | `e048745` | tune ✅ → A ✅ → B ✅ | conv fixed the transformer (recall 0.18 → 0.83); hybrid 1.00; GLA 0.23; control 1.00 for all | A: gate PASSES; capacity gap linear < dense at 64/128, hybrid ≈ 1.00 everywhere; GLA length-gen perfect B: GLA length-gen 0.94 at 8192 vs attention ~0.01; cost panel uninformative (prefill only) | r04 param-matched; add decode profiling |
 | r02 | 2026-10-01 | `d218e42` | tune | control learned by all 3; hybrid recall 1.00, transformer 0.18, GLA 0.07 | pure attention can't learn multi-digit key matching → short conv for all (option 1) → r03 |
@@ -33,6 +33,12 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-05 — r05 plan B: recall length-generalisation holds on both seeds.**
+Pass 2 (recall at 8 bindings), mean [range] over r04 + r05: GLA 0.991 [0.99–0.99] at 2048 and **0.970
+[0.95–0.99] at 8192**; transformer 0.057 / 0.011, hybrid 0.278 / 0.013. Both RoPE models collapse past ~1024
+in both seeds. The seed-dependence seen at 8192 (0.98 vs 0.50) is specific to the single-value *control*;
+recall itself generalises in both seeds. Pass 4 repeats on seed 1. Decode cost is identical (architecture-only).
 
 **2026-10-04 — r06 prepared (seed 2) + multi-seed figure.**
 - `seed: 2` in all three configs: a third replicate (r04 = 0, r05 = 1, r06 = 2). Nothing else changes.

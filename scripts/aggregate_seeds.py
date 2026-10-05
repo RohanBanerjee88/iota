@@ -29,8 +29,9 @@ PASS_FILES = ["pass1_capacity.csv", "pass2_length.csv", "pass3_control.csv"]
 KEYLEN_FILE = "pass4_keylen.csv"
 GRID_FILE = "pass5_grid.csv"
 FREERUN_FILE = "pass6_freerun.csv"
+HISTORY_FILE = "pass7_history.csv"
 COST_FILES = ["decode_profile.csv", "cost_profile.csv"]
-ALL_FILES = PASS_FILES + [KEYLEN_FILE, GRID_FILE, FREERUN_FILE] + COST_FILES
+ALL_FILES = PASS_FILES + [KEYLEN_FILE, GRID_FILE, FREERUN_FILE, HISTORY_FILE] + COST_FILES
 ARCHS = ["transformer", "gated_linear", "hybrid"]
 
 
@@ -216,6 +217,36 @@ def aggregate(run_dirs: Dict[str, str], out_dir: str, make_plot: bool = True) ->
                "|---|---:|---:|---:|---:|"]
         md += [f"| {_arch(r['model'])} | {r['n_bindings']} | {r['teacher_forced_mean']:.3f} | "
                f"{r['free_running_mean']:.3f} | {r['max_abs_gap']:.3f} |" for r in agg]
+        md.append("")
+    by_run = {run: _read(os.path.join(d, HISTORY_FILE)) for run, d in run_dirs.items()}
+    by_run = {r: rows for r, rows in by_run.items() if rows}
+    if by_run:  # per-seed paired deltas; the claim needs the SIGN to hold in every seed
+        cells = defaultdict(list)
+        for run, rows in by_run.items():
+            for r in rows:
+                cells[(r["model"], int(r["n_bindings"]), int(r["n_prior"]), r["condition"])].append(
+                    (run, float(r["accuracy"]), float(r["delta_vs_oracle"]),
+                     float(r["delta_ci_low"]), float(r["delta_ci_high"])))
+        agg = []
+        for (model, nb, q, c), items in sorted(cells.items()):
+            agg.append({"model": model, "n_bindings": nb, "n_prior": q, "condition": c,
+                        "accuracy_mean": round(statistics.fmean(a for _, a, *_ in items), 4),
+                        "delta_mean": round(statistics.fmean(d for _, _, d, *_ in items), 4),
+                        "delta_min": round(min(d for _, _, d, *_ in items), 4),
+                        "delta_max": round(max(d for _, _, d, *_ in items), 4),
+                        "seeds_ci_excludes_0": sum(1 for *_, lo, hi in items if lo > 0 or hi < 0),
+                        "n_seeds": len(items),
+                        "per_seed": " ".join(f"{r}={d:+.3f}[{lo:+.2f},{hi:+.2f}]" for r, _, d, lo, hi in items)})
+        _write(os.path.join(out_dir, HISTORY_FILE), agg)
+        result[HISTORY_FILE] = agg
+        md += [f"## Matched histories (Pass 7) — {len(by_run)} seed(s)", "",
+               "Δ = condition − oracle on the final query (paired per item). "
+               "`CI≠0` counts seeds whose 95% CI excludes zero.", "",
+               "| model | bindings | prior Qs | condition | accuracy | Δ mean [seed range] | CI≠0 |",
+               "|---|---:|---:|---|---:|---|---:|"]
+        md += [f"| {_arch(r['model'])} | {r['n_bindings']} | {r['n_prior']} | {r['condition']} | "
+               f"{r['accuracy_mean']:.3f} | {r['delta_mean']:+.3f} [{r['delta_min']:+.3f}, {r['delta_max']:+.3f}] | "
+               f"{r['seeds_ci_excludes_0']}/{r['n_seeds']} |" for r in agg]
         md.append("")
     for f in COST_FILES:  # architecture-only: copy from the first run that has it
         for run, d in run_dirs.items():

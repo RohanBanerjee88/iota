@@ -33,6 +33,25 @@ the figure is not trustworthy.
 
 ## Timeline
 
+**2026-10-06 — Pass 7 built: matched histories (paper direction, Stage 1 screen).**
+Question: does answering earlier questions change later recall? Every query/answer token also updates a
+recurrent state, so a "read" is a write. Design (`iota/history.py`): per item, a fixed fact prefix
+(SET lines + distractors, exactly 512 tokens), a held-out target key, and a history region of exactly T
+tokens before the same final query at the same absolute position:
+- **neutral:** T distractor tokens
+- **oracle:** n_prior other questions with correct answers
+- **generated:** the same questions with the model's own greedy answers
+- **reordered:** the oracle blocks permuted
+
+Cells: 8/32/64 bindings × 0/3/7/15 prior questions (q < n), ≤ ~610 tokens total, so everything is
+in-distribution. Metrics: final-answer greedy accuracy, true-answer log-prob, error-copies-a-history-value
+rate, and paired Δ vs oracle with an item-bootstrap CI. Dense attention only appends on a question, the
+hybrid partly overwrites and linear fully overwrites, so the three archs form a natural control ladder.
+Tests check the invariants: identical prefix, length and final-query position; target never asked earlier;
+reordered is a permutation; neutral has no questions; generated differs only inside answer spans.
+`aggregate_seeds` reports per-seed Δ and how many seeds' CIs exclude 0. Decision rule (from the draft): if
+oracle-clean histories don't hurt beyond matched filler, drop the "query writes damage memory" hypothesis.
+
 **2026-10-06 — Correction: the GLA decay-gate init never took effect (found in the paper-draft audit).**
 - `GatedLinearAttention.__init__` sets the gate bias to `decay_bias_init` (6.0 → γ ≈ 0.9975) with zero weight.
   `LMBackbone` then applies its generic init to *every* linear layer, which overwrites that with **bias 0 and

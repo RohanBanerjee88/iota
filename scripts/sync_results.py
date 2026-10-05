@@ -315,6 +315,29 @@ def _freerun_section(run_dir: str) -> List[str]:
     return lines + [""]
 
 
+def _history_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass7_history.csv"))
+    if not rows:
+        return []
+    lines = ["## 4e. Matched histories (Pass 7): does answering earlier questions change later recall?", "",
+             "Same facts, same final question at the same position; only the history differs. "
+             "Final-query accuracy; Δ = condition − oracle (paired, 95% CI over items).", "",
+             "| model | bindings | prior Qs | none / oracle | neutral (Δ) | generated (Δ) | reordered (Δ) |",
+             "|---|---:|---:|---:|---|---|---|"]
+    def cell(r):
+        return f"{_fmt(r['accuracy'])} ({float(r['delta_vs_oracle']):+.3f} [{_fmt(r['delta_ci_low'], 2)}, {_fmt(r['delta_ci_high'], 2)}])"
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        for nb, q in sorted({(int(r["n_bindings"]), int(r["n_prior"])) for r in mine}):
+            by = {r["condition"]: r for r in mine if int(r["n_bindings"]) == nb and int(r["n_prior"]) == q}
+            base = by.get("none") or by.get("oracle")
+            lines.append(f"| {m} | {nb} | {q} | {_fmt(base['accuracy'])} | "
+                         + " | ".join(cell(by[c]) if c in by else "–" for c in ("neutral", "generated", "reordered"))
+                         + " |")
+    return lines + ["", "Positive neutral Δ = the correctly answered history HURTS the final recall relative "
+                    "to equally long filler.", ""]
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -387,6 +410,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _keylen_section(run_dir)
         + _grid_section(run_dir)
         + _freerun_section(run_dir)
+        + _history_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

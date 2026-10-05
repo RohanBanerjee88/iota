@@ -385,7 +385,7 @@ def stage_eval(args) -> None:
               f"comparison is incomplete", flush=True)
 
     names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen",
-             5: "pass5_grid", 6: "pass6_freerun"}
+             5: "pass5_grid", 6: "pass6_freerun", 7: "pass7_history"}
     for p in passes:
         out_csv = os.path.join(RESULTS_DIR, f"{names.get(p, f'pass{p}')}.csv")
         print(f"\n--- pass {p} -> {out_csv}", flush=True)
@@ -393,6 +393,10 @@ def stage_eval(args) -> None:
             from iota.eval import run_keylen_pass
             run_keylen_pass(models, n=args.n, device=device, out_csv=out_csv,
                             minibatch=args.minibatch)
+        elif p == 7:  # matched histories: does answering earlier questions change later recall?
+            from iota.history import run_history_pass
+            run_history_pass(models, n=args.n, device=device, out_csv=out_csv,
+                             minibatch=args.minibatch)
         elif p == 6:  # free-running vs teacher-forced on pass 1's prompts
             from iota.eval import run_freerun_pass
             run_freerun_pass(models, n=args.n, device=device, out_csv=out_csv,
@@ -496,7 +500,7 @@ def main() -> int:
     ap.add_argument("--stage", default="all",
                     choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
-    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running)")
+    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running, 7 = matched histories)")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")

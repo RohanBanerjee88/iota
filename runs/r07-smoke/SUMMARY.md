@@ -1,6 +1,6 @@
 # iota run `r07-smoke`
 
-- **updated:** 2026-10-06 19:19 UTC (last stage: `tune:hybrid:0.00075`)
+- **updated:** 2026-10-06 19:19 UTC (last stage: `tune:gated_linear:0.00075`)
 - **code:** `d5e5191` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -9,6 +9,7 @@
 | arch | lr | best balanced | assoc | state | exact | best step | final balanced | time |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | transformer ★ | 0.00075 | 0.001 | 0.003 | 0.000 | 0.000 | 60 | 0.001 | 5s |
+| gated_linear ★ | 0.00075 | 0.000 | 0.000 | 0.000 | 0.000 | 20 | 0.000 | 7s |
 | hybrid ★ | 0.00075 | 0.004 | 0.008 | 0.000 | 0.000 | 40 | 0.000 | 6s |
 
 4000 steps each, grad_clip 1.0. ★ = best lr for that arch.

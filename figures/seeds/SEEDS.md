@@ -94,6 +94,118 @@ One seed is not a result: r04 and r05 disagreed by up to 0.26 at high load on id
 | transformer | 64 | 0.651 | 0.629 | 0.026 |
 | transformer | 128 | 0.390 | 0.379 | 0.021 |
 
+## Matched histories (Pass 7) — 3 seed(s)
+
+Δ = condition − oracle on the final query (paired per item). `CI≠0` counts seeds whose 95% CI excludes zero.
+
+| model | bindings | prior Qs | condition | accuracy | Δ mean [seed range] | CI≠0 |
+|---|---:|---:|---|---:|---|---:|
+| gated_linear | 8 | 0 | none | 0.993 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 8 | 3 | generated | 0.990 | -0.003 [-0.006, +0.000] | 0/3 |
+| gated_linear | 8 | 3 | neutral | 0.989 | -0.004 [-0.010, +0.002] | 0/3 |
+| gated_linear | 8 | 3 | oracle | 0.993 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 8 | 3 | reordered | 0.993 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 8 | 7 | generated | 0.997 | -0.003 [-0.008, +0.000] | 1/3 |
+| gated_linear | 8 | 7 | neutral | 0.995 | -0.005 [-0.010, -0.002] | 1/3 |
+| gated_linear | 8 | 7 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 8 | 7 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 32 | 0 | none | 0.917 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 32 | 3 | generated | 0.921 | -0.003 [-0.004, -0.002] | 0/3 |
+| gated_linear | 32 | 3 | neutral | 0.921 | -0.003 [-0.006, +0.000] | 0/3 |
+| gated_linear | 32 | 3 | oracle | 0.924 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 32 | 3 | reordered | 0.923 | -0.001 [-0.004, +0.000] | 0/3 |
+| gated_linear | 32 | 7 | generated | 0.931 | -0.005 [-0.014, +0.000] | 1/3 |
+| gated_linear | 32 | 7 | neutral | 0.925 | -0.011 [-0.020, -0.004] | 0/3 |
+| gated_linear | 32 | 7 | oracle | 0.936 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 32 | 7 | reordered | 0.935 | -0.001 [-0.004, +0.002] | 0/3 |
+| gated_linear | 32 | 15 | generated | 0.927 | -0.010 [-0.022, -0.002] | 1/3 |
+| gated_linear | 32 | 15 | neutral | 0.920 | -0.017 [-0.032, -0.006] | 1/3 |
+| gated_linear | 32 | 15 | oracle | 0.937 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 32 | 15 | reordered | 0.940 | +0.003 [-0.002, +0.010] | 0/3 |
+| gated_linear | 64 | 0 | none | 0.748 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 64 | 3 | generated | 0.757 | +0.001 [-0.002, +0.004] | 0/3 |
+| gated_linear | 64 | 3 | neutral | 0.755 | -0.001 [-0.014, +0.006] | 0/3 |
+| gated_linear | 64 | 3 | oracle | 0.755 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 64 | 3 | reordered | 0.759 | +0.004 [-0.004, +0.012] | 1/3 |
+| gated_linear | 64 | 7 | generated | 0.765 | -0.003 [-0.012, +0.004] | 0/3 |
+| gated_linear | 64 | 7 | neutral | 0.768 | -0.001 [-0.004, +0.002] | 0/3 |
+| gated_linear | 64 | 7 | oracle | 0.769 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 64 | 7 | reordered | 0.770 | +0.001 [-0.006, +0.008] | 0/3 |
+| gated_linear | 64 | 15 | generated | 0.767 | -0.012 [-0.018, -0.002] | 1/3 |
+| gated_linear | 64 | 15 | neutral | 0.760 | -0.019 [-0.034, -0.008] | 1/3 |
+| gated_linear | 64 | 15 | oracle | 0.779 | +0.000 [+0.000, +0.000] | 0/3 |
+| gated_linear | 64 | 15 | reordered | 0.774 | -0.005 [-0.008, -0.002] | 0/3 |
+| hybrid | 8 | 0 | none | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 3 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 3 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 3 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 3 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 7 | generated | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 7 | neutral | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 7 | oracle | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 8 | 7 | reordered | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 0 | none | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 3 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 3 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 3 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 3 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 7 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 7 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 7 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 7 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 15 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 15 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 15 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 32 | 15 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 0 | none | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 3 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 3 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 3 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 3 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 7 | generated | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 7 | neutral | 1.000 | +0.001 [+0.000, +0.002] | 0/3 |
+| hybrid | 64 | 7 | oracle | 0.999 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 7 | reordered | 1.000 | +0.001 [+0.000, +0.002] | 0/3 |
+| hybrid | 64 | 15 | generated | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 15 | neutral | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 15 | oracle | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| hybrid | 64 | 15 | reordered | 1.000 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 8 | 0 | none | 0.957 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 8 | 3 | generated | 0.963 | -0.011 [-0.016, -0.006] | 2/3 |
+| transformer | 8 | 3 | neutral | 0.961 | -0.014 [-0.022, -0.010] | 1/3 |
+| transformer | 8 | 3 | oracle | 0.975 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 8 | 3 | reordered | 0.976 | +0.001 [+0.000, +0.002] | 0/3 |
+| transformer | 8 | 7 | generated | 0.962 | -0.033 [-0.042, -0.026] | 3/3 |
+| transformer | 8 | 7 | neutral | 0.961 | -0.035 [-0.040, -0.030] | 3/3 |
+| transformer | 8 | 7 | oracle | 0.995 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 8 | 7 | reordered | 0.995 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 32 | 0 | none | 0.815 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 32 | 3 | generated | 0.823 | -0.014 [-0.016, -0.010] | 2/3 |
+| transformer | 32 | 3 | neutral | 0.811 | -0.025 [-0.030, -0.022] | 3/3 |
+| transformer | 32 | 3 | oracle | 0.837 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 32 | 3 | reordered | 0.834 | -0.003 [-0.008, +0.000] | 0/3 |
+| transformer | 32 | 7 | generated | 0.852 | -0.021 [-0.030, -0.014] | 2/3 |
+| transformer | 32 | 7 | neutral | 0.843 | -0.030 [-0.034, -0.026] | 3/3 |
+| transformer | 32 | 7 | oracle | 0.873 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 32 | 7 | reordered | 0.872 | -0.001 [-0.002, +0.000] | 0/3 |
+| transformer | 32 | 15 | generated | 0.847 | -0.053 [-0.066, -0.042] | 3/3 |
+| transformer | 32 | 15 | neutral | 0.825 | -0.074 [-0.102, -0.054] | 3/3 |
+| transformer | 32 | 15 | oracle | 0.899 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 32 | 15 | reordered | 0.895 | -0.004 [-0.012, +0.002] | 1/3 |
+| transformer | 64 | 0 | none | 0.650 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 64 | 3 | generated | 0.639 | -0.013 [-0.018, -0.006] | 1/3 |
+| transformer | 64 | 3 | neutral | 0.648 | -0.005 [-0.012, +0.004] | 0/3 |
+| transformer | 64 | 3 | oracle | 0.653 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 64 | 3 | reordered | 0.654 | +0.001 [-0.004, +0.008] | 0/3 |
+| transformer | 64 | 7 | generated | 0.657 | -0.013 [-0.016, -0.010] | 0/3 |
+| transformer | 64 | 7 | neutral | 0.670 | +0.001 [-0.020, +0.018] | 0/3 |
+| transformer | 64 | 7 | oracle | 0.669 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 64 | 7 | reordered | 0.667 | -0.002 [-0.012, +0.004] | 0/3 |
+| transformer | 64 | 15 | generated | 0.641 | -0.055 [-0.078, -0.038] | 3/3 |
+| transformer | 64 | 15 | neutral | 0.661 | -0.035 [-0.078, +0.000] | 1/3 |
+| transformer | 64 | 15 | oracle | 0.697 | +0.000 [+0.000, +0.000] | 0/3 |
+| transformer | 64 | 15 | reordered | 0.693 | -0.003 [-0.006, -0.002] | 0/3 |
+
 _decode_profile.csv: from r04 (cost depends on architecture only, not the seed)._
 
 _cost_profile.csv: from r04 (cost depends on architecture only, not the seed)._

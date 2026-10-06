@@ -13,13 +13,17 @@ under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 and its caveats. The paper audit (passes 5 and 6, three seeds) is in: the linear model's failure is load, not
 distance, and teacher forcing does not inflate any headline number.
 
-**Next:** pass 7 (matched histories) on r04–r06, then r07 (the gate-init ablation, paired with r04).
+Pass 7 (2026-10-06) rejected the "asking a question damages a recurrent memory" hypothesis: no architecture
+recalls worse after answered questions than after matched filler.
+
+**Next:** r07 (the gate-init ablation, paired with r04).
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
 | r07 | — | `configs/fixinit/` | prepared | r04 (seed 0) with the intended GLA gate init (`legacy_gate_init: false`); transformer reused from r04 | run after pass 7 |
+| audit | 2026-10-06 | `1a8050f` | pass 7 on r04–r06 | answered questions never hurt later recall (any arch); dense *gains* up to 0.07 from them; GLA within ±0.02; hybrid 1.00 throughout | drop the read-is-a-write hypothesis; r07 next |
 | audit | 2026-10-05 | `28c0e1e` | passes 5, 6 on r04–r06 | GLA: load costs 0.55, 8× distance costs ≤0.05; dense/hybrid collapse past 1024 at any load; free-running ≈ teacher-forced (max gap 0.038, dense) | headline numbers stand; pass 7 next |
 | r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
 | r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
@@ -34,6 +38,40 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-06 — Pass 7 on r04–r06: answering questions does not damage recall. Hypothesis dropped.**
+Numbers: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md) and `figures/seeds/pass7_history.csv` (n = 500 per cell
+per seed). Δ = condition − oracle, paired per item. The hypothesis predicted **neutral > oracle**, especially for GLA.
+
+| model | 32 facts, 15 prior Qs: none* / oracle / neutral / generated | 64 facts, 15 prior Qs: oracle / neutral |
+|---|---|---|
+| GLA | 0.917 / 0.937 / 0.920 / 0.927 | 0.779 / 0.760 |
+| dense | 0.815 / 0.899 / 0.825 / 0.847 | 0.697 / 0.661 |
+| hybrid | 1.00 everywhere | 1.00 |
+
+\* "none" = the 0-prior cell, which uses different items, so it is an unpaired reference.
+
+- **Every sign is the wrong way for the hypothesis.** Correctly answered questions never hurt, in any architecture,
+  cell or seed. For dense attention they *help*, by up to 0.074 (3/3 seeds' CIs exclude 0 at 32 facts / 15 Qs).
+  For GLA, oracle − neutral is +0.00 to +0.02 and mostly inside the CIs. The hybrid sits at ceiling, so it is
+  uninformative.
+- **Order doesn't matter** (reordered within ±0.005). **The model's own answers** fall between oracle and neutral.
+- **Why answered questions help: elimination, a training-distribution prior.** Training prompts never ask the same
+  key twice (`rng.sample` in `dsl.py`), so a model can learn that an already-asked key is not the target. Split the
+  errors into "copies the value of an asked key" vs "any other wrong value":
+  - **Dense, 32 facts / 15 Qs:** copy-errors 0.08–0.12 → 0.02–0.03.
+  - **GLA, same cell:** copy-errors 0.02–0.07 → 0.00–0.03.
+  - **Other errors:** stay flat or rise by ~0.01–0.02 in **both** architectures, as expected if the remaining
+    confusion just moves to the keys that are left.
+- **No recurrent-specific damage.** Dense attention only appends on a question, yet it shows the same small rise in
+  "other" errors as GLA. So the dense → hybrid → linear ladder gives no recurrent-specific signal.
+- **Caveat:** elimination could in principle mask a small GLA write cost. Ruling that out cleanly would need a model
+  trained with repeated-key queries. Given effects of ≤ 0.02, that is not worth a training run now.
+
+**Decision** (the pre-registered rule): oracle-clean histories do not hurt beyond matched filler, so drop the
+"queries write into memory and damage it" direction. Keep the eval (cheap, tested) as a negative result and as a
+note on eval design: multi-query training teaches elimination, so sequential-use evals must control for it.
+Next: r07.
 
 **2026-10-05 — Audit results: passes 5 + 6 on r04–r06 (three seeds, n = 500 per cell).**
 Every number: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md), `figures/seeds/pass5_grid.csv`,

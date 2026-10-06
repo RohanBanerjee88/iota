@@ -1,0 +1,38 @@
+
+##### profile started 2026-10-06 19:20:24 UTC argv=--stage all --smoke
+
+### STAGE profile
+
+  transformer   seq=128       28.8MB     4.61ms (36.02 ms/1k tok)
+  transformer   seq=256       30.2MB     4.73ms (18.46 ms/1k tok)
+  transformer   seq=512       33.3MB     5.01ms (9.79 ms/1k tok)
+  transformer   seq=1024      38.7MB     5.05ms (4.93 ms/1k tok)
+  transformer   seq=2048      50.7MB    11.04ms (5.39 ms/1k tok)
+  transformer   seq=4096      72.4MB    26.71ms (6.52 ms/1k tok)
+  transformer   seq=8192     117.5MB    82.08ms (10.02 ms/1k tok)
+  gated_linear  seq=128       29.1MB    11.18ms (87.38 ms/1k tok)
+  gated_linear  seq=256       30.3MB    17.04ms (66.55 ms/1k tok)
+  gated_linear  seq=512       32.5MB    30.45ms (59.47 ms/1k tok)
+  gated_linear  seq=1024      37.0MB    52.79ms (51.55 ms/1k tok)
+  gated_linear  seq=2048      46.9MB   101.52ms (49.57 ms/1k tok)
+  gated_linear  seq=4096      64.2MB   197.99ms (48.34 ms/1k tok)
+  gated_linear  seq=8192     100.3MB   381.06ms (46.52 ms/1k tok)
+  hybrid        seq=128       29.2MB     8.23ms (64.30 ms/1k tok)
+  hybrid        seq=256       30.4MB    11.75ms (45.91 ms/1k tok)
+  hybrid        seq=512       32.9MB    19.26ms (37.62 ms/1k tok)
+  hybrid        seq=1024      37.9MB    34.28ms (33.47 ms/1k tok)
+  hybrid        seq=2048      49.2MB    64.85ms (31.67 ms/1k tok)
+  hybrid        seq=4096      69.5MB   125.41ms (30.62 ms/1k tok)
+  hybrid        seq=8192     111.5MB   250.18ms (30.54 ms/1k tok)
+wrote experiments/smoke/cost_profile.csv (21 rows)
+[decode] per-token decode cost, batch 1, device cuda
+  transformer   ctx=128    cache     1.606 MB    4.700 ms/tok
+  transformer   ctx=512    cache     5.356 MB    4.715 ms/tok
+  transformer   ctx=2048   cache    20.356 MB    4.959 ms/tok
+  gated_linear  ctx=128    cache     0.332 MB    5.193 ms/tok
+  gated_linear  ctx=512    cache     0.332 MB    5.213 ms/tok
+  gated_linear  ctx=2048   cache     0.332 MB    5.119 ms/tok
+  hybrid        ctx=128    cache     0.842 MB    5.037 ms/tok
+  hybrid        ctx=512    cache     2.342 MB    5.079 ms/tok
+  hybrid        ctx=2048   cache     8.342 MB    5.106 ms/tok
+wrote experiments/smoke/decode_profile.csv (9 rows)

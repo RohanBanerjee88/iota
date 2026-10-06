@@ -1,0 +1,51 @@
+
+##### eval_p7 started 2026-10-06 00:00:28 UTC argv=--stage eval --passes 7 --n 500 --repo BanerjeeRohan44/iota-r05 --run-id r05
+
+### STAGE eval  (passes [7], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 4000 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 12500 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 7 -> experiments/results/pass7_history.csv
+  pass7 hybrid_sweep       nb=8   prior=0   oracle=1.000
+  pass7 transformer_sweep  nb=8   prior=0   oracle=0.962
+  pass7 gated_linear_sweep nb=8   prior=0   oracle=0.994
+  pass7 hybrid_sweep       nb=8   prior=3   neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=8   prior=3   neutral=0.970 oracle=0.980 generated=0.964 reordered=0.982
+  pass7 gated_linear_sweep nb=8   prior=3   neutral=0.992 oracle=0.996 generated=0.994 reordered=0.996
+  pass7 hybrid_sweep       nb=8   prior=7   neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=8   prior=7   neutral=0.954 oracle=0.994 generated=0.962 reordered=0.994
+  pass7 gated_linear_sweep nb=8   prior=7   neutral=0.998 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 hybrid_sweep       nb=32  prior=0   oracle=1.000
+  pass7 transformer_sweep  nb=32  prior=0   oracle=0.836
+  pass7 gated_linear_sweep nb=32  prior=0   oracle=0.928
+  pass7 hybrid_sweep       nb=32  prior=3   neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=32  prior=3   neutral=0.832 oracle=0.856 generated=0.840 reordered=0.848
+  pass7 gated_linear_sweep nb=32  prior=3   neutral=0.934 oracle=0.934 generated=0.932 reordered=0.934
+  pass7 hybrid_sweep       nb=32  prior=7   neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=32  prior=7   neutral=0.856 oracle=0.882 generated=0.868 reordered=0.880
+  pass7 gated_linear_sweep nb=32  prior=7   neutral=0.922 oracle=0.926 generated=0.924 reordered=0.928
+  pass7 hybrid_sweep       nb=32  prior=15  neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=32  prior=15  neutral=0.854 oracle=0.920 generated=0.854 reordered=0.918
+  pass7 gated_linear_sweep nb=32  prior=15  neutral=0.918 oracle=0.924 generated=0.922 reordered=0.922
+  pass7 hybrid_sweep       nb=64  prior=0   oracle=1.000
+  pass7 transformer_sweep  nb=64  prior=0   oracle=0.694
+  pass7 gated_linear_sweep nb=64  prior=0   oracle=0.744
+  pass7 hybrid_sweep       nb=64  prior=3   neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=64  prior=3   neutral=0.694 oracle=0.700 generated=0.682 reordered=0.696
+  pass7 gated_linear_sweep nb=64  prior=3   neutral=0.778 oracle=0.772 generated=0.774 reordered=0.784
+  pass7 hybrid_sweep       nb=64  prior=7   neutral=1.000 oracle=0.998 generated=0.998 reordered=1.000
+  pass7 transformer_sweep  nb=64  prior=7   neutral=0.742 oracle=0.724 generated=0.712 reordered=0.728
+  pass7 gated_linear_sweep nb=64  prior=7   neutral=0.764 oracle=0.768 generated=0.766 reordered=0.776
+  pass7 hybrid_sweep       nb=64  prior=15  neutral=1.000 oracle=1.000 generated=1.000 reordered=1.000
+  pass7 transformer_sweep  nb=64  prior=15  neutral=0.712 oracle=0.790 generated=0.712 reordered=0.788
+  pass7 gated_linear_sweep nb=64  prior=15  neutral=0.782 oracle=0.798 generated=0.782 reordered=0.790
+wrote experiments/results/pass7_history.csv (105 rows)
+  [hf] pushed pass7_history.csv

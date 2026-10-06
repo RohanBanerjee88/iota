@@ -13,3 +13,14 @@
 [sweep] hybrid step    60 loss 2.531 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 1.00  (5s)
 [sweep] hybrid BEST plateau_acc = 0.0039 -> experiments/smoke/hybrid_sweep
 === hybrid done, best balanced acc = 0.0039
+  [sync] published 7 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r07-smoke
+
+========================================================================
+=== TRAIN transformer -> transformer_sweep
+========================================================================
+[sweep] model=transformer params=2.66M device=cuda max_steps=60 bs=8 patience=8
+[sweep] transformer step    20 loss 3.169 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 0.33 * (1s)
+[sweep] transformer step    40 loss 2.675 bal 0.000 [assoc 0.000 state 0.000] exact 0.000 diff 1.00  (2s)
+[sweep] transformer step    60 loss 2.359 bal 0.001 [assoc 0.003 state 0.000] exact 0.000 diff 1.00 * (3s)
+[sweep] transformer BEST plateau_acc = 0.0013 -> experiments/smoke/transformer_sweep
+=== transformer done, best balanced acc = 0.0013

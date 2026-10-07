@@ -22,12 +22,17 @@ collapses for GLA *and* the hybrid (32 facts: 0.88 → 0.36 and 1.00 → 0.36).
 Pass 8 (2026-10-07) confirmed r07's gates stayed pinned near 1. The legacy init's models learned what r07's
 couldn't: a fast-forgetting first layer, and layers that forget filler more than facts.
 
-**Next:** run pass 9 (gate-clamp intervention, built) on r04–r07 to find which layers' forgetting recall needs.
+Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every model. Pinning layer 0 at
+"keep" drops all six legacy models to chance.
+
+**Next (proposed):** r08, a training run with the gate started unsaturated (bias 2, zero weight, γ₀ ≈ 0.88).
+It tests whether saturation, rather than the γ value or the random weights, is what blocked learning.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
 | pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
 | r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
 | audit | 2026-10-06 | `1a8050f` | pass 7 on r04–r06 | answered questions never hurt later recall (any arch); dense *gains* up to 0.07 from them; GLA within ±0.02; hybrid 1.00 throughout | drop the read-is-a-write hypothesis; r07 next |
@@ -45,6 +50,45 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — Pass 9 results: recall depends on layer 0 forgetting, in every model.**
+Data: `runs/r0{4,5,6,7}/pass9_clamp.csv`, n = 500, 8 / 32 / 64 facts. Δ = clamped − unclamped per-query recall on
+the same prompts. Paired CIs are all within ±0.01 of Δ, except where noted.
+
+| clamp | GLA r04 / r05 / r06 (Δ at 32 facts) | hybrid r04 / r05 / r06 (Δ at 32 facts) | r07 GLA / hybrid (Δ at 8 facts) |
+|---|---|---|---|
+| keep, all layers | −0.87 / −0.92 / −0.96 → chance | −0.99 / −0.99 / −0.99 → chance | −0.24 / −0.22 |
+| keep L0 | −0.87 / −0.92 / −0.96 → chance | −0.99 / −0.99 / −0.99 → chance | −0.24 / −0.22 |
+| mean L0 | −0.18 / −0.08 / −0.17 | −0.00 / −0.00 / −0.00 | −0.02 / −0.21 |
+| keep L1 | −0.01 / −0.35 / −0.03 | −0.72 / −0.79 / −0.85 | 0.00 / 0.00 |
+| mean L1 | −0.04 / −0.03 / 0.00 | −0.07 / −0.11 / −0.15 (−0.21 to −0.28 at 8 facts) | 0.00 / 0.00 |
+| keep L2 | −0.01 / −0.09 / 0.00 | (attention) | 0.00 |
+| keep L3 | −0.02 / −0.29 / 0.00 | 0.00 / 0.00 / 0.00 | 0.00 / 0.00 |
+| keep L4 | 0.00 / 0.00 / 0.00 | (attention) | 0.00 |
+| all `mean` on L2–L4 | ≤ 0.01 | ≤ 0.00 | ≤ 0.01 |
+
+- **Layer 0's forgetting is necessary.** Pinning layer 0 at "keep" sends all six legacy models (GLA and hybrid,
+  three seeds) to chance (~0.01) at every load. "Keep" on all layers does nothing beyond that.
+- **Amount vs selectivity, from the gentler `mean` clamp:**
+  - **Hybrid layer 0** needs only the *amount* of forgetting (mean clamp costs nothing). It is a short-memory layer.
+  - **GLA layer 0** also needs *selectivity*: mean clamp costs 0.03–0.25.
+  - **Hybrid layer 1** depends on both: keep costs 0.41–0.90, mean costs 0.07–0.28. This is the layer that resets at
+    fact values and holds through distractors.
+  - **Hybrid layer 3** is unused (Δ = 0 either way).
+- **Deeper GLA layers are seed-dependent.** r05 also uses the *amount* of forgetting in layers 1–3 (keep −0.09 to
+  −0.35, mean ≤ −0.03). r04 and r06 barely use them. Same function, different solutions, as pass 8 suggested.
+- **r07 control:** keep clamps on layers 1–4 are no-ops, as predicted, since those gates are already ≈ 0.9975. Layer 0
+  is not: r07 learned a little distractor forgetting there (γ 0.975), and removing it costs 0.15–0.24. So r07's
+  remaining recall also rests on layer-0 forgetting. It just learned far too little of it.
+- **Caveat:** a `keep` clamp moves a layer far from its trained regime (r04 L0 mean γ 0.3 → 0.9975), so a collapse
+  to chance partly reflects the network being knocked off its operating point. The `mean` clamps are the cleaner
+  evidence, and they also show real, layer-specific costs.
+
+**Decision:** the mechanism holds up causally. Recall in these models is built on a fast-forgetting first layer,
+and in places on selective forgetting. The configured init (bias 6) saturates the sigmoid, so the gate never
+learns either. Proposed r08: bias 2, zero weight (γ₀ ≈ 0.88, σ'(2) = 0.105, 42× the gradient at bias 6). If r08
+recovers r04-level recall, saturation, not the zero weights or the starting γ, is the cause, and the paper can
+recommend an init rather than just warn.
 
 **2026-10-07 — Pass 9 built: gate-clamp intervention (eval only).**
 `iota/clamp.py` replaces one GLA layer's gate with a constant per head at eval time and measures per-query recall

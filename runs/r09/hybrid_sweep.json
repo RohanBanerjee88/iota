@@ -1,0 +1,185 @@
+{
+  "config": {
+    "arch": "hybrid",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 0.0,
+    "short_conv": 4,
+    "legacy_gate_init": false,
+    "full_attention_layers": [
+      2,
+      4
+    ],
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 15000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
+      "eval_every": 500,
+      "eval_n": 500,
+      "patience": 8,
+      "seed": 0,
+      "lr": 0.00075,
+      "run_name": "hybrid_sweep",
+      "grad_clip": 1.0
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 500,
+        "per_query": 0.04816268283981449,
+        "exact": 0.178,
+        "balanced": 0.2752,
+        "by_mode": {
+          "assoc_recall": 0.0175,
+          "state_track": 0.5329
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1000,
+        "per_query": 0.0624331073849447,
+        "exact": 0.182,
+        "balanced": 0.2884,
+        "by_mode": {
+          "assoc_recall": 0.0319,
+          "state_track": 0.5449
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1500,
+        "per_query": 0.5825900820549411,
+        "exact": 0.434,
+        "balanced": 0.6967,
+        "by_mode": {
+          "assoc_recall": 0.5671,
+          "state_track": 0.8263
+        },
+        "difficulty": 0.25
+      },
+      {
+        "step": 2000,
+        "per_query": 0.9004637887977167,
+        "exact": 0.732,
+        "balanced": 0.9218,
+        "by_mode": {
+          "assoc_recall": 0.8976,
+          "state_track": 0.9461
+        },
+        "difficulty": 0.5
+      },
+      {
+        "step": 2500,
+        "per_query": 0.9850160542276133,
+        "exact": 0.938,
+        "balanced": 0.9892,
+        "by_mode": {
+          "assoc_recall": 0.9844,
+          "state_track": 0.994
+        },
+        "difficulty": 0.75
+      },
+      {
+        "step": 3000,
+        "per_query": 0.9964323938637174,
+        "exact": 0.98,
+        "balanced": 0.9981,
+        "by_mode": {
+          "assoc_recall": 0.9962,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 3500,
+        "per_query": 0.9992864787727435,
+        "exact": 0.996,
+        "balanced": 0.9996,
+        "by_mode": {
+          "assoc_recall": 0.9992,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4000,
+        "per_query": 0.998572957545487,
+        "exact": 0.992,
+        "balanced": 0.9964,
+        "by_mode": {
+          "assoc_recall": 0.9989,
+          "state_track": 0.994
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4500,
+        "per_query": 0.998572957545487,
+        "exact": 0.992,
+        "balanced": 0.9992,
+        "by_mode": {
+          "assoc_recall": 0.9985,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5000,
+        "per_query": 1.0,
+        "exact": 1.0,
+        "balanced": 1.0,
+        "by_mode": {
+          "assoc_recall": 1.0,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "hybrid_sweep.safetensors"
+}

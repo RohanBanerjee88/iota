@@ -20,3 +20,4 @@
 2026-10-07 17:42 UTC  stage=train  code=5568695  files=9
 2026-10-07 17:42 UTC  stage=sanity  code=5568695  files=11
 2026-10-07 17:43 UTC  stage=eval 1,3,4,2  code=5568695  files=16
+2026-10-07 17:43 UTC  stage=profile  code=5568695  files=19

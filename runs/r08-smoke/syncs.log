@@ -18,3 +18,4 @@
 2026-10-07 17:42 UTC  stage=train:transformer  code=5568695  files=8
 2026-10-07 17:42 UTC  stage=train:gated_linear  code=5568695  files=9
 2026-10-07 17:42 UTC  stage=train  code=5568695  files=9
+2026-10-07 17:42 UTC  stage=sanity  code=5568695  files=11

@@ -3,3 +3,4 @@
 2026-10-07 00:10 UTC  stage=train  code=d5e5191  files=4
 2026-10-07 00:10 UTC  stage=sanity  code=d5e5191  files=6
 2026-10-07 00:17 UTC  stage=eval 1,3  code=d5e5191  files=9
+2026-10-07 00:17 UTC  stage=eval 4  code=d5e5191  files=11

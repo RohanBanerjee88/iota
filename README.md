@@ -4,10 +4,10 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
+| [r06](runs/r06/SUMMARY.md) | 2026-10-07 04:34 UTC | eval 9 | Tesla T4 | `ac9a40c` |
 | [r05](runs/r05/SUMMARY.md) | 2026-10-07 04:32 UTC | eval 9 | Tesla T4 | `ac9a40c` |
 | [r04](runs/r04/SUMMARY.md) | 2026-10-07 04:30 UTC | eval 9 | Tesla T4 | `ac9a40c` |
 | [r07](runs/r07/SUMMARY.md) | 2026-10-07 04:28 UTC | eval 4 | Tesla T4 | `ac9a40c` |
-| [r06](runs/r06/SUMMARY.md) | 2026-10-07 00:44 UTC | eval 8 | Tesla T4 | `4101680` |
 | [r07-smoke](runs/r07-smoke/SUMMARY.md) | 2026-10-06 19:20 UTC | plot | Tesla T4 | `d5e5191` |
 | [r06-smoke](runs/r06-smoke/SUMMARY.md) | 2026-10-05 17:30 UTC | plot | Tesla T4 | `5026708` |
 | [r05-smoke](runs/r05-smoke/SUMMARY.md) | 2026-10-04 06:26 UTC | plot | Tesla T4 | `e713514` |

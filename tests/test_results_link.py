@@ -247,3 +247,31 @@ def test_bias2_configs_change_only_the_gate_bias():
             model = build_model(dict(r08, vocab_size=get_tokenizer().vocab_size))
             gates = [m.g_proj for m in model.modules() if isinstance(m, GatedLinearAttention)]
             assert gates and all(torch.all(g.bias == 2.0) and torch.all(g.weight == 0) for g in gates)
+
+
+def test_zerow0_configs_differ_from_r04_only_in_the_gate_weight():
+    # r09 = bias 0 with a ZERO gate weight; r04 = bias 0 with the generic RANDOM weight.
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    V = get_tokenizer().vocab_size
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        r08 = yaml.safe_load(open(f"configs/bias2/sweep_{arch}.yaml"))
+        r09 = yaml.safe_load(open(f"configs/zerow0/sweep_{arch}.yaml"))
+        assert r09["train"] == r08["train"], arch
+        f8, f9 = ra._fingerprint(r08), ra._fingerprint(r09)
+        diff = {k for k in set(f8) | set(f9) if f8.get(k) != f9.get(k)}
+        assert diff == (set() if arch == "transformer" else {"decay_bias_init"}), arch
+        if arch == "transformer":
+            continue
+        r04 = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))   # legacy: same bias 0, random weight
+        torch.manual_seed(0)
+        g09 = [m.g_proj for m in build_model(dict(r09, vocab_size=V)).modules() if isinstance(m, GatedLinearAttention)]
+        torch.manual_seed(0)
+        g04 = [m.g_proj for m in build_model(dict(r04, vocab_size=V)).modules() if isinstance(m, GatedLinearAttention)]
+        for a, b in zip(g09, g04):
+            assert torch.all(a.bias == 0) and torch.all(b.bias == 0)
+            assert torch.all(a.weight == 0) and b.weight.abs().max() > 0

@@ -28,13 +28,14 @@ Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every
 r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybrid fully recovers** (1.00 at
 32 facts, as r04), but the **pure GLA gets worse** (0.14 at 32 facts; r07 0.36, r04 0.88).
 
-**Next:** pass 8 + 9 on r08 (eval only), then r09 = zero gate weight with bias 0. r09 differs from r04 only in the
-random vs zero initial gate weight, so it isolates that factor for the GLA.
+**Next:** pass 8 + 9 on r08 (eval only); r09 prepared (bias 0, zero gate weight). It differs from r04 only in the
+initial gate weight.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r09 | — | `configs/zerow0/` | prepared | gate bias 0, zero weight (γ₀ = 0.5 for every input); differs from r04 only in the gate weight; transformer reused from r04 | run plan A |
 | r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
 | pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
 | pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
@@ -54,6 +55,27 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — r09 prepared: bias 0 with a zero gate weight (isolates r04's random gate weight).**
+- `configs/zerow0/sweep_*.yaml` are r08's configs with `decay_bias_init: 2.0 → 0.0`. The gate weight stays zero
+  (`legacy_gate_init: false`), so γ₀ = 0.5 for every token. r04's gate was bias 0 plus the generic random weight
+  N(0, 0.02²), giving γ₀ ≈ 0.5 with a small input dependence (|W·x| ~ 0.3) that also differs between heads. A test
+  checks that r09 and r04 build identical gate biases (0) and differ only in the weight (zero vs random), and that
+  the train block and fingerprint match r08 except `decay_bias_init`.
+- The four seed-0 runs now form a 2 × 2-ish grid over the gate init:
+
+  | | zero weight | small random weight |
+  |---|---|---|
+  | bias 0 (γ₀ 0.5) | **r09** | r04: GLA 0.88, hybrid 1.00 |
+  | bias 2 (γ₀ 0.88) | r08: GLA 0.14, hybrid 1.00 | — |
+  | bias 6 (γ₀ 0.9975) | r07: GLA 0.36, hybrid 0.36 | — |
+
+- **Pre-registered reading** (GLA per-query recall at 32 facts):
+  - **r09 ≥ ~0.80** → the starting γ is what matters. A pure GLA needs to start forgetting (γ₀ ≈ 0.5) and learn to
+    keep, not the reverse. The random weight is incidental.
+  - **r09 ≤ ~0.45** → the small random gate weight matters: input dependence or head symmetry breaking at init.
+  - **The hybrid** should train fine either way (unsaturated). If it doesn't, the bias-2 result needs rethinking.
+- The hybrid is trained too (~1.3 h extra) to keep the grid complete for both architectures.
 
 **2026-10-07 — r08 plan A: an unsaturated gate fixes the hybrid but not the pure GLA.**
 r08 = r07 with the gate bias 6 → 2 (γ₀ 0.88, zero weight). Seed 0; the transformer is r04's.

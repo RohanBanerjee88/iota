@@ -12,3 +12,4 @@
 2026-10-07 05:01 UTC  stage=plot  code=aa84c56  files=22
 2026-10-07 17:42 UTC  stage=tune:transformer:0.00075  code=5568695  files=3
 2026-10-07 17:42 UTC  stage=tune:hybrid:0.00075  code=5568695  files=4
+2026-10-07 17:42 UTC  stage=tune:gated_linear:0.00075  code=5568695  files=5

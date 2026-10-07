@@ -1,6 +1,6 @@
 # iota run `r07`
 
-- **updated:** 2026-10-07 00:42 UTC (last stage: `eval 4`)
+- **updated:** 2026-10-07 00:44 UTC (last stage: `eval 8`)
 - **code:** `4101680` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -71,6 +71,29 @@ Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, 
 | 64 | 3 | 0.545 | 0.078 | 0.107 |
 
 If one model's errors pile up on 3-digit keys, its drop with load is partly key resolution, not memory capacity.
+
+## 4f. Decay gates (Pass 8): what γ does on real prompts
+
+Mean γ ± std over tokens × heads, by token role. `retention` = mean log10 of the share of a fact value's write still in the state at the first question. A frozen gate has std ≈ 0; selective forgetting shows as γ(distractor) < γ(fact value).
+
+| model | bindings | layer | fact value | distractor | query | answer | retention (log10) | gate bias / ‖W‖ |
+|---|---:|---|---|---|---|---|---:|---|
+| gated_linear | 8 | backbone.blocks.0.mixer | 1.000 ± 0.000 | 0.976 ± 0.050 | 1.000 ± 0.000 | 1.000 ± 0.000 | -2.394 | +5.82 / 4.343 |
+| gated_linear | 8 | backbone.blocks.1.mixer | 0.997 ± 0.008 | 1.000 ± 0.001 | 0.998 ± 0.003 | 0.997 ± 0.010 | -0.049 | +5.64 / 2.442 |
+| gated_linear | 8 | backbone.blocks.2.mixer | 1.000 ± 0.003 | 1.000 ± 0.003 | 0.999 ± 0.004 | 0.999 ± 0.002 | -0.028 | +5.74 / 3.373 |
+| gated_linear | 8 | backbone.blocks.3.mixer | 0.992 ± 0.023 | 0.998 ± 0.008 | 0.991 ± 0.023 | 0.993 ± 0.014 | -0.264 | +5.75 / 3.057 |
+| gated_linear | 8 | backbone.blocks.4.mixer | 0.982 ± 0.035 | 0.999 ± 0.002 | 0.998 ± 0.003 | 0.991 ± 0.015 | -0.149 | +5.57 / 1.812 |
+| gated_linear | 32 | backbone.blocks.0.mixer | 1.000 ± 0.000 | 0.975 ± 0.059 | 1.000 ± 0.000 | 1.000 ± 0.000 | -1.22 | +5.82 / 4.343 |
+| gated_linear | 32 | backbone.blocks.1.mixer | 0.997 ± 0.009 | 1.000 ± 0.001 | 0.999 ± 0.002 | 0.999 ± 0.004 | -0.094 | +5.64 / 2.442 |
+| gated_linear | 32 | backbone.blocks.2.mixer | 0.999 ± 0.002 | 1.000 ± 0.005 | 0.999 ± 0.003 | 1.000 ± 0.001 | -0.109 | +5.74 / 3.373 |
+| gated_linear | 32 | backbone.blocks.3.mixer | 0.992 ± 0.023 | 0.998 ± 0.010 | 0.996 ± 0.012 | 0.997 ± 0.007 | -0.564 | +5.75 / 3.057 |
+| gated_linear | 32 | backbone.blocks.4.mixer | 0.985 ± 0.027 | 0.999 ± 0.002 | 0.999 ± 0.002 | 0.995 ± 0.009 | -0.346 | +5.57 / 1.812 |
+| hybrid | 8 | backbone.blocks.0.mixer | 1.000 ± 0.001 | 1.000 ± 0.001 | 0.992 ± 0.080 | 1.000 ± 0.001 | -0.045 | +5.86 / 2.444 |
+| hybrid | 8 | backbone.blocks.1.mixer | 0.983 ± 0.016 | 0.985 ± 0.014 | 0.995 ± 0.004 | 0.992 ± 0.007 | -1.535 | +5.61 / 1.159 |
+| hybrid | 8 | backbone.blocks.3.mixer | 0.997 ± 0.003 | 0.999 ± 0.001 | 0.998 ± 0.001 | 0.999 ± 0.001 | -0.109 | +5.71 / 1.167 |
+| hybrid | 32 | backbone.blocks.0.mixer | 1.000 ± 0.001 | 1.000 ± 0.001 | 0.996 ± 0.056 | 1.000 ± 0.001 | -0.028 | +5.86 / 2.444 |
+| hybrid | 32 | backbone.blocks.1.mixer | 0.988 ± 0.013 | 0.987 ± 0.012 | 0.994 ± 0.003 | 0.991 ± 0.006 | -1.06 | +5.61 / 1.159 |
+| hybrid | 32 | backbone.blocks.3.mixer | 0.998 ± 0.002 | 0.999 ± 0.002 | 0.998 ± 0.002 | 0.999 ± 0.001 | -0.239 | +5.71 / 1.167 |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

@@ -1,0 +1,185 @@
+{
+  "config": {
+    "arch": "hybrid",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 2.0,
+    "short_conv": 4,
+    "legacy_gate_init": false,
+    "full_attention_layers": [
+      2,
+      4
+    ],
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 15000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
+      "eval_every": 500,
+      "eval_n": 500,
+      "patience": 8,
+      "seed": 0,
+      "lr": 0.00075,
+      "run_name": "hybrid_sweep",
+      "grad_clip": 1.0
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 500,
+        "per_query": 0.03995718872636461,
+        "exact": 0.13,
+        "balanced": 0.2007,
+        "by_mode": {
+          "assoc_recall": 0.0182,
+          "state_track": 0.3832
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1000,
+        "per_query": 0.08383874420264002,
+        "exact": 0.218,
+        "balanced": 0.3362,
+        "by_mode": {
+          "assoc_recall": 0.0497,
+          "state_track": 0.6228
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1500,
+        "per_query": 0.5247948626471638,
+        "exact": 0.456,
+        "balanced": 0.7193,
+        "by_mode": {
+          "assoc_recall": 0.4985,
+          "state_track": 0.9401
+        },
+        "difficulty": 0.25
+      },
+      {
+        "step": 2000,
+        "per_query": 0.8669282911166607,
+        "exact": 0.716,
+        "balanced": 0.9208,
+        "by_mode": {
+          "assoc_recall": 0.8596,
+          "state_track": 0.982
+        },
+        "difficulty": 0.5
+      },
+      {
+        "step": 2500,
+        "per_query": 0.9867998572957546,
+        "exact": 0.944,
+        "balanced": 0.9902,
+        "by_mode": {
+          "assoc_recall": 0.9863,
+          "state_track": 0.994
+        },
+        "difficulty": 0.75
+      },
+      {
+        "step": 3000,
+        "per_query": 0.9992864787727435,
+        "exact": 0.996,
+        "balanced": 0.9996,
+        "by_mode": {
+          "assoc_recall": 0.9992,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 3500,
+        "per_query": 0.9996432393863718,
+        "exact": 0.998,
+        "balanced": 0.9998,
+        "by_mode": {
+          "assoc_recall": 0.9996,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4000,
+        "per_query": 0.9992864787727435,
+        "exact": 0.996,
+        "balanced": 0.9968,
+        "by_mode": {
+          "assoc_recall": 0.9996,
+          "state_track": 0.994
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4500,
+        "per_query": 0.9992864787727435,
+        "exact": 0.996,
+        "balanced": 0.9996,
+        "by_mode": {
+          "assoc_recall": 0.9992,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5000,
+        "per_query": 1.0,
+        "exact": 1.0,
+        "balanced": 1.0,
+        "by_mode": {
+          "assoc_recall": 1.0,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "hybrid_sweep.safetensors"
+}

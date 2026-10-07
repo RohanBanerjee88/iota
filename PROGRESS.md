@@ -16,13 +16,17 @@ distance, and teacher forcing does not inflate any headline number.
 Pass 7 (2026-10-06) rejected the "asking a question damages a recurrent memory" hypothesis: no architecture
 recalls worse after answered questions than after matched filler.
 
-**Next:** r07 (the gate-init ablation, paired with r04).
+r07 (2026-10-07) showed the gate-init "bug" was load-bearing: with the configured init (γ₀ ≈ 0.9975) recall
+collapses for GLA *and* the hybrid (32 facts: 0.88 → 0.36 and 1.00 → 0.36).
+
+**Next:** confirm the mechanism (gate statistics on r04 vs r07 checkpoints); decide whether r07 plan B is worth
+running.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r07 | — | `configs/fixinit/` | prepared | r04 (seed 0) with the intended GLA gate init (`legacy_gate_init: false`); transformer reused from r04 | run after pass 7 |
+| r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
 | audit | 2026-10-06 | `1a8050f` | pass 7 on r04–r06 | answered questions never hurt later recall (any arch); dense *gains* up to 0.07 from them; GLA within ±0.02; hybrid 1.00 throughout | drop the read-is-a-write hypothesis; r07 next |
 | audit | 2026-10-05 | `28c0e1e` | passes 5, 6 on r04–r06 | GLA: load costs 0.55, 8× distance costs ≤0.05; dense/hybrid collapse past 1024 at any load; free-running ≈ teacher-forced (max gap 0.038, dense) | headline numbers stand; pass 7 next |
 | r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
@@ -38,6 +42,40 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — r07 plan A: the configured gate init kills recall, for GLA and the hybrid.**
+r07 is r04 (seed 0, same lr, data and schedule) with one change: the decay gate keeps its configured init (bias 6,
+zero weight, so γ₀ ≈ 0.9975) instead of being overwritten (bias 0, random weight, γ₀ ≈ 0.5). The transformer is
+r04's checkpoint, reused, and its numbers match r04 to the third decimal, which confirms the pairing.
+
+| facts | GLA r04 → r07 | hybrid r04 → r07 | transformer (both) |
+|---:|---|---|---|
+| 8 | 0.989 → 0.854 | 1.000 → 0.848 | 0.975 |
+| 16 | 0.964 → 0.718 | 1.000 → 0.717 | 0.945 |
+| 32 | 0.882 → 0.355 | 1.000 → 0.357 | 0.842 |
+| 64 | 0.489 → 0.082 | 0.997 → 0.113 | 0.620 |
+| 128 | 0.222 → 0.045 | 0.990 → 0.060 | 0.347 |
+
+- **Training curves (held-out assoc):** r07 GLA starts faster (0.10 vs 0.01 at step 500) but is flat at
+  0.36–0.38 from step ~3.5k to the stop at 10.5k. r04 GLA starts slow and climbs to 0.84. r07 hybrid is flat at
+  ~0.37 by step ~8k; r04 hybrid hit 0.98 by step 2.5k.
+- **The control is unaffected:** state_track is 1.00 for every model. GLA holds 0.93 at 8192 tokens.
+- **The hybrid falls to exactly the GLA curve** (0.357 vs 0.355 at 32 facts, 0.717 vs 0.718 at 16). Its two
+  attention layers do not take over recall, even though a 5-layer transformer learns it to 0.84. Hypothesis: the
+  hybrid's recall in r04–r06 was carried by its GLA layers, and the attention layers never learned a recall
+  circuit of their own.
+- **Likely mechanism (unverified): a saturated sigmoid gate.** At bias 6 the gate's gradient is σ'(6) ≈ 0.0025,
+  101× smaller than σ'(0) = 0.25 at the legacy init. With zero weight it starts input-independent and can barely
+  move, so γ stays ≈ 0.9975 everywhere. That gives near-uniform accumulation with no selective forgetting, and a
+  hard ceiling on how many bindings the state can separate. The legacy init starts in the gate's responsive range
+  and learns input-dependent forgetting. To check: measure γ per layer and per token type on the r04 vs r07
+  checkpoints.
+- **Caveats:** one seed (the effect is 0.5 at 32 facts, far outside r04–r06's seed spread); lr not re-tuned for
+  the new init; plateau early stop. The plateau sits flat for ~7k steps, so more steps would not obviously help.
+
+**Decision:** the "init bug" is a finding, not a footnote. Every r01–r06 result depends on the γ₀ ≈ 0.5 init,
+and the documented init gives the opposite conclusion about linear-attention recall. The paper needs a
+gate-init section. Next: a gate diagnostic to test the saturation mechanism (cheap, no training).
 
 **2026-10-06 — Pass 7 on r04–r06: answering questions does not damage recall. Hypothesis dropped.**
 Numbers: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md) and `figures/seeds/pass7_history.csv` (n = 500 per cell
@@ -552,5 +590,5 @@ patience only counts after the ramp.
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but
   we need to state how each was tuned.
-- **GLA gate init** (2026-10-05): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation = r07 (prepared).
+- **GLA gate init** (2026-10-05): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation = r07: the configured init collapses recall (2026-10-07).
 - **Phase 9 (Gradio demo)** not started. It waits for a trustworthy figure.

@@ -1,5 +1,5 @@
 
-##### eval_p1342 started 2026-10-07 05:01:17 UTC argv=--stage all --smoke
+##### eval_p1342 started 2026-10-07 17:42:55 UTC argv=--stage all --smoke
 
 ### STAGE eval  (passes [1, 3, 4, 2], device=cuda)
 

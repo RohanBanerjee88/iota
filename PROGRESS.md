@@ -43,6 +43,19 @@ the figure is not trustworthy.
 
 ## Timeline
 
+**2026-10-07 — Pass 8 built: decay-gate statistics (tests the r07 mechanism, no training).**
+`iota/gates.py` hooks every GLA layer's gate and records γ = σ(g_proj(x)) on pass-1-style prompts (8 and 32
+facts, n = 500). It splits γ by token role: fact key, **fact value**, **distractor**, question, answer. For each
+fact value it also records how much of the write survives to the first question (mean log10 of the product of
+γ), plus each layer's gate bias and weight norm.
+- **Predictions if the saturation story is right:**
+  - r07: γ ≈ 0.9975 on every role, std ≈ 0, bias still ≈ 6, ‖W‖ near 0.
+  - r04–r06: γ varies with the input, with γ(distractor) and γ(fact value) differing and a wide spread.
+- Tests check the role labels against the dataset's answer spans, that a fresh intended-init model reads exactly
+  σ(6) everywhere with std 0, that a fresh legacy model sits around 0.5 and varies, and the retention formula for a
+  constant gate.
+- Notebook `PLAN="audit"` with `AUDIT_PASSES = "8"` runs r04, r05, r06 (main configs) and r07 (`configs/fixinit`).
+
 **2026-10-07 — r07 plan A: the configured gate init kills recall, for GLA and the hybrid.**
 r07 is r04 (seed 0, same lr, data and schedule) with one change: the decay gate keeps its configured init (bias 6,
 zero weight, so γ₀ ≈ 0.9975) instead of being overwritten (bias 0, random weight, γ₀ ≈ 0.5). The transformer is

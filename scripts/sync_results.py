@@ -338,6 +338,29 @@ def _history_section(run_dir: str) -> List[str]:
                     "to equally long filler.", ""]
 
 
+def _gates_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass8_gates.csv"))
+    if not rows:
+        return []
+    lines = ["## 4f. Decay gates (Pass 8): what γ does on real prompts", "",
+             "Mean γ ± std over tokens × heads, by token role. `retention` = mean log10 of the share of a fact "
+             "value's write still in the state at the first question. A frozen gate has std ≈ 0; selective "
+             "forgetting shows as γ(distractor) < γ(fact value).", "",
+             "| model | bindings | layer | fact value | distractor | query | answer | retention (log10) | gate bias / ‖W‖ |",
+             "|---|---:|---|---|---|---|---|---:|---|"]
+    by = {}
+    for r in rows:
+        by.setdefault((_arch_of(r["model"]), int(r["n_bindings"]), r["layer"]), {})[r["role"]] = r
+    def g(d, role):
+        return f"{float(d[role]['gamma_mean']):.3f} ± {float(d[role]['gamma_std']):.3f}" if role in d else "–"
+    for (m, nb, layer), d in sorted(by.items()):
+        any_r = next(iter(d.values()))
+        ret = d.get("set_value", {}).get("fact_log10_retention", "")
+        lines.append(f"| {m} | {nb} | {layer} | {g(d, 'set_value')} | {g(d, 'distractor')} | {g(d, 'query')} | "
+                     f"{g(d, 'answer')} | {ret} | {float(any_r['bias_mean']):+.2f} / {float(any_r['weight_norm']):.3f} |")
+    return lines + [""]
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -411,6 +434,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _grid_section(run_dir)
         + _freerun_section(run_dir)
         + _history_section(run_dir)
+        + _gates_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

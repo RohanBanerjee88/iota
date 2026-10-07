@@ -25,13 +25,14 @@ couldn't: a fast-forgetting first layer, and layers that forget filler more than
 Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every model. Pinning layer 0 at
 "keep" drops all six legacy models to chance.
 
-**Next (proposed):** r08, a training run with the gate started unsaturated (bias 2, zero weight, γ₀ ≈ 0.88).
-It tests whether saturation, rather than the γ value or the random weights, is what blocked learning.
+**Next:** r08 (prepared): the gate started unsaturated (bias 2, zero weight, γ₀ ≈ 0.88). It tests whether
+saturation, rather than the γ value or the random weights, is what blocked learning.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r08 | — | `configs/bias2/` | prepared | r07 with gate bias 2 instead of 6 (γ₀ 0.88, unsaturated), zero weight; transformer reused from r04 | run plan A |
 | pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
 | pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
 | r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
@@ -50,6 +51,21 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — r08 prepared: the same intended init, but unsaturated (bias 2).**
+- `configs/bias2/sweep_*.yaml` are r07's configs with one change: `decay_bias_init: 6.0 → 2.0` for GLA and the
+  hybrid. That puts γ₀ at 0.88 and σ'(2) at 0.105, 42× the gradient at bias 6. `legacy_gate_init: false` and the
+  zero gate weight stay. Seed 0, lr, data, schedule and size match r04 and r07. A test checks that the train block
+  matches r07's, that the fingerprint differs only in `decay_bias_init`, and that built models start with bias 2
+  and zero weight. The transformer is again r04's, via `--reuse`.
+- **Pre-registered reading** (GLA per-query recall at 32 facts: r04 0.88, r07 0.36):
+  - **≥ ~0.80** → saturation was the cause. A responsive start is enough, and the zero initial weight and
+    γ₀ < 1 are fine. Recommend "start the gate unsaturated".
+  - **≈ r07 (≤ ~0.45)** → saturation is not the whole story. Next test: zero vs random initial gate weight
+    (r04's other difference).
+  - **In between** → partial. Check pass 8 for whether layer 0 learned to forget.
+- **After plan A:** run passes 8 and 9 on r08 (audit cell, which now includes `("r08", "configs/bias2")`), so its
+  gates can be compared directly with r04 and r07.
 
 **2026-10-07 — Pass 9 results: recall depends on layer 0 forgetting, in every model.**
 Data: `runs/r0{4,5,6,7}/pass9_clamp.csv`, n = 500, 8 / 32 / 64 facts. Δ = clamped − unclamped per-query recall on

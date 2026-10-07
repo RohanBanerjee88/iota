@@ -226,3 +226,24 @@ def test_train_reuse_takes_a_matching_checkpoint_and_rejects_a_stale_one(tmp_pat
     remote["r04"] = dict(cfg, short_conv=0)              # a different model: must not be reused
     ra.stage_train(args)
     assert len(trained) == 1 and pushed == ["r07"]      # trained from scratch, then backed up
+
+
+def test_bias2_configs_change_only_the_gate_bias():
+    # r08 = r07 with the gate started unsaturated: decay_bias_init 6 -> 2, nothing else.
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        r07 = yaml.safe_load(open(f"configs/fixinit/sweep_{arch}.yaml"))
+        r08 = yaml.safe_load(open(f"configs/bias2/sweep_{arch}.yaml"))
+        assert r08["train"] == r07["train"], arch
+        f7, f8 = ra._fingerprint(r07), ra._fingerprint(r08)
+        diff = {k for k in set(f7) | set(f8) if f7.get(k) != f8.get(k)}
+        assert diff == (set() if arch == "transformer" else {"decay_bias_init"}), arch
+        if arch != "transformer":
+            model = build_model(dict(r08, vocab_size=get_tokenizer().vocab_size))
+            gates = [m.g_proj for m in model.modules() if isinstance(m, GatedLinearAttention)]
+            assert gates and all(torch.all(g.bias == 2.0) and torch.all(g.weight == 0) for g in gates)

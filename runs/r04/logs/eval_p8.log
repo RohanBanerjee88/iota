@@ -1,0 +1,36 @@
+
+##### eval_p8 started 2026-10-07 00:42:46 UTC argv=--stage eval --passes 8 --n 500 --repo BanerjeeRohan44/iota-r04 --run-id r04
+
+### STAGE eval  (passes [8], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 4500 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 14000 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 8 -> experiments/results/pass8_gates.csv
+  pass8 hybrid_sweep       nb=8   backbone.blocks.0.mixer set_value=0.311±0.250 distractor=0.119±0.082 bias=-0.10 |W|=0.921
+  pass8 hybrid_sweep       nb=8   backbone.blocks.1.mixer set_value=0.182±0.265 distractor=0.973±0.072 bias=+0.04 |W|=1.451
+  pass8 hybrid_sweep       nb=8   backbone.blocks.3.mixer set_value=0.711±0.204 distractor=0.698±0.215 bias=+0.05 |W|=0.783
+  pass8 transformer_sweep  no gated-linear layers -- skipped
+  pass8 gated_linear_sweep nb=8   backbone.blocks.0.mixer set_value=0.399±0.340 distractor=0.281±0.207 bias=-0.04 |W|=1.322
+  pass8 gated_linear_sweep nb=8   backbone.blocks.1.mixer set_value=1.000±0.000 distractor=0.929±0.144 bias=+0.18 |W|=2.490
+  pass8 gated_linear_sweep nb=8   backbone.blocks.2.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+0.12 |W|=2.420
+  pass8 gated_linear_sweep nb=8   backbone.blocks.3.mixer set_value=0.997±0.007 distractor=0.902±0.109 bias=+0.10 |W|=2.496
+  pass8 gated_linear_sweep nb=8   backbone.blocks.4.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+0.07 |W|=2.014
+  pass8 hybrid_sweep       nb=32  backbone.blocks.0.mixer set_value=0.311±0.251 distractor=0.119±0.083 bias=-0.10 |W|=0.921
+  pass8 hybrid_sweep       nb=32  backbone.blocks.1.mixer set_value=0.179±0.261 distractor=0.966±0.098 bias=+0.04 |W|=1.451
+  pass8 hybrid_sweep       nb=32  backbone.blocks.3.mixer set_value=0.709±0.203 distractor=0.699±0.210 bias=+0.05 |W|=0.783
+  pass8 transformer_sweep  no gated-linear layers -- skipped
+  pass8 gated_linear_sweep nb=32  backbone.blocks.0.mixer set_value=0.399±0.340 distractor=0.281±0.208 bias=-0.04 |W|=1.322
+  pass8 gated_linear_sweep nb=32  backbone.blocks.1.mixer set_value=1.000±0.000 distractor=0.931±0.143 bias=+0.18 |W|=2.490
+  pass8 gated_linear_sweep nb=32  backbone.blocks.2.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+0.12 |W|=2.420
+  pass8 gated_linear_sweep nb=32  backbone.blocks.3.mixer set_value=0.997±0.006 distractor=0.919±0.095 bias=+0.10 |W|=2.496
+  pass8 gated_linear_sweep nb=32  backbone.blocks.4.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+0.07 |W|=2.014
+wrote experiments/results/pass8_gates.csv (80 rows)
+  [hf] pushed pass8_gates.csv

@@ -28,13 +28,16 @@ Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every
 r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybrid fully recovers** (1.00 at
 32 facts, as r04), but the **pure GLA gets worse** (0.14 at 32 facts; r07 0.36, r04 0.88).
 
-**Next:** pass 8 + 9 on r08 (eval only); r09 prepared (bias 0, zero gate weight). It differs from r04 only in the
-initial gate weight.
+Pass 8 + 9 on r08 (2026-10-07): r08's GLA did build long-memory layers. Its weak spot is layer 0, which forgets
+too little and keeps filler over facts. In every run the gate bias barely moves from its init.
+
+**Next:** r09 (prepared: bias 0, zero gate weight). It differs from r04 only in the initial gate weight.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r08 audit | 2026-10-07 | `c3632aa` | pass 8+9 on r08 | GLA built long-memory layers (L1/L2 γ = 1.000) and a forgetting L0, but L0 forgets less (γ 0.5–0.8) and keeps filler over facts; keep-L0 → chance in GLA and hybrid; gate biases stay within ~0.2 of init in every run | the init bias sets each layer's baseline timescale; r09 next |
 | r09 | — | `configs/zerow0/` | prepared | gate bias 0, zero weight (γ₀ = 0.5 for every input); differs from r04 only in the gate weight; transformer reused from r04 | run plan A |
 | r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
 | pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
@@ -55,6 +58,51 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — Pass 8 + 9 on r08: the long-memory layers are there; layer 0 is wrong.**
+Data: `runs/r08/pass8_gates.csv`, `runs/r08/pass9_clamp.csv` (32 facts unless noted).
+
+*GLA gates, r04 vs r08 (γ mean, retention = log10 share of a fact left at the first question):*
+
+| layer | r04: fact value / distractor | r04 retention | r08: fact value / distractor | r08 retention | bias r04 → r08 |
+|---|---|---:|---|---:|---|
+| 0 | 0.40 / 0.28 | −141 | 0.48 / **0.77** | −71 | −0.04 / +1.79 |
+| 1 | 1.000 / 0.93 | −3.7 | 1.000 / 1.000 | 0.0 | +0.18 / +2.01 |
+| 2 | 1.000 / 1.000 | 0.0 | 1.000 / 1.000 | 0.0 | +0.12 / +2.02 |
+| 3 | 0.997 / 0.92 | −3.8 | 0.993 / 0.989 | −1.1 | +0.10 / +2.10 |
+| 4 | 1.000 / 1.000 | 0.0 | 0.983 / 0.991 | −1.0 | +0.07 / +1.99 |
+
+- **The r08 hypothesis is ruled out.** r08's GLA *did* build long-memory layers: layers 1 and 2 sit at γ = 1.000
+  with full retention, exactly like r04's. They get there through W·x (‖W‖ 2.7–3.0), not the bias.
+- **What differs is layer 0.**
+  - **Less forgetting:** r08's layer 0 forgets less than r04's (γ on distractors 0.77 vs 0.28; retention −71 vs
+    −141).
+  - **Reversed selectivity:** it keeps *filler* longer than *facts* (0.77 vs 0.48; keys 0.71). r04's layer 0 does
+    the opposite (facts 0.40 > filler 0.28).
+  - **No filler-dropping middle layers:** r08 lacks the layers r04 has in 1 and 3 (facts 1.00 / filler 0.93, 0.92).
+    The clamp results say these matter little in r04 itself (keep L1/L3: −0.01 to −0.02 at 32 facts).
+- **Clamps (r08):** keep on layer 0 → chance for the GLA (0.52 → 0.01 at 8 facts) and the hybrid (1.00 → 0.01).
+  Mean on layer 0 costs the GLA 0.34 at 8 facts, so selectivity in layer 0 carries most of its remaining recall.
+  Every other GLA layer: |Δ| ≤ 0.01. Hybrid: keep L1 costs 0.16–0.58 but mean L1 costs nothing. r08's hybrid needs
+  layer 1's *amount* of forgetting, not its selectivity, whereas r04's hybrid needed both (mean L1 −0.07 to −0.28).
+  The same function is reached by different solutions.
+- **Across runs, the gate bias barely moves from its init:**
+
+  | run | bias init | bias after training |
+  |---|---:|---|
+  | r04 | 0 | −0.11 to +0.46 |
+  | r07 | 6 | 5.6 to 5.9 |
+  | r08 | 2 | 1.8 to 2.1 |
+
+  All learning goes through W·x. So **the init bias effectively fixes each layer's baseline γ for all of training**.
+  Layer 0 must forget within a few tokens. Starting at 0.88 (r08), it only got part of the way, with the wrong
+  selectivity. Starting at 0.9975 (r07), it barely moved. Starting at 0.5 (r04), it found the r04 solution.
+
+**Decision:** the working hypothesis is now "the init bias sets each layer's timescale, and recall needs a short
+timescale in layer 0 plus long ones above it". r09 (bias 0, zero weight) gives layer 0 r04's baseline, so it
+should succeed for the GLA if the hypothesis is right. A failure would point at the random initial weight. If r09
+succeeds, the natural recommended init is a *spread* of biases (low in early layers or some heads, high
+elsewhere), in the spirit of multi-timescale initialisations (e.g. Mamba's Δ init). That would be r10.
 
 **2026-10-07 — r09 prepared: bias 0 with a zero gate weight (isolates r04's random gate weight).**
 - `configs/zerow0/sweep_*.yaml` are r08's configs with `decay_bias_init: 2.0 → 0.0`. The gate weight stays zero

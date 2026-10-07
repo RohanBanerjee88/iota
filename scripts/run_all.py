@@ -407,7 +407,8 @@ def stage_eval(args) -> None:
               f"comparison is incomplete", flush=True)
 
     names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen",
-             5: "pass5_grid", 6: "pass6_freerun", 7: "pass7_history", 8: "pass8_gates"}
+             5: "pass5_grid", 6: "pass6_freerun", 7: "pass7_history", 8: "pass8_gates",
+             9: "pass9_clamp"}
     for p in passes:
         out_csv = os.path.join(RESULTS_DIR, f"{names.get(p, f'pass{p}')}.csv")
         print(f"\n--- pass {p} -> {out_csv}", flush=True)
@@ -419,6 +420,10 @@ def stage_eval(args) -> None:
             from iota.history import run_history_pass
             run_history_pass(models, n=args.n, device=device, out_csv=out_csv,
                              minibatch=args.minibatch)
+        elif p == 9:  # gate-clamp intervention: which layers' forgetting recall needs
+            from iota.clamp import run_clamp_pass
+            run_clamp_pass(models, n=args.n, device=device, out_csv=out_csv,
+                           minibatch=args.minibatch)
         elif p == 8:  # gate statistics: what the GLA decay gates do, per token role
             from iota.gates import run_gate_pass
             run_gate_pass(models, n=args.n, device=device, out_csv=out_csv,
@@ -526,7 +531,7 @@ def main() -> int:
     ap.add_argument("--stage", default="all",
                     choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
-    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running, 7 = matched histories, 8 = gate statistics)")
+    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running, 7 = matched histories, 8 = gate statistics, 9 = gate-clamp intervention)")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")

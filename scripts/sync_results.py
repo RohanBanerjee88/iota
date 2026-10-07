@@ -361,6 +361,38 @@ def _gates_section(run_dir: str) -> List[str]:
     return lines + [""]
 
 
+def _clamp_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass9_clamp.csv"))
+    if not rows:
+        return []
+    lines = ["## 4g. Gate-clamp intervention (Pass 9): which layers' forgetting does recall need?", "",
+             "Per-query recall with one GLA layer's gate replaced by a constant: `keep` = σ(6) ≈ 0.9975 "
+             "(no forgetting), `mean` = the head's own average γ (same amount of forgetting, no selectivity). "
+             "Δ vs the unclamped model on the same prompts, paired 95% CI.", ""]
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    for m in models:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        nbs = sorted({int(r["n_bindings"]) for r in mine})
+        conds = list(dict.fromkeys(r["condition"] for r in mine))
+        lines += [f"**{m}**", "", "| condition | " + " | ".join(f"{nb} facts" for nb in nbs) + " |",
+                  "|---|" + "---|" * len(nbs)]
+        for c in conds:
+            cells = []
+            for nb in nbs:
+                hit = [r for r in mine if r["condition"] == c and int(r["n_bindings"]) == nb]
+                if not hit:
+                    cells.append("–")
+                elif c == "none":
+                    cells.append(_fmt(hit[0]["per_query"]))
+                else:
+                    h = hit[0]
+                    cells.append(f"{_fmt(h['per_query'])} ({float(h['delta']):+.3f} "
+                                 f"[{float(h['delta_ci_low']):+.2f}, {float(h['delta_ci_high']):+.2f}])")
+            lines.append(f"| {c} | " + " | ".join(cells) + " |")
+        lines.append("")
+    return lines
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -435,6 +467,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _freerun_section(run_dir)
         + _history_section(run_dir)
         + _gates_section(run_dir)
+        + _clamp_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

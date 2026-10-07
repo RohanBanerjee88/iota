@@ -22,7 +22,7 @@ collapses for GLA *and* the hybrid (32 facts: 0.88 → 0.36 and 1.00 → 0.36).
 Pass 8 (2026-10-07) confirmed r07's gates stayed pinned near 1. The legacy init's models learned what r07's
 couldn't: a fast-forgetting first layer, and layers that forget filler more than facts.
 
-**Next:** a gate-clamp intervention on r04 (eval only), to find which layers' forgetting recall actually needs.
+**Next:** run pass 9 (gate-clamp intervention, built) on r04–r07 to find which layers' forgetting recall needs.
 
 ## Run log
 
@@ -45,6 +45,19 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — Pass 9 built: gate-clamp intervention (eval only).**
+`iota/clamp.py` replaces one GLA layer's gate with a constant per head at eval time and measures per-query recall
+on pass-1-style prompts (8 / 32 / 64 facts, n = 500). Δ is measured against the unclamped model on the same
+prompts, with a paired bootstrap CI over examples. Two clamps per layer, plus `keep` on all layers at once:
+- **`keep`:** γ = σ(6) ≈ 0.9975, the configured init. Removes the layer's forgetting *and* its selectivity.
+- **`mean`:** γ = the head's own average γ on these prompts. Keeps how much the layer forgets, removes what it
+  chooses to forget.
+
+Reading: a drop under `keep` only means the *amount* of forgetting matters; a drop under `mean` too means the
+*selectivity* matters. On r07 every `keep` clamp should be a no-op (built-in control). Tests check that the clamp
+imposes exactly the requested γ, touches no other layer, undoes itself on exit, is a no-op on an intended-init
+model, and that `mean` uses each head's own mean. Notebook audit: `AUDIT_PASSES = "9"` over r04–r07.
 
 **2026-10-07 — Pass 8 results: r07's gates are pinned near 1; the legacy models learned to forget.**
 Data: `runs/r0{4,5,6,7}/pass8_gates.csv` on `kaggle-results`, 500 prompts, 32 facts (8 facts gives the same

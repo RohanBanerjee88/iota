@@ -1,0 +1,105 @@
+
+##### eval_p89 started 2026-10-07 18:06:55 UTC argv=--stage eval --passes 8,9 --n 500 --repo BanerjeeRohan44/iota-r08 --run-id r08
+
+### STAGE eval  (passes [8, 9], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 5000 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 14000 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 8000 steps)
+
+--- pass 8 -> experiments/results/pass8_gates.csv
+  pass8 hybrid_sweep       nb=8   backbone.blocks.0.mixer set_value=0.458±0.336 distractor=0.659±0.181 bias=+1.83 |W|=1.113
+  pass8 hybrid_sweep       nb=8   backbone.blocks.1.mixer set_value=0.706±0.362 distractor=0.761±0.377 bias=+1.97 |W|=1.215
+  pass8 hybrid_sweep       nb=8   backbone.blocks.3.mixer set_value=0.909±0.154 distractor=0.928±0.120 bias=+2.03 |W|=1.365
+  pass8 transformer_sweep  no gated-linear layers -- skipped
+  pass8 gated_linear_sweep nb=8   backbone.blocks.0.mixer set_value=0.483±0.430 distractor=0.772±0.168 bias=+1.79 |W|=1.829
+  pass8 gated_linear_sweep nb=8   backbone.blocks.1.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+2.01 |W|=2.966
+  pass8 gated_linear_sweep nb=8   backbone.blocks.2.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+2.02 |W|=2.696
+  pass8 gated_linear_sweep nb=8   backbone.blocks.3.mixer set_value=0.991±0.028 distractor=0.982±0.034 bias=+2.10 |W|=2.993
+  pass8 gated_linear_sweep nb=8   backbone.blocks.4.mixer set_value=0.976±0.056 distractor=0.987±0.024 bias=+1.99 |W|=2.088
+  pass8 hybrid_sweep       nb=32  backbone.blocks.0.mixer set_value=0.458±0.336 distractor=0.656±0.183 bias=+1.83 |W|=1.113
+  pass8 hybrid_sweep       nb=32  backbone.blocks.1.mixer set_value=0.705±0.363 distractor=0.762±0.376 bias=+1.97 |W|=1.215
+  pass8 hybrid_sweep       nb=32  backbone.blocks.3.mixer set_value=0.911±0.152 distractor=0.931±0.115 bias=+2.03 |W|=1.365
+  pass8 transformer_sweep  no gated-linear layers -- skipped
+  pass8 gated_linear_sweep nb=32  backbone.blocks.0.mixer set_value=0.482±0.430 distractor=0.773±0.169 bias=+1.79 |W|=1.829
+  pass8 gated_linear_sweep nb=32  backbone.blocks.1.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+2.01 |W|=2.966
+  pass8 gated_linear_sweep nb=32  backbone.blocks.2.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+2.02 |W|=2.696
+  pass8 gated_linear_sweep nb=32  backbone.blocks.3.mixer set_value=0.993±0.022 distractor=0.989±0.022 bias=+2.10 |W|=2.993
+  pass8 gated_linear_sweep nb=32  backbone.blocks.4.mixer set_value=0.983±0.043 distractor=0.991±0.016 bias=+1.99 |W|=2.088
+wrote experiments/results/pass8_gates.csv (80 rows)
+  [hf] pushed pass8_gates.csv
+
+--- pass 9 -> experiments/results/pass9_clamp.csv
+  pass9 hybrid_sweep       nb=8   none       recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=8   keep_all   recall=0.015 delta=-0.985 [-0.988, -0.981]
+  pass9 hybrid_sweep       nb=8   keep_L0    recall=0.017 delta=-0.983 [-0.987, -0.979]
+  pass9 hybrid_sweep       nb=8   mean_L0    recall=0.996 delta=-0.004 [-0.006, -0.002]
+  pass9 hybrid_sweep       nb=8   keep_L1    recall=0.845 delta=-0.155 [-0.165, -0.144]
+  pass9 hybrid_sweep       nb=8   mean_L1    recall=1.000 delta=-0.000 [-0.001, +0.000]
+  pass9 hybrid_sweep       nb=8   keep_L3    recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=8   mean_L3    recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 transformer_sweep  no gated-linear layers -- skipped
+  pass9 gated_linear_sweep nb=8   none       recall=0.523 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=8   keep_all   recall=0.011 delta=-0.511 [-0.524, -0.498]
+  pass9 gated_linear_sweep nb=8   keep_L0    recall=0.013 delta=-0.510 [-0.523, -0.497]
+  pass9 gated_linear_sweep nb=8   mean_L0    recall=0.183 delta=-0.339 [-0.355, -0.323]
+  pass9 gated_linear_sweep nb=8   keep_L1    recall=0.517 delta=-0.006 [-0.014, +0.003]
+  pass9 gated_linear_sweep nb=8   mean_L1    recall=0.523 delta=+0.000 [+0.000, +0.001]
+  pass9 gated_linear_sweep nb=8   keep_L2    recall=0.513 delta=-0.009 [-0.019, +0.000]
+  pass9 gated_linear_sweep nb=8   mean_L2    recall=0.523 delta=+0.000 [-0.001, +0.001]
+  pass9 gated_linear_sweep nb=8   keep_L3    recall=0.518 delta=-0.005 [-0.010, -0.000]
+  pass9 gated_linear_sweep nb=8   mean_L3    recall=0.520 delta=-0.003 [-0.006, +0.001]
+  pass9 gated_linear_sweep nb=8   keep_L4    recall=0.518 delta=-0.005 [-0.011, +0.001]
+  pass9 gated_linear_sweep nb=8   mean_L4    recall=0.520 delta=-0.002 [-0.006, +0.002]
+  pass9 hybrid_sweep       nb=32  none       recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=32  keep_all   recall=0.012 delta=-0.987 [-0.990, -0.985]
+  pass9 hybrid_sweep       nb=32  keep_L0    recall=0.013 delta=-0.987 [-0.989, -0.984]
+  pass9 hybrid_sweep       nb=32  mean_L0    recall=0.999 delta=-0.001 [-0.002, -0.000]
+  pass9 hybrid_sweep       nb=32  keep_L1    recall=0.553 delta=-0.446 [-0.457, -0.436]
+  pass9 hybrid_sweep       nb=32  mean_L1    recall=0.998 delta=-0.002 [-0.003, -0.001]
+  pass9 hybrid_sweep       nb=32  keep_L3    recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=32  mean_L3    recall=1.000 delta=+0.000 [+0.000, +0.000]
+  pass9 transformer_sweep  no gated-linear layers -- skipped
+  pass9 gated_linear_sweep nb=32  none       recall=0.144 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=32  keep_all   recall=0.010 delta=-0.134 [-0.141, -0.127]
+  pass9 gated_linear_sweep nb=32  keep_L0    recall=0.010 delta=-0.134 [-0.141, -0.128]
+  pass9 gated_linear_sweep nb=32  mean_L0    recall=0.111 delta=-0.033 [-0.041, -0.025]
+  pass9 gated_linear_sweep nb=32  keep_L1    recall=0.145 delta=+0.001 [-0.003, +0.005]
+  pass9 gated_linear_sweep nb=32  mean_L1    recall=0.144 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=32  keep_L2    recall=0.139 delta=-0.005 [-0.009, -0.001]
+  pass9 gated_linear_sweep nb=32  mean_L2    recall=0.143 delta=-0.001 [-0.002, +0.001]
+  pass9 gated_linear_sweep nb=32  keep_L3    recall=0.142 delta=-0.002 [-0.005, +0.001]
+  pass9 gated_linear_sweep nb=32  mean_L3    recall=0.143 delta=-0.001 [-0.003, +0.002]
+  pass9 gated_linear_sweep nb=32  keep_L4    recall=0.143 delta=-0.001 [-0.004, +0.002]
+  pass9 gated_linear_sweep nb=32  mean_L4    recall=0.144 delta=+0.000 [-0.002, +0.002]
+  pass9 hybrid_sweep       nb=64  none       recall=0.989 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=64  keep_all   recall=0.013 delta=-0.976 [-0.979, -0.973]
+  pass9 hybrid_sweep       nb=64  keep_L0    recall=0.013 delta=-0.975 [-0.978, -0.972]
+  pass9 hybrid_sweep       nb=64  mean_L0    recall=0.987 delta=-0.001 [-0.002, -0.000]
+  pass9 hybrid_sweep       nb=64  keep_L1    recall=0.412 delta=-0.577 [-0.587, -0.565]
+  pass9 hybrid_sweep       nb=64  mean_L1    recall=0.986 delta=-0.003 [-0.005, -0.001]
+  pass9 hybrid_sweep       nb=64  keep_L3    recall=0.989 delta=+0.000 [+0.000, +0.000]
+  pass9 hybrid_sweep       nb=64  mean_L3    recall=0.989 delta=+0.000 [+0.000, +0.000]
+  pass9 transformer_sweep  no gated-linear layers -- skipped
+  pass9 gated_linear_sweep nb=64  none       recall=0.080 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=64  keep_all   recall=0.010 delta=-0.070 [-0.076, -0.064]
+  pass9 gated_linear_sweep nb=64  keep_L0    recall=0.009 delta=-0.070 [-0.076, -0.064]
+  pass9 gated_linear_sweep nb=64  mean_L0    recall=0.066 delta=-0.014 [-0.021, -0.007]
+  pass9 gated_linear_sweep nb=64  keep_L1    recall=0.080 delta=+0.000 [-0.004, +0.004]
+  pass9 gated_linear_sweep nb=64  mean_L1    recall=0.080 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=64  keep_L2    recall=0.078 delta=-0.001 [-0.006, +0.003]
+  pass9 gated_linear_sweep nb=64  mean_L2    recall=0.080 delta=+0.000 [-0.001, +0.001]
+  pass9 gated_linear_sweep nb=64  keep_L3    recall=0.078 delta=-0.002 [-0.004, +0.001]
+  pass9 gated_linear_sweep nb=64  mean_L3    recall=0.079 delta=-0.001 [-0.002, +0.001]
+  pass9 gated_linear_sweep nb=64  keep_L4    recall=0.079 delta=-0.001 [-0.003, +0.001]
+  pass9 gated_linear_sweep nb=64  mean_L4    recall=0.079 delta=-0.001 [-0.003, +0.001]
+wrote experiments/results/pass9_clamp.csv (60 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass8_gates.csv
+  [hf] pushed pass9_clamp.csv

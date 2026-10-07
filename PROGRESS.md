@@ -19,13 +19,16 @@ recalls worse after answered questions than after matched filler.
 r07 (2026-10-07) showed the gate-init "bug" was load-bearing: with the configured init (γ₀ ≈ 0.9975) recall
 collapses for GLA *and* the hybrid (32 facts: 0.88 → 0.36 and 1.00 → 0.36).
 
-**Next:** confirm the mechanism (gate statistics on r04 vs r07 checkpoints); decide whether r07 plan B is worth
-running.
+Pass 8 (2026-10-07) confirmed r07's gates stayed pinned near 1. The legacy init's models learned what r07's
+couldn't: a fast-forgetting first layer, and layers that forget filler more than facts.
+
+**Next:** a gate-clamp intervention on r04 (eval only), to find which layers' forgetting recall actually needs.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
 | r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
 | audit | 2026-10-06 | `1a8050f` | pass 7 on r04–r06 | answered questions never hurt later recall (any arch); dense *gains* up to 0.07 from them; GLA within ±0.02; hybrid 1.00 throughout | drop the read-is-a-write hypothesis; r07 next |
 | audit | 2026-10-05 | `28c0e1e` | passes 5, 6 on r04–r06 | GLA: load costs 0.55, 8× distance costs ≤0.05; dense/hybrid collapse past 1024 at any load; free-running ≈ teacher-forced (max gap 0.038, dense) | headline numbers stand; pass 7 next |
@@ -42,6 +45,47 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — Pass 8 results: r07's gates are pinned near 1; the legacy models learned to forget.**
+Data: `runs/r0{4,5,6,7}/pass8_gates.csv` on `kaggle-results`, 500 prompts, 32 facts (8 facts gives the same
+picture). γ = mean ± std over tokens × heads. "Retention" = log10 of the share of a fact's write still in the
+state at the first question (0 = all of it, −3 = a thousandth).
+
+*GLA, r04 (legacy init) vs r07 (configured init):*
+
+| layer | r04 γ fact value | r04 γ distractor | r04 retention | r07 γ fact value | r07 γ distractor | r07 retention |
+|---|---|---|---:|---|---|---:|
+| 0 | 0.40 ± 0.34 | 0.28 ± 0.21 | −141 | 1.000 ± 0.000 | 0.975 ± 0.059 | −1.2 |
+| 1 | 1.000 ± 0.000 | 0.93 ± 0.14 | −3.7 | 0.997 ± 0.009 | 1.000 ± 0.001 | −0.09 |
+| 2 | 1.000 | 1.000 | 0.00 | 0.999 | 1.000 | −0.11 |
+| 3 | 0.997 ± 0.006 | 0.92 ± 0.10 | −3.8 | 0.992 ± 0.023 | 0.998 ± 0.010 | −0.56 |
+| 4 | 1.000 | 1.000 | −0.01 | 0.985 ± 0.027 | 0.999 ± 0.002 | −0.35 |
+
+- **Saturation confirmed, with a correction.** Every r07 gate, in both the GLA and the hybrid, sits at 0.98–1.00
+  with std ≤ 0.06. The gate bias barely moved (6 → 5.6–5.9). But the gate *weights* did learn (‖W‖ 1.2–4.3 per
+  head, the same size as r04's), so the gate is not literally frozen. Rather, a bias of ~6 keeps σ near 1 whatever
+  W·x adds. The prediction "‖W‖ ≈ 0" was wrong; "γ ≈ 1 everywhere" was right.
+- **r07 does not forget facts; it forgets nothing.** Facts keep 6–100% of their write until the question. Its
+  failure is clutter: ~200 distractor tokens and every fact pile up in one state with no way to drop anything.
+- **What all six legacy models learned (r04–r06, GLA and hybrid):**
+  - **Layer 0 forgets fast:** γ 0.12–0.45, retention ≤ −140, so it only sees the last few tokens. It works like a
+    second short convolution.
+  - **Selective forgetting in some layers:** r04 GLA layers 1 and 3 keep facts at 1.00 but let distractors decay
+    (0.93, 0.92). r06 GLA layer 1 shows the same (0.91 vs 0.77). In the hybrid, layer 0 keeps fact values longer
+    than filler in all three seeds (0.25–0.31 vs 0.12–0.19).
+  - **Long-memory layers:** GLA layers with γ ≈ 1.000 and retention ≈ 0, like r07's. r05 instead spreads γ over
+    0.6–0.75, and its layer 3 has bimodal heads, some always 0 and some always 1. There is more than one solution.
+- **Correction to the r07 entry:** in r04–r06, **no linear layer of the hybrid keeps facts until the question**
+  (retention −33 to −195 in all three layers and all seeds). The hybrid's recall must come from its attention
+  layers, and its linear layers do short-range processing. So the earlier hypothesis ("the hybrid's recall was
+  carried by its GLA layers") is wrong. Revised: with the legacy init the hybrid's linear layers become local
+  processors that feed attention; with the configured init they become uniform accumulators, and the hybrid's
+  attention never learns recall. Why that blocks attention is open.
+
+**Decision:** the mechanism is "the configured init pins γ near 1 and the model never learns to forget", not
+"the model forgets facts". This is still correlational. Next: a gate-clamp intervention on r04 (eval only). Clamp
+one layer's γ to σ(6) at a time, and measure the recall drop. That shows which layers' forgetting recall actually
+needs.
 
 **2026-10-07 — Pass 8 built: decay-gate statistics (tests the r07 mechanism, no training).**
 `iota/gates.py` hooks every GLA layer's gate and records γ = σ(g_proj(x)) on pass-1-style prompts (8 and 32

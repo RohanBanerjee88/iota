@@ -25,14 +25,17 @@ couldn't: a fast-forgetting first layer, and layers that forget filler more than
 Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every model. Pinning layer 0 at
 "keep" drops all six legacy models to chance.
 
-**Next:** r08 (prepared): the gate started unsaturated (bias 2, zero weight, γ₀ ≈ 0.88). It tests whether
-saturation, rather than the γ value or the random weights, is what blocked learning.
+r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybrid fully recovers** (1.00 at
+32 facts, as r04), but the **pure GLA gets worse** (0.14 at 32 facts; r07 0.36, r04 0.88).
+
+**Next:** pass 8 + 9 on r08 (eval only), then r09 = zero gate weight with bias 0. r09 differs from r04 only in the
+random vs zero initial gate weight, so it isolates that factor for the GLA.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r08 | — | `configs/bias2/` | prepared | r07 with gate bias 2 instead of 6 (γ₀ 0.88, unsaturated), zero weight; transformer reused from r04 | run plan A |
+| r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
 | pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
 | pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
 | r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
@@ -51,6 +54,38 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-07 — r08 plan A: an unsaturated gate fixes the hybrid but not the pure GLA.**
+r08 = r07 with the gate bias 6 → 2 (γ₀ 0.88, zero weight). Seed 0; the transformer is r04's.
+
+| facts | GLA r04 / r07 / r08 | hybrid r04 / r07 / r08 |
+|---:|---|---|
+| 2 | 0.999 / 0.978 / 0.851 | 1.000 / 0.979 / 1.000 |
+| 8 | 0.989 / 0.854 / 0.531 | 1.000 / 0.848 / 1.000 |
+| 32 | 0.882 / 0.355 / **0.143** | 1.000 / 0.357 / **1.000** |
+| 64 | 0.489 / 0.082 / 0.079 | 0.997 / 0.113 / 0.988 |
+| 128 | 0.222 / 0.045 / 0.049 | 0.990 / 0.060 / 0.986 |
+
+- **Hybrid: saturation was the cause.** The hybrid recovers completely and trains as fast as r04's (0.50 at step
+  1.5k, 0.99 at 2.5k; r04: 0.53 / 0.98). This fits pass 9: the hybrid needs its linear layers to *forget* (short
+  memory in layer 0, selective resets in layer 1). Starting at 0.88 with a responsive gradient, they can learn
+  that. From 0.9975 they couldn't.
+- **Pure GLA: not explained by saturation.** By the pre-registered rule (≤ 0.45 at 32 facts) saturation is not the
+  whole story. r08's GLA climbs slowly (assoc 0.07 at 1.5k → 0.19 at 8k, still accelerating at 7–8k) and then sits
+  at ~0.18 until the plateau stop at 12k. r04's GLA was also slow but reached 0.55 by 7.5k.
+- **The control is fine:** state_track is 1.00. GLA holds a single overwritten value to 0.97 at 8192 tokens, so it
+  can keep long memory for one variable. What fails is holding many bindings at once.
+- **Why the two architectures differ (hypothesis):** the hybrid's attention does the long-range recall, so its
+  linear layers only need to learn to forget, which bias 2 allows. The pure GLA must also build long-memory layers
+  (r04 layers 2 and 4: γ = 1.000, retention ≈ 0). r04 reached γ ≈ 1 through large input-dependent W·x (bias only
+  +0.1, ‖W‖ ≈ 2.4), not through the bias. r08 and r07 both start with W = 0, and r04 had a random W. That is the
+  remaining difference between r04 and r08 besides the starting γ.
+- **Caveat:** one seed. But r04–r06 agree tightly at 32 facts (0.88–0.97), so 0.14 is far outside seed noise.
+
+**Decision:** the paper's recommendation splits by architecture. For the hybrid, "don't saturate the gate" is
+sufficient. For the pure GLA we need one more ablation: r09 = zero W, bias 0 (γ₀ = 0.5, input-independent at
+init). It differs from r04 only in the initial gate weight. First, passes 8 and 9 on r08 (eval only, ~15 min) to
+see which layers r08's GLA failed to build.
 
 **2026-10-07 — r08 prepared: the same intended init, but unsaturated (bias 2).**
 - `configs/bias2/sweep_*.yaml` are r07's configs with one change: `decay_bias_init: 6.0 → 2.0` for GLA and the

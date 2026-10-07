@@ -1,6 +1,6 @@
 # iota run `r08-smoke`
 
-- **updated:** 2026-10-07 05:01 UTC (last stage: `train:gated_linear`)
+- **updated:** 2026-10-07 05:01 UTC (last stage: `train`)
 - **code:** `aa84c56` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

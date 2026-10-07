@@ -6,3 +6,4 @@
 2026-10-07 19:05 UTC  stage=train:transformer  code=494960f  files=8
 2026-10-07 19:06 UTC  stage=train:gated_linear  code=494960f  files=9
 2026-10-07 19:06 UTC  stage=train  code=494960f  files=9
+2026-10-07 19:06 UTC  stage=sanity  code=494960f  files=11

@@ -1,0 +1,14 @@
+
+##### sanity started 2026-10-07 19:06:08 UTC argv=--stage all --smoke
+
+### STAGE sanity (each model on its own training distribution)
+
+model             assoc_pq  assoc_ex  state_pq  state_ex
+----------------------------------------------------------
+hybrid               0.018     0.000     0.000     0.000
+transformer          0.000     0.000     0.000     0.000
+gated_linear         0.000     0.000     0.000     0.000
+
+Healthy = both per-query columns high. state_pq ~0.01 means the control
+never learned and no sweep figure is trustworthy yet.
+wrote experiments/smoke/sanity_indist.csv

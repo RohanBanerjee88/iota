@@ -1,7 +1,7 @@
 # iota run `r07`
 
-- **updated:** 2026-10-07 00:17 UTC (last stage: `eval 4`)
-- **code:** `d5e5191` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-07 00:42 UTC (last stage: `eval 4`)
+- **code:** `4101680` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)

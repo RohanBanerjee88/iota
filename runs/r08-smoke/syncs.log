@@ -7,3 +7,4 @@
 2026-10-07 05:01 UTC  stage=train:gated_linear  code=aa84c56  files=9
 2026-10-07 05:01 UTC  stage=train  code=aa84c56  files=9
 2026-10-07 05:01 UTC  stage=sanity  code=aa84c56  files=11
+2026-10-07 05:01 UTC  stage=eval 1,3,4,2  code=aa84c56  files=16

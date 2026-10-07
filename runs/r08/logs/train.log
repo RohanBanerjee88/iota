@@ -1,206 +1,20 @@
 
-##### train started 2026-10-07 05:01:56 UTC argv=--stage train --repo BanerjeeRohan44/iota-r08 --reuse transformer=BanerjeeRohan44/iota-r04
+##### train started 2026-10-07 17:43:33 UTC argv=--stage train --repo BanerjeeRohan44/iota-r08 --reuse transformer=BanerjeeRohan44/iota-r04
 
 ### STAGE train  (hybrid, transformer, gated_linear)
 
 [hybrid] no local checkpoint -> trying the Hub
-
-========================================================================
-=== TRAIN hybrid -> hybrid_sweep
-========================================================================
-[sweep] model=hybrid params=2.67M device=cuda max_steps=15000 bs=64 patience=8
-[sweep] hybrid step   500 loss 0.267 bal 0.201 [assoc 0.018 state 0.383] exact 0.130 diff 0.00 * (30s)
-[sweep] hybrid step  1000 loss 0.041 bal 0.336 [assoc 0.050 state 0.623] exact 0.218 diff 0.00 * (60s)
-[sweep] hybrid step  1500 loss 0.033 bal 0.719 [assoc 0.498 state 0.940] exact 0.456 diff 0.25 * (119s)
-[sweep] hybrid step  2000 loss 0.025 bal 0.921 [assoc 0.860 state 0.982] exact 0.716 diff 0.50 * (247s)
-[sweep] hybrid step  2500 loss 0.014 bal 0.990 [assoc 0.986 state 0.994] exact 0.944 diff 0.75 * (448s)
-[sweep] hybrid step  3000 loss 0.002 bal 1.000 [assoc 0.999 state 1.000] exact 0.996 diff 1.00 * (730s)
-[sweep] hybrid step  3500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00 * (1054s)
-[sweep] hybrid step  4000 loss 0.000 bal 0.997 [assoc 1.000 state 0.994] exact 0.996 diff 1.00  (1380s)
-[sweep] hybrid step  4500 loss 0.000 bal 1.000 [assoc 0.999 state 1.000] exact 0.996 diff 1.00  (1705s)
-[sweep] hybrid step  5000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00 * (2030s)
-[sweep] hybrid step  5500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (2355s)
-[sweep] hybrid step  6000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (2680s)
-[sweep] hybrid step  6500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (3004s)
-[sweep] hybrid step  7000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00  (3330s)
-[sweep] hybrid step  7500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 0.998 diff 1.00  (3655s)
-[sweep] hybrid step  8000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (3981s)
-[sweep] hybrid step  8500 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (4307s)
-[sweep] hybrid step  9000 loss 0.000 bal 1.000 [assoc 1.000 state 1.000] exact 1.000 diff 1.00  (4631s)
-[sweep] hybrid plateaued (patience 8) -> stop
-[sweep] hybrid BEST plateau_acc = 1.0000 -> experiments/results/hybrid_sweep
-=== hybrid done, best balanced acc = 1.0000
-Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
-New Data Upload               : |          |  0.00B /  0.00B            [A
-
-  .../hybrid_sweep.safetensors:   5%|▌         |  556kB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors:   5%|▌         |  556kB / 10.8MB            [A[AProcessing Files (0 / 1)      :   5%|▌         |  556kB / 10.8MB,  464kB/s  
-New Data Upload               :   5%|▌         |  555kB / 10.8MB,  463kB/s  [A
-
-  .../hybrid_sweep.safetensors:   5%|▌         |  556kB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors:   5%|▌         |  556kB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors:  10%|█         | 1.11MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  10%|█         | 1.11MB / 10.8MB,  618kB/s  
-New Data Upload               :  10%|█         | 1.11MB / 10.8MB,  617kB/s  [A
-
-  .../hybrid_sweep.safetensors:  26%|██▌       | 2.78MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  26%|██▌       | 2.78MB / 10.8MB, 1.39MB/s  
-New Data Upload               :  26%|██▌       | 2.77MB / 10.8MB, 1.39MB/s  [A
-
-  .../hybrid_sweep.safetensors:  26%|██▌       | 2.78MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors:  41%|████▏     | 4.45MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  41%|████▏     | 4.45MB / 10.8MB, 1.86MB/s  
-New Data Upload               :  41%|████▏     | 4.44MB / 10.8MB, 1.85MB/s  [A
-
-  .../hybrid_sweep.safetensors:  41%|████▏     | 4.45MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors:  57%|█████▋    | 6.12MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  57%|█████▋    | 6.12MB / 10.8MB, 2.19MB/s  
-New Data Upload               :  57%|█████▋    | 6.10MB / 10.8MB, 2.18MB/s  [A
-
-  .../hybrid_sweep.safetensors:  93%|█████████▎| 10.0MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  93%|█████████▎| 10.0MB / 10.8MB, 3.34MB/s  
-New Data Upload               :  93%|█████████▎| 9.99MB / 10.8MB, 3.33MB/s  [A
-
-  .../hybrid_sweep.safetensors:  98%|█████████▊| 10.6MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  98%|█████████▊| 10.6MB / 10.8MB, 3.30MB/s  
-New Data Upload               :  98%|█████████▊| 10.5MB / 10.8MB, 3.30MB/s  [A
-
-  .../hybrid_sweep.safetensors:  98%|█████████▊| 10.6MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 3.00MB/s  
-New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 2.99MB/s  [A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 2.34MB/s  
-New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 2.34MB/s  
-  .../hybrid_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
-  [hf] pushed hybrid_sweep.safetensors
-  [hf] pushed hybrid_sweep.json
-  [sync] published 2 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r08
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+[hybrid] SKIP -- trained 5000 steps
 [transformer] no local checkpoint -> trying the Hub
-[transformer] reusing the checkpoint from BanerjeeRohan44/iota-r04
   [hf] pulled transformer_sweep.safetensors
   [hf] pulled transformer_sweep.json
-Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
-New Data Upload               : |          |  0.00B /  0.00B            [A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 53.9MB/s  
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 7.69MB/s  
-New Data Upload               : |          |  0.00B /  0.00B,  0.00B/s  
-  ...sformer_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
-  [hf] pushed transformer_sweep.safetensors
-  [hf] pushed transformer_sweep.json
 [transformer] SKIP -- trained 14000 steps
 [gated_linear] no local checkpoint -> trying the Hub
-
-========================================================================
-=== TRAIN gated_linear -> gated_linear_sweep
-========================================================================
-[sweep] model=gated_linear params=2.67M device=cuda max_steps=15000 bs=64 patience=8
-[sweep] gated_linear step   500 loss 1.334 bal 0.019 [assoc 0.013 state 0.024] exact 0.008 diff 0.00 * (32s)
-[sweep] gated_linear step  1000 loss 0.617 bal 0.424 [assoc 0.010 state 0.838] exact 0.282 diff 0.00 * (65s)
-[sweep] gated_linear step  1500 loss 1.019 bal 0.526 [assoc 0.069 state 0.982] exact 0.334 diff 0.25 * (130s)
-[sweep] gated_linear step  2000 loss 1.155 bal 0.539 [assoc 0.078 state 1.000] exact 0.336 diff 0.50 * (267s)
-[sweep] gated_linear step  2500 loss 1.231 bal 0.547 [assoc 0.094 state 1.000] exact 0.350 diff 0.75 * (483s)
-[sweep] gated_linear step  3000 loss 1.229 bal 0.559 [assoc 0.117 state 1.000] exact 0.350 diff 1.00 * (784s)
-[sweep] gated_linear step  3500 loss 1.230 bal 0.559 [assoc 0.118 state 1.000] exact 0.348 diff 1.00 * (1130s)
-[sweep] gated_linear step  4000 loss 1.365 bal 0.558 [assoc 0.117 state 1.000] exact 0.356 diff 1.00  (1477s)
-[sweep] gated_linear step  4500 loss 1.086 bal 0.563 [assoc 0.126 state 1.000] exact 0.346 diff 1.00 * (1823s)
-[sweep] gated_linear step  5000 loss 1.242 bal 0.565 [assoc 0.130 state 1.000] exact 0.344 diff 1.00 * (2170s)
-[sweep] gated_linear step  5500 loss 1.230 bal 0.566 [assoc 0.131 state 1.000] exact 0.348 diff 1.00 * (2516s)
-[sweep] gated_linear step  6000 loss 1.231 bal 0.568 [assoc 0.135 state 1.000] exact 0.352 diff 1.00 * (2862s)
-[sweep] gated_linear step  6500 loss 1.267 bal 0.572 [assoc 0.144 state 1.000] exact 0.352 diff 1.00 * (3207s)
-[sweep] gated_linear step  7000 loss 1.092 bal 0.582 [assoc 0.165 state 1.000] exact 0.360 diff 1.00 * (3554s)
-[sweep] gated_linear step  7500 loss 1.023 bal 0.586 [assoc 0.173 state 1.000] exact 0.362 diff 1.00 * (3901s)
-[sweep] gated_linear step  8000 loss 0.917 bal 0.597 [assoc 0.193 state 1.000] exact 0.362 diff 1.00 * (4249s)
-[sweep] gated_linear step  8500 loss 1.071 bal 0.589 [assoc 0.179 state 1.000] exact 0.360 diff 1.00  (4595s)
-[sweep] gated_linear step  9000 loss 0.883 bal 0.594 [assoc 0.189 state 1.000] exact 0.354 diff 1.00  (4941s)
-[sweep] gated_linear step  9500 loss 1.022 bal 0.591 [assoc 0.183 state 1.000] exact 0.356 diff 1.00  (5287s)
-[sweep] gated_linear step 10000 loss 1.094 bal 0.592 [assoc 0.183 state 1.000] exact 0.360 diff 1.00  (5634s)
-[sweep] gated_linear step 10500 loss 0.934 bal 0.593 [assoc 0.186 state 1.000] exact 0.356 diff 1.00  (5980s)
-[sweep] gated_linear step 11000 loss 1.033 bal 0.590 [assoc 0.180 state 1.000] exact 0.356 diff 1.00  (6325s)
-[sweep] gated_linear step 11500 loss 0.967 bal 0.596 [assoc 0.192 state 1.000] exact 0.364 diff 1.00  (6670s)
-[sweep] gated_linear step 12000 loss 1.108 bal 0.591 [assoc 0.182 state 1.000] exact 0.358 diff 1.00  (7016s)
-[sweep] gated_linear plateaued (patience 8) -> stop
-[sweep] gated_linear BEST plateau_acc = 0.5967 -> experiments/results/gated_linear_sweep
-=== gated_linear done, best balanced acc = 0.5967
-Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
-New Data Upload               : |          |  0.00B /  0.00B            [A
-
-  ..._linear_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[AProcessing Files (0 / 1)      :   5%|▌         |  553kB / 10.8MB,  553kB/s  
-New Data Upload               :   5%|▌         |  553kB / 10.8MB,  553kB/s  [A
-
-  ..._linear_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:   5%|▌         |  553kB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:  10%|█         | 1.11MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  10%|█         | 1.11MB / 10.8MB,  691kB/s  
-New Data Upload               :  10%|█         | 1.11MB / 10.8MB,  691kB/s  [A
-
-  ..._linear_sweep.safetensors:  26%|██▌       | 2.76MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  26%|██▌       | 2.76MB / 10.8MB, 1.54MB/s  
-New Data Upload               :  26%|██▌       | 2.76MB / 10.8MB, 1.54MB/s  [A
-
-  ..._linear_sweep.safetensors:  41%|████      | 4.42MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  41%|████      | 4.42MB / 10.8MB, 2.21MB/s  
-New Data Upload               :  41%|████      | 4.42MB / 10.8MB, 2.21MB/s  [A
-
-  ..._linear_sweep.safetensors:  41%|████      | 4.42MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:  41%|████      | 4.42MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:  61%|██████▏   | 6.63MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  61%|██████▏   | 6.63MB / 10.8MB, 2.55MB/s  
-New Data Upload               :  61%|██████▏   | 6.63MB / 10.8MB, 2.55MB/s  [A
-
-  ..._linear_sweep.safetensors:  97%|█████████▋| 10.5MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  97%|█████████▋| 10.5MB / 10.8MB, 3.75MB/s  
-New Data Upload               :  97%|█████████▋| 10.5MB / 10.8MB, 3.75MB/s  [A
-
-  ..._linear_sweep.safetensors:  97%|█████████▋| 10.5MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors:  97%|█████████▋| 10.5MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 3.17MB/s  
-New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 3.17MB/s  [A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
-
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 2.45MB/s  
-New Data Upload               : 100%|██████████| 10.8MB / 10.8MB, 2.45MB/s  
-  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
-  [hf] pushed gated_linear_sweep.safetensors
-  [hf] pushed gated_linear_sweep.json
-  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r08
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+[gated_linear] SKIP -- trained 8000 steps
 
 ========================================================================
 === TRAIN SUMMARY

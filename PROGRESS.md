@@ -90,7 +90,7 @@ Data: `runs/r08/pass8_gates.csv`, `runs/r08/pass9_clamp.csv` (32 facts unless no
 
   | run | bias init | bias after training |
   |---|---:|---|
-  | r04 | 0 | −0.11 to +0.46 |
+  | r04–r06 | 0 | −0.11 to +0.46 |
   | r07 | 6 | 5.6 to 5.9 |
   | r08 | 2 | 1.8 to 2.1 |
 

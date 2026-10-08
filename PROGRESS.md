@@ -5,7 +5,7 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-10-05)
+## Where we are (2026-10-08)
 
 **Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
 [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
@@ -28,17 +28,20 @@ Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every
 r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybrid fully recovers** (1.00 at
 32 facts, as r04), but the **pure GLA gets worse** (0.14 at 32 facts; r07 0.36, r04 0.88).
 
-Pass 8 + 9 on r08 (2026-10-07): r08's GLA did build long-memory layers. Its weak spot is layer 0, which forgets
-too little and keeps filler over facts. In every run the gate bias barely moves from its init.
+r09 (2026-10-08) closed the init question. With a zero gate weight, bias 0 reproduces r04: GLA 0.86 at 32 facts
+(r04 0.88), and the hybrid scores 1.00. Bias 2 fails the GLA (0.14) and bias 6 fails both. So the starting gate
+bias, not r04's random gate weight, decides whether a pure GLA learns recall. That also means r04–r06's "buggy"
+init is equivalent to a clean, documentable one: bias 0, zero weight.
 
-**Next:** r09 (prepared: bias 0, zero gate weight). It differs from r04 only in the initial gate weight.
+**Next (proposed):** passes 8 + 9 on r09 (eval only), then seed replicates of the key contrast (bias 0 vs bias 2,
+GLA) before writing it up.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
 | r08 audit | 2026-10-07 | `c3632aa` | pass 8+9 on r08 | GLA built long-memory layers (L1/L2 γ = 1.000) and a forgetting L0, but L0 forgets less (γ 0.5–0.8) and keeps filler over facts; keep-L0 → chance in GLA and hybrid; gate biases stay within ~0.2 of init in every run | the init bias sets each layer's baseline timescale; r09 next |
-| r09 | — | `configs/zerow0/` | prepared | gate bias 0, zero weight (γ₀ = 0.5 for every input); differs from r04 only in the gate weight; transformer reused from r04 | run plan A |
 | r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
 | pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
 | pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
@@ -58,6 +61,46 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-08 — r09 plan A: bias 0 with a zero weight reproduces r04. The starting bias decides.**
+r09 = r04's gate bias (0) with a zero gate weight instead of r04's small random one. Seed 0; the transformer is
+r04's. Per-query recall, pass 1:
+
+| facts | GLA r04 / r05 / r06 (legacy) | GLA r09 (bias 0) | GLA r08 (bias 2) | GLA r07 (bias 6) | hybrid r04 / r07 / r08 / r09 |
+|---:|---|---:|---:|---:|---|
+| 8 | 0.989 / 0.994 / 0.999 | **0.991** | 0.531 | 0.854 | 1.000 / 0.848 / 1.000 / 1.000 |
+| 32 | 0.882 / 0.935 / 0.971 | **0.858** | 0.143 | 0.355 | 1.000 / 0.357 / 1.000 / 1.000 |
+| 64 | 0.489 / 0.754 / 0.555 | **0.512** | 0.079 | 0.082 | 0.997 / 0.113 / 0.988 / 0.986 |
+| 128 | 0.222 / 0.456 / 0.307 | **0.222** | 0.049 | 0.045 | 0.990 / 0.060 / 0.986 / 0.979 |
+
+- **Pre-registered outcome: ≥ 0.80 at 32 facts → the starting γ is what matters; the random weight is incidental.**
+  r09's GLA tracks r04 within its seed spread at every load (0.858 vs r04–r06 0.88–0.97 at 32; 0.222 = r04 at 128).
+- **Training curve:** r09's GLA climbs a little faster than r04's (assoc 0.42 at 4.5k vs 0.20) and is still
+  creeping up at the 15k-step cap (0.81, as r04's 0.84). Held-out balanced 0.907, control 1.00 out to 8192 tokens.
+  The hybrid matches r04 step for step (0.57 at 1.5k, 0.98 at 2.5k).
+- **The complete seed-0 picture** (zero gate weight unless noted):
+
+  | starting γ | bias | GLA @32 | hybrid @32 |
+  |---:|---:|---:|---:|
+  | 0.5 | 0 | 0.86 (r09); 0.88 with a random weight (r04) | 1.00 |
+  | 0.88 | 2 | 0.14 (r08) | 1.00 |
+  | 0.9975 | 6 | 0.36 (r07) | 0.36 |
+
+  Together with "the bias barely moves in training" (pass 8): the starting bias picks each layer's timescale. A
+  pure GLA needs to *start forgetting* and learn what to keep. The hybrid tolerates a longer start (0.88) because
+  its attention does the long-range work, but not a saturated one (0.9975). The usual advice, "init the decay
+  gate near 1 so memory lasts", is exactly wrong for recall here.
+- **This rescues the main results.** r04–r06's accidental init behaves like a clean, documentable init (bias 0,
+  zero weight). The paper can state that init honestly, and the r04–r06 numbers stand.
+- **Side note (control, past training length):** the hybrid's state_track at 1024–8192 tokens varies with the
+  init. r07, with long-memory linear layers, holds 1.00 to 2048 and 0.93 at 4096; r04–r06 and r09 drop to 0.51–0.96
+  at 1024 and ≤ 0.21 at 2048. A long-memory init helps the hybrid extrapolate one variable while killing recall.
+  That is a trade-off worth one sentence, not a section.
+- **Caveat:** r07–r09 are one seed each. The contrasts are far outside r04–r06's seed spread (e.g. 0.14 vs
+  0.88–0.97 at 32 facts), but the init finding needs replicates before it is a paper claim.
+
+**Decision:** the init question is answered for seed 0. Next: passes 8 + 9 on r09 (check that its layer 0 looks
+like r04's), then 1–2 more seeds of the key contrast (bias 0 vs bias 2, GLA only), then write up.
 
 **2026-10-07 — Pass 8 + 9 on r08: the long-memory layers are there; layer 0 is wrong.**
 Data: `runs/r08/pass8_gates.csv`, `runs/r08/pass9_clamp.csv` (32 facts unless noted).

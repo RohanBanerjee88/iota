@@ -1,0 +1,53 @@
+# r11: SEED REPLICATE of r08 (gate bias2, zero gate weight), GLA ONLY, seed 1.
+# Identical to configs/bias2/sweep_gated_linear.yaml except train.seed 0 -> 1. This folder holds only the GLA
+# config, so run_all trains and evaluates only the GLA (see run_all._archs).
+# Replicates the r08-vs-r09 contrast (bias 2 vs bias 0) on seeds 1 and 2. PROGRESS.md 2026-10-08.
+arch: gated_linear
+d_model: 256
+n_layers: 5
+n_heads: 4
+d_ff: 512
+dropout: 0.0
+chunk_size: 64
+decay_bias_init: 2.0
+short_conv: 4
+legacy_gate_init: false
+curriculum:
+- mode: assoc_recall
+  n_bindings:
+    min: 2
+    max: 64
+  seq_len:
+    min: 64
+    max: 640
+  n_queries:
+    min: 1
+    max: 16
+  distractor_density: 0.1
+  query_pos: uniform
+  weight: 0.67
+- mode: state_track
+  n_bindings:
+    min: 2
+    max: 16
+  seq_len:
+    min: 64
+    max: 640
+  distractor_density: 0.1
+  ops_kinds:
+  - set
+  weight: 0.33
+train:
+  batch_size: 64
+  warmup: 200
+  weight_decay: 0.01
+  max_steps: 15000
+  easy_steps: 1000
+  ramp_steps: 2000
+  eval_every: 500
+  eval_n: 500
+  patience: 8
+  seed: 1
+  lr: 0.0015
+  run_name: gated_linear_sweep
+  grad_clip: 1.0

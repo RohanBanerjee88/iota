@@ -33,13 +33,14 @@ r09 (2026-10-08) closed the init question. With a zero gate weight, bias 0 repro
 bias, not r04's random gate weight, decides whether a pure GLA learns recall. That also means r04–r06's "buggy"
 init is equivalent to a clean, documentable one: bias 0, zero weight.
 
-**Next (proposed):** passes 8 + 9 on r09 (eval only), then seed replicates of the key contrast (bias 0 vs bias 2,
-GLA) before writing it up.
+**Next:** seed replicates r10–r13 (prepared: GLA only, bias 0 vs bias 2, seeds 1 and 2; each run includes passes
+8 + 9), then the write-up.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r10–r13 | — | `configs/seeds/` | prepared | GLA-only seed replicates: r10/r12 bias 0 (as r09), r11/r13 bias 2 (as r08), seeds 1 / 2; passes 1, 3, 8, 9 | notebook `PLAN="seeds"`, `SEED_BATCH` 1 then 2 |
 | r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
 | r08 audit | 2026-10-07 | `c3632aa` | pass 8+9 on r08 | GLA built long-memory layers (L1/L2 γ = 1.000) and a forgetting L0, but L0 forgets less (γ 0.5–0.8) and keeps filler over facts; keep-L0 → chance in GLA and hybrid; gate biases stay within ~0.2 of init in every run | the init bias sets each layer's baseline timescale; r09 next |
 | r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
@@ -61,6 +62,30 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-08 — r10–r13 prepared: seed replicates of the gate-init contrast (GLA only).**
+- **What:** four runs, each ~3 h of GLA training plus ~15 min of evals.
+
+  | run | gate | seed | replicates |
+  |---|---|---:|---|
+  | r10 | bias 0, zero weight | 1 | r09 |
+  | r11 | bias 2, zero weight | 1 | r08 |
+  | r12 | bias 0, zero weight | 2 | r09 |
+  | r13 | bias 2, zero weight | 2 | r08 |
+
+  Configs live in `configs/seeds/<bias>_s<seed>/`. Each is the r09 or r08 GLA config with only `train.seed` changed
+  (tested). The seed sets both the weight init and the training stream.
+- **GLA only:** each folder holds only `sweep_gated_linear.yaml`, and `run_all` now drives only the architectures
+  whose config exists in the active folder (`_archs()`; train, tune, sanity, eval, profile, status). That saves
+  ~1.4 h per run: the hybrid already recovered at bias 2 and isn't in question.
+- **Each run:** train → sanity → passes 1, 3 → passes 8, 9 (gate stats and clamps, so every seed shows whether
+  layer 0 learned to forget).
+- **Notebook:** `PLAN="seeds"`, cell 9c. `SEED_BATCH = 1` runs r10 + r11, the complete seed-1 contrast, in ~6 h.
+  `SEED_BATCH = 2` runs r12 + r13. Two sessions keep each under Kaggle's 12 h limit.
+- **Pre-registered reading** (GLA per-query recall at 32 facts; seed 0: bias 0 → 0.86, bias 2 → 0.14):
+  - **The init claim holds** if, on each seed, bias 0 ≥ ~0.80 and bias 2 ≤ ~0.45.
+  - **Split seeds** → report the seed lottery honestly.
+  - **Bias 2 succeeding on both seeds** → r08 was a bad seed, and the claim narrows to "bias 6 fails".
 
 **2026-10-08 — r09 plan A: bias 0 with a zero weight reproduces r04. The starting bias decides.**
 r09 = r04's gate bias (0) with a zero gate weight instead of r04's small random one. Seed 0; the transformer is

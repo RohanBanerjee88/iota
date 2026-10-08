@@ -275,3 +275,23 @@ def test_zerow0_configs_differ_from_r04_only_in_the_gate_weight():
         for a, b in zip(g09, g04):
             assert torch.all(a.bias == 0) and torch.all(b.bias == 0)
             assert torch.all(a.weight == 0) and b.weight.abs().max() > 0
+
+
+def test_seed_replicate_folders_are_gla_only_and_differ_only_in_seed(monkeypatch):
+    # r10-r13: GLA-only seed replicates of r09 (bias 0) and r08 (bias 2), seeds 1 and 2.
+    import yaml
+    import scripts.run_all as ra
+
+    src = {"bias0": "configs/zerow0", "bias2": "configs/bias2"}
+    for b in ("bias0", "bias2"):
+        base = yaml.safe_load(open(f"{src[b]}/sweep_gated_linear.yaml"))
+        for seed in (1, 2):
+            d = f"configs/seeds/{b}_s{seed}"
+            assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
+            cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))
+            assert cfg["train"] == dict(base["train"], seed=seed)
+            assert ra._fingerprint(cfg) == ra._fingerprint(base)
+            monkeypatch.setenv("IOTA_CONFIG_DIR", d)
+            assert ra._archs() == ["gated_linear"]          # every stage touches only the GLA
+    monkeypatch.delenv("IOTA_CONFIG_DIR")
+    assert ra._archs() == ra.ARCH_ORDER

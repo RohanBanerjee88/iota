@@ -1,10 +1,16 @@
 
-##### eval_p4 started 2026-10-07 23:20:18 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r09
+##### eval_p4 started 2026-10-08 00:54:30 UTC argv=--stage eval --passes 4 --repo BanerjeeRohan44/iota-r09
 
 ### STAGE eval  (passes [4], device=cuda)
 
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
   loaded hybrid_sweep (trained 5000 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
   loaded transformer_sweep (trained 14000 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
   loaded gated_linear_sweep (trained 14500 steps)
 
 --- pass 4 -> experiments/results/pass4_keylen.csv
@@ -37,9 +43,4 @@
   pass4 gated_linear_sweep nb=64  key_digits=3 acc=0.487 (n_q=3564)
 wrote experiments/results/pass4_keylen.csv (27 rows)
 No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed pass1_capacity.csv
-No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed pass3_control.csv
   [hf] pushed pass4_keylen.csv
-No files have been modified since last commit. Skipping to prevent empty commit.
-  [hf] pushed sanity_indist.csv

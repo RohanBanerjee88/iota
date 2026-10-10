@@ -36,7 +36,7 @@ init is equivalent to a clean, documentable one: bias 0, zero weight.
 Seed 1 (r10, r11; 2026-10-10) kept the direction but shrank the gap. Bias 0 beat bias 2 at every load (32 facts:
 0.75 vs 0.52; seed 0: 0.86 vs 0.14), but neither met its pre-registered threshold. So "bias 2 fails" is
 seed-dependent, while "bias 0 learns recall faster and better" holds on both seeds. Layer 0's forgetting is
-necessary in all 9 GLA/hybrid models tested.
+necessary in all 12 GLA/hybrid models tested (every run except r07, whose gates never learned to forget).
 
 **Next:** seed 2 (r12, r13; batch 2, ~6 h) decides how big the effect is, then the write-up.
 
@@ -106,8 +106,9 @@ GLA only, zero gate weight. Per-query recall (pass 1):
   - **Different seeds, different layer-0 strategies:** r09 forgets everything evenly (fact values 0.27, filler
     0.25). r10 *resets on fact values* (0.06) and holds through filler (0.65), like the hybrid's layer 1. r11 sits
     at 0.65–0.68 everywhere.
-  - **Clamps:** keep-L0 sends r09, r10 and r11 to chance, as in all earlier runs. That makes **9 of 9 models**
-    (r04–r06 GLA + hybrid, r08 GLA, r09–r11 GLA) where layer 0's forgetting is necessary. Mean-L0 costs 0.15–0.84
+  - **Clamps:** keep-L0 sends r09, r10 and r11 to chance, as in all earlier runs. That makes **12 of 12 models**
+    (GLA + hybrid of r04, r05, r06, r08 and r09, plus r10 and r11 GLA) where layer 0's forgetting is necessary. The
+    exception is r07, whose layer 0 never learned to forget; its small forgetting is still worth 0.15–0.24. Mean-L0 costs 0.15–0.84
     (selectivity matters too); other layers cost ≤ 0.13.
   - **r09's hybrid** reproduces r04's pattern exactly: short-memory layer 0, a layer 1 that resets on values (0.42)
     and holds filler (0.99), keep-L1 −0.81, mean-L1 −0.27.

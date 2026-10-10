@@ -1,5 +1,5 @@
 
-##### eval_p89 started 2026-10-08 00:54:58 UTC argv=--stage eval --passes 8,9 --n 500 --repo BanerjeeRohan44/iota-r09 --run-id r09
+##### eval_p89 started 2026-10-10 02:03:19 UTC argv=--stage eval --passes 8,9 --n 500 --repo BanerjeeRohan44/iota-r09 --run-id r09
 
 ### STAGE eval  (passes [8, 9], device=cuda)
 
@@ -33,6 +33,7 @@
   pass8 gated_linear_sweep nb=32  backbone.blocks.3.mixer set_value=0.967±0.109 distractor=0.945±0.063 bias=+0.17 |W|=2.388
   pass8 gated_linear_sweep nb=32  backbone.blocks.4.mixer set_value=0.997±0.008 distractor=0.989±0.019 bias=+0.26 |W|=2.875
 wrote experiments/results/pass8_gates.csv (80 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
   [hf] pushed pass8_gates.csv
 
 --- pass 9 -> experiments/results/pass9_clamp.csv
@@ -102,4 +103,5 @@ wrote experiments/results/pass8_gates.csv (80 rows)
 wrote experiments/results/pass9_clamp.csv (60 rows)
 No files have been modified since last commit. Skipping to prevent empty commit.
   [hf] pushed pass8_gates.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
   [hf] pushed pass9_clamp.csv

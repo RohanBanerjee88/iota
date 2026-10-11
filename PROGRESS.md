@@ -42,7 +42,7 @@ Seed 2 (r12, r13; 2026-10-11) matched seed 0: bias 0 0.88 vs bias 2 0.15 at 32 f
 beats bias 2 at every load on every seed (mean 0.83 vs 0.27 at 32 facts). The pre-registered thresholds hold on 2
 of 3 seeds, with seed 1 in between. The gate-init study is complete for this scale.
 
-**Next:** the write-up (results draft + an init-study figure); optional: a second model scale.
+**Next:** the write-up. The results draft and the init-study figure (`figures/init/`) exist; open items are a second model scale and the related-work check.
 
 ## Run log
 
@@ -71,6 +71,17 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-11 — Write-up started: init-study figure + results draft.**
+- `scripts/init_study.py` reads r04–r13 from `kaggle-results` and writes `figures/init/`:
+  - `init_runs.csv` and `INIT.md`: per run, recall by load, steps to 0.5, layer-0 retention and bias, keep-L0 clamp
+    Δ; plus group means with seed ranges
+  - `init_figure.png/.pdf`, three panels: A, GLA recall vs facts by init (mean + seed range); B, training curves;
+    C, layer-0 retention vs recall at 32 facts
+- Palette: the reference categorical blue / orange / aqua, validated all-pairs for CVD. Legacy is drawn as the grey
+  reference, and every series also has its own marker.
+- Results draft as a Claude Doc: setup; Results 1–4 (trade-off and cost, load vs distance, the sequential-use
+  negative result, the gate-init study with mechanism and clamps); limitations; next steps; draft abstract.
 
 **2026-10-11 — Seed 2 (r12, r13): the gate-init effect replicates. Three-seed summary.**
 GLA only, zero gate weight, seeds 0 / 1 / 2. Per-query recall (pass 1), with the mean in brackets:

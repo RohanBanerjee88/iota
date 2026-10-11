@@ -129,3 +129,37 @@ def test_decode_profile_state_is_constant_and_kv_grows():
     mb = {(r["arch"], r["context_len"]): r["cache_mb"] for r in rows}
     assert mb[("gated_linear", 64)] == mb[("gated_linear", 512)]          # fixed state
     assert mb[("transformer", 512)] > 5 * mb[("transformer", 64)]        # KV cache grows
+
+
+
+def test_gate_init_legacy_vs_intended():
+    # r01-r06 trained with the gate init OVERWRITTEN by the backbone's generic init
+    # (bias 0 -> gamma 0.5). That must stay reproducible by default; the intended
+    # init (bias decay_bias_init, zero weight) must be what legacy_gate_init=False builds.
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    V = get_tokenizer().vocab_size
+    for arch in ("gated_linear", "hybrid"):
+        base = {"arch": arch, "vocab_size": V, "d_model": 32, "n_layers": 3, "n_heads": 4,
+                "d_ff": 64, "chunk_size": 8, "full_attention_layers": [1], "decay_bias_init": 6.0}
+        for legacy, want_bias in ((None, 0.0), (True, 0.0), (False, 6.0)):
+            cfg = dict(base) if legacy is None else dict(base, legacy_gate_init=legacy)
+            torch.manual_seed(0)
+            gates = [m.g_proj for m in build_model(cfg).modules() if isinstance(m, GatedLinearAttention)]
+            assert gates, arch
+            for g in gates:
+                assert torch.allclose(g.bias, torch.full_like(g.bias, want_bias)), (arch, legacy)
+                if legacy is False:
+                    assert g.weight.abs().max() == 0
+                else:
+                    assert g.weight.abs().max() > 0   # random, overwritten
+
+
+def test_fingerprint_treats_missing_legacy_key_as_legacy():
+    import scripts.run_all as ra
+
+    old = {"arch": "gated_linear", "d_model": 8, "curriculum": [], "train": {"lr": 1}}
+    assert ra._fingerprint(old) == ra._fingerprint(dict(old, legacy_gate_init=True))
+    assert ra._fingerprint(old) != ra._fingerprint(dict(old, legacy_gate_init=False))

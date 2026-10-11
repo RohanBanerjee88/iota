@@ -124,3 +124,41 @@ def test_seed_picks_training_stream_and_seed0_is_unchanged():
     assert seed0 == legacy                      # seed 0 reproduces every earlier run
     assert seed1 != seed0                       # a replicate sees different examples
     assert 255 * (1 << 32) + 10 ** 7 < EVAL_OFFSET  # streams never reach the eval set
+
+
+def test_free_running_matches_teacher_forced_on_query0_and_on_a_perfect_model():
+    from iota.eval import free_running_scores
+
+    seed_everything(0)
+    model = build_model({"arch": "transformer", "vocab_size": TOK.vocab_size,
+                         "d_model": 64, "n_layers": 2, "n_heads": 4, "d_ff": 128})
+    # varied query counts per example, so the batching across queries is exercised
+    exs = [make_sweep_example(TOK, "assoc_recall", 4, 0.0, 32, seed=s, n_queries=1 + s % 3) for s in range(8)]
+    tf0 = teacher_forced_scores(model, exs, TOK.pad_id, "cpu", minibatch=3)
+    fr0 = free_running_scores(model, exs, TOK.pad_id, "cpu", minibatch=3)
+    assert [len(s) for s in fr0] == [len(s) for s in tf0]
+    assert [s[0] for s in fr0] == [s[0] for s in tf0]       # query 0: same context either way
+    inp, tgt, mask = collate_sweep(exs, TOK.pad_id)
+    opt = torch.optim.AdamW(model.parameters(), lr=2e-3)
+    for _ in range(200):                                      # memorise these 8 examples
+        logits = model(inp)
+        ce = F.cross_entropy(logits.reshape(-1, logits.shape[-1]), tgt.reshape(-1),
+                             reduction="none").view_as(tgt)
+        loss = (ce * mask).sum() / mask.sum().clamp_min(1.0)
+        opt.zero_grad(); loss.backward(); opt.step()
+    tf = teacher_forced_scores(model, exs, TOK.pad_id, "cpu")
+    fr = free_running_scores(model, exs, TOK.pad_id, "cpu", minibatch=3)
+    assert all(all(s) for s in tf)                            # it did memorise them
+    assert fr == tf                                           # no earlier error to propagate
+
+
+def test_joint_grid_holds_length_fixed_per_column():
+    from iota.eval import _cell_examples
+
+    cells = cells_for_pass(5)
+    assert len(cells) == 16 and all(c["n_queries"] == 8 for c in cells)
+    for c in cells:
+        if c["seq_len"] in (1024, 2048):
+            exs = _cell_examples(TOK, c, 4, 0)
+            for e in exs:  # true prompt length within a few tokens of the column's length
+                assert abs(e.true_len - c["seq_len"]) <= 16, (c, e.true_len)

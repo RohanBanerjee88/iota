@@ -13,6 +13,10 @@ the whole run.
     python -m scripts.run_all --stage all      --repo <user>/iota-sweep
     python -m scripts.run_all --stage all      --smoke     # whole pipeline in minutes
 
+Ablations select another config folder with IOTA_CONFIG_DIR (default `configs`), e.g.
+    IOTA_CONFIG_DIR=configs/fixinit python -m scripts.run_all --stage train \
+        --repo <user>/iota-r07 --reuse transformer=<user>/iota-r04
+
 Every stage tees its output to experiments/results/logs/<stage>.log and, when
 GH_TOKEN is set, publishes the run's small artifacts (CSVs, run jsons, logs, the
 figure, a SUMMARY.md) to the `kaggle-results` branch under runs/<run_id>/ -- that
@@ -56,7 +60,16 @@ MIN_REAL_STEPS = 1000  # below this it's a smoke run, not a trained model
 # checkpoint bookkeeping
 # ---------------------------------------------------------------------------
 def _cfg_path(arch: str) -> str:
-    return f"configs/sweep_{arch}.yaml"
+    from iota.util import sweep_config_path
+    return sweep_config_path(arch)
+
+
+def _archs() -> list:
+    """Architectures that have a config in the active config folder ($IOTA_CONFIG_DIR).
+
+    An ablation folder may hold a subset (e.g. only sweep_gated_linear.yaml for a
+    GLA-only seed replicate); every stage then touches only those architectures."""
+    return [a for a in ARCH_ORDER if os.path.exists(_cfg_path(a))]
 
 
 def _run_name(cfg: dict, arch: str) -> str:
@@ -71,7 +84,11 @@ def _fingerprint(cfg: dict) -> dict:
     shouldn't invalidate a finished checkpoint, but changing the architecture or the
     task distribution must. (vocab_size is filled in at train time, so it's ignored.)
     """
-    return {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
+    fp = {k: v for k, v in cfg.items() if k not in ("train", "vocab_size")}
+    # legacy_gate_init absent == True (every run before the key existed used the
+    # overwritten gate init), so old checkpoints match configs that state it.
+    fp.setdefault("legacy_gate_init", True)
+    return fp
 
 
 def checkpoint_status(arch: str) -> tuple:
@@ -211,14 +228,31 @@ def hf_push_results(repo: str, token) -> None:
 def stage_train(args) -> None:
     from iota.train import train
 
-    archs = [args.only] if args.only else ARCH_ORDER
+    archs = [args.only] if args.only else _archs()
     print(f"\n### STAGE train  ({', '.join(archs)})\n", flush=True)
+    reuse = dict(r.split("=", 1) for r in args.reuse.split(",") if r.strip()) if args.reuse else {}
     for arch in archs:
         status, run_name, detail = checkpoint_status(arch)
         if status == "missing" and not args.no_hf:
             print(f"[{arch}] no local checkpoint -> trying the Hub", flush=True)
             if hf_pull(run_name, args.repo, args.token):
                 status, run_name, detail = checkpoint_status(arch)
+        if status == "missing" and arch in reuse and not args.no_hf:
+            # An ablation that leaves this arch untouched reuses an earlier run's
+            # checkpoint -- but only if it is EXACTLY the current config (fingerprint).
+            print(f"[{arch}] reusing the checkpoint from {reuse[arch]}", flush=True)
+            if hf_pull(run_name, reuse[arch], args.token):
+                status, run_name, detail = checkpoint_status(arch)
+                if status == "ok":
+                    hf_push(run_name, args.repo, args.token)  # later sessions pull it from --repo
+                else:
+                    print(f"!! [{arch}] {reuse[arch]} checkpoint is {status} ({detail}) -- "
+                          f"NOT reusing it; training from scratch", flush=True)
+                    for ext in ("safetensors", "json"):
+                        p = os.path.join(RESULTS_DIR, f"{run_name}.{ext}")
+                        if os.path.exists(p):
+                            os.remove(p)
+                    status, run_name, detail = checkpoint_status(arch)
         if status == "ok" and not args.force:
             print(f"[{arch}] SKIP -- {detail}", flush=True)
             continue
@@ -274,7 +308,7 @@ def stage_tune(args) -> None:
     if os.path.exists(path) and not args.smoke:
         with open(path) as fh:
             done = {(r["arch"], float(r["lr"])) for r in csv.DictReader(fh)}
-    archs = [args.only] if args.only else TUNE_ORDER
+    archs = [args.only] if args.only else [a for a in TUNE_ORDER if a in _archs()]
     print(f"\n### STAGE tune  ({', '.join(archs)} x lr {lrs}, {args.tune_steps} steps each)\n",
           flush=True)
     if args.smoke and os.path.exists(path):
@@ -333,7 +367,7 @@ def stage_tune(args) -> None:
 
 def _ensure_checkpoints(args) -> None:
     """Pull any checkpoint that isn't usable locally from the Hub (Session B)."""
-    for arch in ARCH_ORDER:
+    for arch in _archs():
         status, run_name, _ = checkpoint_status(arch)
         if status != "ok" and not args.no_hf:
             hf_pull(run_name, args.repo, args.token)
@@ -345,7 +379,7 @@ def stage_sanity(args) -> None:
 
     print("\n### STAGE sanity (each model on its own training distribution)\n", flush=True)
     _ensure_checkpoints(args)
-    archs = [a for a in ARCH_ORDER if checkpoint_status(a)[0] == "ok"]
+    archs = [a for a in _archs() if checkpoint_status(a)[0] == "ok"]
     run_sanity(n=8 if args.smoke else 500, archs=archs, minibatch=args.minibatch,
                device=args.device, results_dir=RESULTS_DIR,
                out_csv=os.path.join(RESULTS_DIR, "sanity_indist.csv"))
@@ -361,7 +395,7 @@ def stage_eval(args) -> None:
     print(f"\n### STAGE eval  (passes {passes}, device={device})\n", flush=True)
 
     models = {}
-    for arch in ARCH_ORDER:
+    for arch in _archs():
         status, run_name, detail = checkpoint_status(arch)
         if status != "ok":
             if not args.no_hf and hf_pull(run_name, args.repo, args.token):
@@ -376,11 +410,13 @@ def stage_eval(args) -> None:
     if not models:
         print("no usable checkpoints; nothing to evaluate", flush=True)
         return
-    if len(models) < len(ARCH_ORDER):
-        print(f"WARNING: evaluating {len(models)}/{len(ARCH_ORDER)} models -- the "
+    if len(models) < len(_archs()):
+        print(f"WARNING: evaluating {len(models)}/{len(_archs())} models -- the "
               f"comparison is incomplete", flush=True)
 
-    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen"}
+    names = {1: "pass1_capacity", 2: "pass2_length", 3: "pass3_control", 4: "pass4_keylen",
+             5: "pass5_grid", 6: "pass6_freerun", 7: "pass7_history", 8: "pass8_gates",
+             9: "pass9_clamp"}
     for p in passes:
         out_csv = os.path.join(RESULTS_DIR, f"{names.get(p, f'pass{p}')}.csv")
         print(f"\n--- pass {p} -> {out_csv}", flush=True)
@@ -388,6 +424,22 @@ def stage_eval(args) -> None:
             from iota.eval import run_keylen_pass
             run_keylen_pass(models, n=args.n, device=device, out_csv=out_csv,
                             minibatch=args.minibatch)
+        elif p == 7:  # matched histories: does answering earlier questions change later recall?
+            from iota.history import run_history_pass
+            run_history_pass(models, n=args.n, device=device, out_csv=out_csv,
+                             minibatch=args.minibatch)
+        elif p == 9:  # gate-clamp intervention: which layers' forgetting recall needs
+            from iota.clamp import run_clamp_pass
+            run_clamp_pass(models, n=args.n, device=device, out_csv=out_csv,
+                           minibatch=args.minibatch)
+        elif p == 8:  # gate statistics: what the GLA decay gates do, per token role
+            from iota.gates import run_gate_pass
+            run_gate_pass(models, n=args.n, device=device, out_csv=out_csv,
+                          minibatch=args.minibatch)
+        elif p == 6:  # free-running vs teacher-forced on pass 1's prompts
+            from iota.eval import run_freerun_pass
+            run_freerun_pass(models, n=args.n, device=device, out_csv=out_csv,
+                             minibatch=args.minibatch)
         else:
             run_pass(p, models, n=args.n, device=device, out_csv=out_csv,
                      minibatch=args.minibatch)
@@ -403,12 +455,12 @@ def stage_profile(args) -> None:
 
     print("\n### STAGE profile\n", flush=True)
     run_profile(out_csv=os.path.join(RESULTS_DIR, "cost_profile.csv"),
-                device=args.device)
+                device=args.device, archs=_archs())
     # decode: the cost axis that matters for linear attention (KV cache vs state)
     lens = (128, 512, 2048) if args.smoke else None
     kw = {"context_lens": lens} if lens else {}
     run_decode_profile(out_csv=os.path.join(RESULTS_DIR, "decode_profile.csv"),
-                       device=args.device, **kw)
+                       device=args.device, archs=_archs(), **kw)
     if not args.no_hf:
         try:
             hf_push_results(args.repo, args.token)
@@ -487,10 +539,13 @@ def main() -> int:
     ap.add_argument("--stage", default="all",
                     choices=["all", "tune", "train", "sanity", "eval", "profile", "plot", "status"])
     ap.add_argument("--only", choices=ARCH_ORDER, help="train/tune just one architecture")
-    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic)")
+    ap.add_argument("--passes", default="1,3", help="eval passes, e.g. '1,3' or '2,4' (4 = key-length diagnostic, 5 = joint load x distance grid, 6 = free-running, 7 = matched histories, 8 = gate statistics, 9 = gate-clamp intervention)")
     ap.add_argument("--repo", default="BanerjeeRohan44/iota-sweep")
     ap.add_argument("--no-hf", action="store_true", help="skip all Hub traffic")
     ap.add_argument("--force", action="store_true", help="retrain even if a checkpoint is ok")
+    ap.add_argument("--reuse", default="",
+                    help="train: ARCH=HF_REPO[,...] -- take an unchanged arch's checkpoint from an "
+                         "earlier run (must match the current config) instead of retraining it")
     ap.add_argument("--token", default=os.environ.get("HF_TOKEN"))
     ap.add_argument("--n", type=int, default=1000, help="examples per eval cell")
     ap.add_argument("--minibatch", type=int, default=32)
@@ -523,7 +578,7 @@ def main() -> int:
           f"{'  [SMOKE -> ' + SMOKE_DIR + ']' if args.smoke else ''}", flush=True)
 
     if args.stage == "status":
-        for arch in ARCH_ORDER:
+        for arch in _archs():
             status, run_name, detail = checkpoint_status(arch)
             print(f"  {arch:14s} [{status:7s}] {detail}", flush=True)
         return 0

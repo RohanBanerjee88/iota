@@ -140,7 +140,8 @@ class SeqModel(nn.Module):
 class LMBackbone(nn.Module):
     """Embedding -> blocks -> norm -> tied linear head."""
 
-    def __init__(self, vocab_size: int, d_model: int, blocks: List[nn.Module], dropout: float = 0.0):
+    def __init__(self, vocab_size: int, d_model: int, blocks: List[nn.Module], dropout: float = 0.0,
+                 legacy_gate_init: bool = True):
         super().__init__()
         self.embed = nn.Embedding(vocab_size, d_model)
         self.drop = nn.Dropout(dropout)
@@ -148,6 +149,17 @@ class LMBackbone(nn.Module):
         self.norm = RMSNorm(d_model)
         self.head = nn.Linear(d_model, vocab_size, bias=False)
         self.apply(self._init)
+        # The generic init above also hits every mixer's decay-gate projection and
+        # OVERWRITES the gate init set in GatedLinearAttention.__init__ (bias
+        # decay_bias_init, zero weight) with bias 0 / random weight, i.e. gamma=0.5
+        # at init instead of ~0.9975. Every run r01-r06 trained with that
+        # overwritten init. legacy_gate_init=True (the default, also implied when a
+        # config has no such key) keeps that historical behaviour so those configs
+        # and checkpoints reproduce exactly; False re-applies the intended gate init.
+        if not legacy_gate_init:
+            for m in self.modules():
+                if hasattr(m, "init_gate"):
+                    m.init_gate()
         self.tie_weights()  # head shares the embedding matrix
 
     def tie_weights(self):

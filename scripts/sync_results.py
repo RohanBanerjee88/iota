@@ -276,6 +276,123 @@ def _keylen_section(run_dir: str) -> List[str]:
                     "key resolution, not memory capacity.", ""]
 
 
+def _grid_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass5_grid.csv"))
+    if not rows:
+        return []
+    lines = ["## 4c. Joint load × distance grid (8 queries per cell; true length held per column)", ""]
+    lens = sorted({int(float(r["seq_len_nominal"])) for r in rows})
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        lines += [f"**{m}** — per-query recall", "",
+                  "| bindings \\ tokens | " + " | ".join(str(L) for L in lens) + " |",
+                  "|---:|" + "---:|" * len(lens)]
+        for nb in sorted({int(r["n_bindings"]) for r in rows}):
+            cells = []
+            for L in lens:
+                hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb
+                       and int(float(r["seq_len_nominal"])) == L]
+                cells.append(_fmt(hit[0]["accuracy_per_query"]) if hit else "–")
+            lines.append(f"| {nb} | " + " | ".join(cells) + " |")
+        lines.append("")
+    return lines
+
+
+def _freerun_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass6_freerun.csv"))
+    if not rows:
+        return []
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    lines = ["## 4d. Free-running vs teacher-forced (Pass 1 prompts)", "",
+             "Per-query recall: teacher-forced → free-running (queries whose verdict changed).", "",
+             "| n_bindings | " + " | ".join(models) + " |", "|---:|" + "---|" * len(models)]
+    for nb in sorted({int(r["n_bindings"]) for r in rows}):
+        cells = []
+        for m in models:
+            hit = [r for r in rows if _arch_of(r["model"]) == m and int(r["n_bindings"]) == nb]
+            cells.append(f"{_fmt(hit[0]['per_query_teacher_forced'])} → {_fmt(hit[0]['per_query_free_running'])} "
+                         f"({hit[0]['queries_flipped']})" if hit else "–")
+        lines.append(f"| {nb} | " + " | ".join(cells) + " |")
+    return lines + [""]
+
+
+def _history_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass7_history.csv"))
+    if not rows:
+        return []
+    lines = ["## 4e. Matched histories (Pass 7): does answering earlier questions change later recall?", "",
+             "Same facts, same final question at the same position; only the history differs. "
+             "Final-query accuracy; Δ = condition − oracle (paired, 95% CI over items).", "",
+             "| model | bindings | prior Qs | none / oracle | neutral (Δ) | generated (Δ) | reordered (Δ) |",
+             "|---|---:|---:|---:|---|---|---|"]
+    def cell(r):
+        return f"{_fmt(r['accuracy'])} ({float(r['delta_vs_oracle']):+.3f} [{_fmt(r['delta_ci_low'], 2)}, {_fmt(r['delta_ci_high'], 2)}])"
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        for nb, q in sorted({(int(r["n_bindings"]), int(r["n_prior"])) for r in mine}):
+            by = {r["condition"]: r for r in mine if int(r["n_bindings"]) == nb and int(r["n_prior"]) == q}
+            base = by.get("none") or by.get("oracle")
+            lines.append(f"| {m} | {nb} | {q} | {_fmt(base['accuracy'])} | "
+                         + " | ".join(cell(by[c]) if c in by else "–" for c in ("neutral", "generated", "reordered"))
+                         + " |")
+    return lines + ["", "Positive neutral Δ = the correctly answered history HURTS the final recall relative "
+                    "to equally long filler.", ""]
+
+
+def _gates_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass8_gates.csv"))
+    if not rows:
+        return []
+    lines = ["## 4f. Decay gates (Pass 8): what γ does on real prompts", "",
+             "Mean γ ± std over tokens × heads, by token role. `retention` = mean log10 of the share of a fact "
+             "value's write still in the state at the first question. A frozen gate has std ≈ 0; selective "
+             "forgetting shows as γ(distractor) < γ(fact value).", "",
+             "| model | bindings | layer | fact value | distractor | query | answer | retention (log10) | gate bias / ‖W‖ |",
+             "|---|---:|---|---|---|---|---|---:|---|"]
+    by = {}
+    for r in rows:
+        by.setdefault((_arch_of(r["model"]), int(r["n_bindings"]), r["layer"]), {})[r["role"]] = r
+    def g(d, role):
+        return f"{float(d[role]['gamma_mean']):.3f} ± {float(d[role]['gamma_std']):.3f}" if role in d else "–"
+    for (m, nb, layer), d in sorted(by.items()):
+        any_r = next(iter(d.values()))
+        ret = d.get("set_value", {}).get("fact_log10_retention", "")
+        lines.append(f"| {m} | {nb} | {layer} | {g(d, 'set_value')} | {g(d, 'distractor')} | {g(d, 'query')} | "
+                     f"{g(d, 'answer')} | {ret} | {float(any_r['bias_mean']):+.2f} / {float(any_r['weight_norm']):.3f} |")
+    return lines + [""]
+
+
+def _clamp_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass9_clamp.csv"))
+    if not rows:
+        return []
+    lines = ["## 4g. Gate-clamp intervention (Pass 9): which layers' forgetting does recall need?", "",
+             "Per-query recall with one GLA layer's gate replaced by a constant: `keep` = σ(6) ≈ 0.9975 "
+             "(no forgetting), `mean` = the head's own average γ (same amount of forgetting, no selectivity). "
+             "Δ vs the unclamped model on the same prompts, paired 95% CI.", ""]
+    models = [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]
+    for m in models:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        nbs = sorted({int(r["n_bindings"]) for r in mine})
+        conds = list(dict.fromkeys(r["condition"] for r in mine))
+        lines += [f"**{m}**", "", "| condition | " + " | ".join(f"{nb} facts" for nb in nbs) + " |",
+                  "|---|" + "---|" * len(nbs)]
+        for c in conds:
+            cells = []
+            for nb in nbs:
+                hit = [r for r in mine if r["condition"] == c and int(r["n_bindings"]) == nb]
+                if not hit:
+                    cells.append("–")
+                elif c == "none":
+                    cells.append(_fmt(hit[0]["per_query"]))
+                else:
+                    h = hit[0]
+                    cells.append(f"{_fmt(h['per_query'])} ({float(h['delta']):+.3f} "
+                                 f"[{float(h['delta_ci_low']):+.2f}, {float(h['delta_ci_high']):+.2f}])")
+            lines.append(f"| {c} | " + " | ".join(cells) + " |")
+        lines.append("")
+    return lines
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -346,6 +463,11 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _pass_section(run_dir, "pass3_control.csv", "4. Pass 3 — state_track control",
                         "seq_len_nominal", "seq_len")
         + _keylen_section(run_dir)
+        + _grid_section(run_dir)
+        + _freerun_section(run_dir)
+        + _history_section(run_dir)
+        + _gates_section(run_dir)
+        + _clamp_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

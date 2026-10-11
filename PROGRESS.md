@@ -5,20 +5,59 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-10-05)
+## Where we are (2026-10-11)
 
 **Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
 [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
 [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md). The final-result entry (2026-10-05) below states what it shows
-and its caveats.
+and its caveats. The paper audit (passes 5 and 6, three seeds) is in: the linear model's failure is load, not
+distance, and teacher forcing does not inflate any headline number.
 
-**Next (optional):** Phase 9 demo; a second model scale to test whether the crossover point moves; a short
-write-up.
+Pass 7 (2026-10-06) rejected the "asking a question damages a recurrent memory" hypothesis: no architecture
+recalls worse after answered questions than after matched filler.
+
+r07 (2026-10-07) showed the gate-init "bug" was load-bearing: with the configured init (γ₀ ≈ 0.9975) recall
+collapses for GLA *and* the hybrid (32 facts: 0.88 → 0.36 and 1.00 → 0.36).
+
+Pass 8 (2026-10-07) confirmed r07's gates stayed pinned near 1. The legacy init's models learned what r07's
+couldn't: a fast-forgetting first layer, and layers that forget filler more than facts.
+
+Pass 9 (2026-10-07) showed layer 0's forgetting is necessary for recall in every model. Pinning layer 0 at
+"keep" drops all six legacy models to chance.
+
+r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybrid fully recovers** (1.00 at
+32 facts, as r04), but the **pure GLA gets worse** (0.14 at 32 facts; r07 0.36, r04 0.88).
+
+r09 (2026-10-08) closed the init question. With a zero gate weight, bias 0 reproduces r04: GLA 0.86 at 32 facts
+(r04 0.88), and the hybrid scores 1.00. Bias 2 fails the GLA (0.14) and bias 6 fails both. So the starting gate
+bias, not r04's random gate weight, decides whether a pure GLA learns recall. That also means r04–r06's "buggy"
+init is equivalent to a clean, documentable one: bias 0, zero weight.
+
+Seed 1 (r10, r11; 2026-10-10) kept the direction but shrank the gap. Bias 0 beat bias 2 at every load (32 facts:
+0.75 vs 0.52; seed 0: 0.86 vs 0.14), but neither met its pre-registered threshold. So "bias 2 fails" is
+seed-dependent, while "bias 0 learns recall faster and better" holds on both seeds. Layer 0's forgetting is
+necessary in all 12 GLA/hybrid models tested (every run except r07, whose gates never learned to forget).
+
+Seed 2 (r12, r13; 2026-10-11) matched seed 0: bias 0 0.88 vs bias 2 0.15 at 32 facts. Over three seeds, bias 0
+beats bias 2 at every load on every seed (mean 0.83 vs 0.27 at 32 facts). The pre-registered thresholds hold on 2
+of 3 seeds, with seed 1 in between. The gate-init study is complete for this scale.
+
+**Next:** the write-up. The results draft and the init-study figure (`figures/init/`) exist; open items are a second model scale and the related-work check.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
+| r10–r11 | 2026-10-10 | `9150b4e` | seeds batch 1 ✅ (+ pass 8, 9; r09 audit) | seed 1: GLA bias 0 0.75 @32 vs bias 2 0.52 (seed 0: 0.86 vs 0.14); both still improving at the 15k cap; keep-L0 → chance in both | direction holds, size is seed-dependent; run seed 2 |
+| r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
+| r08 audit | 2026-10-07 | `c3632aa` | pass 8+9 on r08 | GLA built long-memory layers (L1/L2 γ = 1.000) and a forgetting L0, but L0 forgets less (γ 0.5–0.8) and keeps filler over facts; keep-L0 → chance in GLA and hybrid; gate biases stay within ~0.2 of init in every run | the init bias sets each layer's baseline timescale; r09 next |
+| r08 | 2026-10-07 | `aa84c56` | A ✅ (+ pass 4) | gate bias 2, zero weight: hybrid 1.00 @32 / 0.99 @128 (recovered); GLA 0.14 @32 (worse than r07); control 1.00, GLA 0.97 @8192 | saturation explains the hybrid, not the GLA; pass 8+9 on r08, then r09 (zero W, bias 0) |
+| pass 9 | 2026-10-07 | `ac9a40c` | gate clamps on r04–r07 | layer-0 keep clamp → chance in 6/6 legacy models; mean clamp costs GLA 3–25 pts (L0), hybrid 7–28 pts (L1); r07: its small L0 forgetting is worth 15–24 pts | layer 0's forgetting is necessary; propose r08 (unsaturated init) |
+| pass 8 | 2026-10-07 | `4101680` | gate stats on r04–r07 | r07: every gate 0.98–1.00, bias 6 → 5.6–5.9; r04–r06: layer 0 forgets within a few tokens (γ 0.12–0.45), some layers forget filler > facts; hybrid's linear layers never hold facts to the question | saturation confirmed (with a correction); clamp intervention next |
+| r07 | 2026-10-07 | `d5e5191` | A ✅ (+ pass 4) | intended gate init: GLA recall 0.88 → 0.36 @32, hybrid 1.00 → 0.36 @32; both plateau at assoc ≈ 0.37 by step ~4k; control 1.00; transformer = r04's (reused) | the legacy init is what made recall work; gate diagnostic next |
+| audit | 2026-10-06 | `1a8050f` | pass 7 on r04–r06 | answered questions never hurt later recall (any arch); dense *gains* up to 0.07 from them; GLA within ±0.02; hybrid 1.00 throughout | drop the read-is-a-write hypothesis; r07 next |
+| audit | 2026-10-05 | `28c0e1e` | passes 5, 6 on r04–r06 | GLA: load costs 0.55, 8× distance costs ≤0.05; dense/hybrid collapse past 1024 at any load; free-running ≈ teacher-forced (max gap 0.038, dense) | headline numbers stand; pass 7 next |
 | r06 | 2026-10-05 | `a66cc35`/`5026708` | A ✅ (+ pass 4) → B ✅ | gate passes; 3-seed crossover: GLA > dense ≤32 (all seeds), dense > GLA @128 (all seeds) | final three-seed figure committed (`figures/seeds/`) |
 | r05 | 2026-10-04 | `e713514` | A ✅ (+ pass 4) → B ✅ | seed swings up to 0.26 at high load; GLA@64 0.49→0.75 flips the order vs dense; hybrid robust | narrow headline; r06 = seed 2; r05 B for pass 2 |
 | r04 | 2026-10-03 | `c1fadb5`/`f6b589e` | A ✅ → B ✅ | gate passes; matched size doesn't help the transformer; crossover at 32–64 bindings; hybrid 1.00 | B: full 4-panel figure; decode: GLA 0.33 MB flat vs dense 640 MB @64k | pass 4: transformer drop is load-driven, not key length | seed replicate / write-up / merge |
@@ -32,6 +71,571 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-11 — Write-up started: init-study figure + results draft.**
+- `scripts/init_study.py` reads r04–r13 from `kaggle-results` and writes `figures/init/`:
+  - `init_runs.csv` and `INIT.md`: per run, recall by load, steps to 0.5, layer-0 retention and bias, keep-L0 clamp
+    Δ; plus group means with seed ranges
+  - `init_figure.png/.pdf`, three panels: A, GLA recall vs facts by init (mean + seed range); B, training curves;
+    C, layer-0 retention vs recall at 32 facts
+- Palette: the reference categorical blue / orange / aqua, validated all-pairs for CVD. Legacy is drawn as the grey
+  reference, and every series also has its own marker.
+- Results draft as a Claude Doc: setup; Results 1–4 (trade-off and cost, load vs distance, the sequential-use
+  negative result, the gate-init study with mechanism and clamps); limitations; next steps; draft abstract.
+
+**2026-10-11 — Seed 2 (r12, r13): the gate-init effect replicates. Three-seed summary.**
+GLA only, zero gate weight, seeds 0 / 1 / 2. Per-query recall (pass 1), with the mean in brackets:
+
+| facts | bias 0 (γ₀ 0.5): r09 / r10 / r12 | bias 2 (γ₀ 0.88): r08 / r11 / r13 | gap per seed | legacy (r04–r06) |
+|---:|---|---|---|---|
+| 2 | 1.000 / 0.998 / 1.000 (0.999) | 0.851 / 0.988 / 0.776 (0.872) | +0.15 / +0.01 / +0.22 | (1.000) |
+| 8 | 0.991 / 0.971 / 0.989 (0.984) | 0.531 / 0.905 / 0.474 (0.637) | +0.46 / +0.07 / +0.52 | (0.994) |
+| 16 | 0.963 / 0.912 / 0.970 (0.948) | 0.360 / 0.765 / 0.343 (0.489) | +0.60 / +0.15 / +0.63 | (0.981) |
+| 32 | 0.858 / 0.752 / 0.883 (**0.831**) | 0.143 / 0.515 / 0.149 (**0.269**) | +0.71 / +0.24 / +0.73 | (0.929) |
+| 64 | 0.512 / 0.419 / 0.637 (0.523) | 0.079 / 0.096 / 0.068 (0.081) | +0.43 / +0.32 / +0.57 | (0.599) |
+| 128 | 0.222 / 0.184 / 0.309 (0.238) | 0.049 / 0.050 / 0.024 (0.041) | +0.17 / +0.13 / +0.29 | (0.328) |
+
+- **Pre-registered reading (bias 0 ≥ ~0.80 and bias 2 ≤ ~0.45 at 32 facts, per seed):** met on seeds 0 and 2;
+  seed 1 is in between (0.75 / 0.52).
+  - **Holds on every seed:** bias 0 beats bias 2 at every load. The gap is never negative, ranging +0.01 to +0.73
+    and largest at 16–64 facts.
+  - **Claim:** "starting the gate at 0.5 rather than 0.88 makes a pure GLA learn multi-binding recall much more
+    reliably: 3/3 seeds better, 2/3 by more than 0.7 at 32 facts". Three seeds don't support a formal significance
+    claim (a sign test on 3/3 gives p = 0.125), but the per-seed gaps are far outside the n = 1000 eval CIs (±0.02).
+- **Learning speed (steps to first reach 0.5 held-out recall):** bias 0 took 5k / 10.5k / 5.5k; bias 2 took never /
+  13k / never. r12 hit 0.85 at the 15k cap and r13 sat at 0.10–0.18 the whole way. Legacy took 7k / 6.5k / 4.5k.
+- **Bias 0 is within legacy's range at low load and slightly below at high load** (0.83 vs 0.93 mean at 32 facts;
+  overlapping seeds: r12 0.883 > r04 0.882). So the zero vs small-random gate weight makes at most a small
+  difference, below the seed spread.
+- **Layer-0 retention separates the two inits cleanly on all six runs** (log10 share of a fact left at the first
+  question):
+  - bias 0: −155 / −145 / −182 (layer-0 bias −0.1 / −0.1 / −0.1)
+  - bias 2: −71 / −82 / −52 (layer-0 bias +1.8 / +1.8 / +1.7)
+
+  The bias stays where it started, and layer 0 forgets about twice as fast (in log terms) when started at 0.5. The
+  two failed bias-2 runs (r08, r13) both have **reversed** layer-0 selectivity: they keep filler longer than facts
+  (0.77 vs 0.48; 0.79 vs 0.28). The partial success r11 is non-selective (0.65 / 0.68). Every bias-0 run keeps
+  facts ≥ filler in layer 0 (r12: 0.37 vs 0.11).
+- **Clamps:** keep-L0 sends r12 and r13 to chance, as for every other trained model. That makes **14 of 14** with
+  r12 and r13 (all except r07). r12 also leans on deeper layers' forgetting (keep-L3 −0.73 to −0.79, keep-L1 −0.19
+  to −0.30). Its middle layers sit at γ 0.4–0.6, another solution again. r13's deep layers are all γ = 1.00 and
+  clamp-neutral, like r08's.
+- **Control:** state_track is 1.00 in-distribution for all six. r12 / r13 hold 0.79 / 0.91 at 8192 tokens.
+
+**Decision:** the gate-init study is done at this scale. The paper section:
+1. Bias barely moves in training, so the starting bias sets each layer's timescale.
+2. γ₀ = 0.5 vs 0.88: better on 3/3 seeds, by more than 0.7 on 2/3.
+3. γ₀ = 0.9975 fails for both GLA and hybrid (one seed).
+4. All 14 trained models depend on a fast-forgetting layer 0.
+5. Failed runs show a slow, filler-keeping layer 0.
+
+The r04–r06 headline results stand and can be described with the clean bias-0 init. Next: write-up.
+
+**2026-10-10 — Seed 1 of the gate-init contrast (r10, r11) + gate checks on r09–r11: the direction holds, the size does not.**
+GLA only, zero gate weight. Per-query recall (pass 1):
+
+| facts | bias 0: r09 (s0) / r10 (s1) | bias 2: r08 (s0) / r11 (s1) | legacy r04 / r05 / r06 |
+|---:|---|---|---|
+| 8 | 0.991 / 0.971 | 0.531 / 0.905 | 0.989 / 0.994 / 0.999 |
+| 16 | 0.963 / 0.912 | 0.360 / 0.765 | 0.964 / 0.983 / 0.995 |
+| 32 | 0.858 / **0.752** | 0.143 / **0.515** | 0.882 / 0.935 / 0.971 |
+| 64 | 0.512 / 0.419 | 0.079 / 0.096 | 0.489 / 0.754 / 0.555 |
+| 128 | 0.222 / 0.184 | 0.049 / 0.050 | 0.222 / 0.456 / 0.307 |
+
+*Steps until held-out recall first reaches 0.25 / 0.5 / 0.7:*
+
+| init | s0 | s1 | s2 |
+|---|---|---|---|
+| legacy (r04 / r05 / r06) | 5.5k / 7k / 9.5k | 5k / 6.5k / 8k | 3k / 4.5k / 6.5k |
+| bias 0 (r09 / r10) | 4k / 5k / 8.5k | 4.5k / 10.5k / 13k | — |
+| bias 2 (r08 / r11) | never (stopped at 0.19) | 8k / 13k / never (0.52 at the 15k cap) | — |
+| bias 6 (r07) | 2.5k / never (0.38) | — | — |
+
+- **Pre-registered reading: neither threshold met on seed 1.** Bias 0 reached 0.75 (needed ≥ ~0.80) and bias 2
+  reached 0.52 (needed ≤ ~0.45). That is the "in between" outcome.
+  - **Holds on both seeds:** bias 0 beats bias 2 at every load from 4 facts up, and gets there sooner.
+  - **Does not hold:** "bias 2 fails". On seed 1 it learns, just slowly (0.5 at 13k steps vs 5k and 10.5k for bias
+    0). The gap at 32 facts is 0.72 on seed 0 and 0.24 on seed 1.
+- **Both seed-1 runs were still improving at the 15k-step cap** (r10 0.73 at 15k, marked as a new best; r11 at
+  0.52). So part of the contrast is *speed*: under a fixed budget, bias 0 learns recall faster.
+  "Steps to 0.5 recall" is a fairer headline metric than final accuracy.
+- **Seed noise in GLA learning is large in itself:** r10 sat at chance until step 3.5k, then climbed. Bias 0 at
+  seed 1 (0.75) is below all three legacy seeds (0.88–0.97). The bias-0 vs legacy difference (zero vs random
+  weight) is within this noise, as the r09 entry said.
+- **Gate checks (pass 8 + 9) on r09, r10, r11:**
+  - **Bias-0 layer 0 forgets fast, like r04's** (retention −145 to −155 vs r04 −141). Bias-2 layer 0 forgets about
+    half as fast (−71 for r08, −82 for r11). Each bias stays within ~0.4 of its init (bias-0 runs −0.1 to +0.4;
+    bias-2 runs +1.8 to +2.2). The starting bias still sets layer 0's baseline timescale.
+  - **Different seeds, different layer-0 strategies:** r09 forgets everything evenly (fact values 0.27, filler
+    0.25). r10 *resets on fact values* (0.06) and holds through filler (0.65), like the hybrid's layer 1. r11 sits
+    at 0.65–0.68 everywhere.
+  - **Clamps:** keep-L0 sends r09, r10 and r11 to chance, as in all earlier runs. That makes **12 of 12 models**
+    (GLA + hybrid of r04, r05, r06, r08 and r09, plus r10 and r11 GLA) where layer 0's forgetting is necessary. The
+    exception is r07, whose layer 0 never learned to forget; its small forgetting is still worth 0.15–0.24. Mean-L0 costs 0.15–0.84
+    (selectivity matters too); other layers cost ≤ 0.13.
+  - **r09's hybrid** reproduces r04's pattern exactly: short-memory layer 0, a layer 1 that resets on values (0.42)
+    and holds filler (0.99), keep-L1 −0.81, mean-L1 −0.27.
+- **Side note:** GLA control extrapolation varies by seed: r10 drops to 0.30 at 4096 tokens, while r11 holds 0.80.
+  Single-variable length extrapolation is not a stable property of either init.
+
+**Decision:** the paper claim becomes "the gate's starting bias sets each layer's timescale. Starting at 0.5 learns
+recall faster and better than 0.88 (both seeds), and 0.9975 fails for both architectures (seed 0). Every working
+model relies on a fast-forgetting first layer." Seed 2 (r12, r13) decides how big the 0.5 vs 0.88 effect is, and
+whether to report it as 'reliable' or 'large but seed-sensitive'.
+
+**2026-10-08 — r10–r13 prepared: seed replicates of the gate-init contrast (GLA only).**
+- **What:** four runs, each ~3 h of GLA training plus ~15 min of evals.
+
+  | run | gate | seed | replicates |
+  |---|---|---:|---|
+  | r10 | bias 0, zero weight | 1 | r09 |
+  | r11 | bias 2, zero weight | 1 | r08 |
+  | r12 | bias 0, zero weight | 2 | r09 |
+  | r13 | bias 2, zero weight | 2 | r08 |
+
+  Configs live in `configs/seeds/<bias>_s<seed>/`. Each is the r09 or r08 GLA config with only `train.seed` changed
+  (tested). The seed sets both the weight init and the training stream.
+- **GLA only:** each folder holds only `sweep_gated_linear.yaml`, and `run_all` now drives only the architectures
+  whose config exists in the active folder (`_archs()`; train, tune, sanity, eval, profile, status). That saves
+  ~1.4 h per run: the hybrid already recovered at bias 2 and isn't in question.
+- **Each run:** train → sanity → passes 1, 3 → passes 8, 9 (gate stats and clamps, so every seed shows whether
+  layer 0 learned to forget).
+- **Notebook:** `PLAN="seeds"`, cell 9c. `SEED_BATCH = 1` runs r10 + r11, the complete seed-1 contrast, in ~6 h.
+  `SEED_BATCH = 2` runs r12 + r13. Two sessions keep each under Kaggle's 12 h limit.
+- **Pre-registered reading** (GLA per-query recall at 32 facts; seed 0: bias 0 → 0.86, bias 2 → 0.14):
+  - **The init claim holds** if, on each seed, bias 0 ≥ ~0.80 and bias 2 ≤ ~0.45.
+  - **Split seeds** → report the seed lottery honestly.
+  - **Bias 2 succeeding on both seeds** → r08 was a bad seed, and the claim narrows to "bias 6 fails".
+
+**2026-10-08 — r09 plan A: bias 0 with a zero weight reproduces r04. The starting bias decides.**
+r09 = r04's gate bias (0) with a zero gate weight instead of r04's small random one. Seed 0; the transformer is
+r04's. Per-query recall, pass 1:
+
+| facts | GLA r04 / r05 / r06 (legacy) | GLA r09 (bias 0) | GLA r08 (bias 2) | GLA r07 (bias 6) | hybrid r04 / r07 / r08 / r09 |
+|---:|---|---:|---:|---:|---|
+| 8 | 0.989 / 0.994 / 0.999 | **0.991** | 0.531 | 0.854 | 1.000 / 0.848 / 1.000 / 1.000 |
+| 32 | 0.882 / 0.935 / 0.971 | **0.858** | 0.143 | 0.355 | 1.000 / 0.357 / 1.000 / 1.000 |
+| 64 | 0.489 / 0.754 / 0.555 | **0.512** | 0.079 | 0.082 | 0.997 / 0.113 / 0.988 / 0.986 |
+| 128 | 0.222 / 0.456 / 0.307 | **0.222** | 0.049 | 0.045 | 0.990 / 0.060 / 0.986 / 0.979 |
+
+- **Pre-registered outcome: ≥ 0.80 at 32 facts → the starting γ is what matters; the random weight is incidental.**
+  r09's GLA tracks r04 within its seed spread at every load (0.858 vs r04–r06 0.88–0.97 at 32; 0.222 = r04 at 128).
+- **Training curve:** r09's GLA climbs a little faster than r04's (assoc 0.42 at 4.5k vs 0.20) and is still
+  creeping up at the 15k-step cap (0.81, as r04's 0.84). Held-out balanced 0.907, control 1.00 out to 8192 tokens.
+  The hybrid matches r04 step for step (0.57 at 1.5k, 0.98 at 2.5k).
+- **The complete seed-0 picture** (zero gate weight unless noted):
+
+  | starting γ | bias | GLA @32 | hybrid @32 |
+  |---:|---:|---:|---:|
+  | 0.5 | 0 | 0.86 (r09); 0.88 with a random weight (r04) | 1.00 |
+  | 0.88 | 2 | 0.14 (r08) | 1.00 |
+  | 0.9975 | 6 | 0.36 (r07) | 0.36 |
+
+  Together with "the bias barely moves in training" (pass 8): the starting bias picks each layer's timescale. A
+  pure GLA needs to *start forgetting* and learn what to keep. The hybrid tolerates a longer start (0.88) because
+  its attention does the long-range work, but not a saturated one (0.9975). The usual advice, "init the decay
+  gate near 1 so memory lasts", is exactly wrong for recall here.
+- **This rescues the main results.** r04–r06's accidental init behaves like a clean, documentable init (bias 0,
+  zero weight). The paper can state that init honestly, and the r04–r06 numbers stand.
+- **Side note (control, past training length):** the hybrid's state_track at 1024–8192 tokens varies with the
+  init. r07, with long-memory linear layers, holds 1.00 to 2048 and 0.93 at 4096; r04–r06 and r09 drop to 0.51–0.96
+  at 1024 and ≤ 0.21 at 2048. A long-memory init helps the hybrid extrapolate one variable while killing recall.
+  That is a trade-off worth one sentence, not a section.
+- **Caveat:** r07–r09 are one seed each. The contrasts are far outside r04–r06's seed spread (e.g. 0.14 vs
+  0.88–0.97 at 32 facts), but the init finding needs replicates before it is a paper claim.
+
+**Decision:** the init question is answered for seed 0. Next: passes 8 + 9 on r09 (check that its layer 0 looks
+like r04's), then 1–2 more seeds of the key contrast (bias 0 vs bias 2, GLA only), then write up.
+
+**2026-10-07 — Pass 8 + 9 on r08: the long-memory layers are there; layer 0 is wrong.**
+Data: `runs/r08/pass8_gates.csv`, `runs/r08/pass9_clamp.csv` (32 facts unless noted).
+
+*GLA gates, r04 vs r08 (γ mean, retention = log10 share of a fact left at the first question):*
+
+| layer | r04: fact value / distractor | r04 retention | r08: fact value / distractor | r08 retention | bias r04 → r08 |
+|---|---|---:|---|---:|---|
+| 0 | 0.40 / 0.28 | −141 | 0.48 / **0.77** | −71 | −0.04 / +1.79 |
+| 1 | 1.000 / 0.93 | −3.7 | 1.000 / 1.000 | 0.0 | +0.18 / +2.01 |
+| 2 | 1.000 / 1.000 | 0.0 | 1.000 / 1.000 | 0.0 | +0.12 / +2.02 |
+| 3 | 0.997 / 0.92 | −3.8 | 0.993 / 0.989 | −1.1 | +0.10 / +2.10 |
+| 4 | 1.000 / 1.000 | 0.0 | 0.983 / 0.991 | −1.0 | +0.07 / +1.99 |
+
+- **The r08 hypothesis is ruled out.** r08's GLA *did* build long-memory layers: layers 1 and 2 sit at γ = 1.000
+  with full retention, exactly like r04's. They get there through W·x (‖W‖ 2.7–3.0), not the bias.
+- **What differs is layer 0.**
+  - **Less forgetting:** r08's layer 0 forgets less than r04's (γ on distractors 0.77 vs 0.28; retention −71 vs
+    −141).
+  - **Reversed selectivity:** it keeps *filler* longer than *facts* (0.77 vs 0.48; keys 0.71). r04's layer 0 does
+    the opposite (facts 0.40 > filler 0.28).
+  - **No filler-dropping middle layers:** r08 lacks the layers r04 has in 1 and 3 (facts 1.00 / filler 0.93, 0.92).
+    The clamp results say these matter little in r04 itself (keep L1/L3: −0.01 to −0.02 at 32 facts).
+- **Clamps (r08):** keep on layer 0 → chance for the GLA (0.52 → 0.01 at 8 facts) and the hybrid (1.00 → 0.01).
+  Mean on layer 0 costs the GLA 0.34 at 8 facts, so selectivity in layer 0 carries most of its remaining recall.
+  Every other GLA layer: |Δ| ≤ 0.01. Hybrid: keep L1 costs 0.16–0.58 but mean L1 costs nothing. r08's hybrid needs
+  layer 1's *amount* of forgetting, not its selectivity, whereas r04's hybrid needed both (mean L1 −0.07 to −0.28).
+  The same function is reached by different solutions.
+- **Across runs, the gate bias barely moves from its init:**
+
+  | run | bias init | bias after training |
+  |---|---:|---|
+  | r04–r06 | 0 | −0.11 to +0.46 |
+  | r07 | 6 | 5.6 to 5.9 |
+  | r08 | 2 | 1.8 to 2.1 |
+
+  All learning goes through W·x. So **the init bias effectively fixes each layer's baseline γ for all of training**.
+  Layer 0 must forget within a few tokens. Starting at 0.88 (r08), it only got part of the way, with the wrong
+  selectivity. Starting at 0.9975 (r07), it barely moved. Starting at 0.5 (r04), it found the r04 solution.
+
+**Decision:** the working hypothesis is now "the init bias sets each layer's timescale, and recall needs a short
+timescale in layer 0 plus long ones above it". r09 (bias 0, zero weight) gives layer 0 r04's baseline, so it
+should succeed for the GLA if the hypothesis is right. A failure would point at the random initial weight. If r09
+succeeds, the natural recommended init is a *spread* of biases (low in early layers or some heads, high
+elsewhere), in the spirit of multi-timescale initialisations (e.g. Mamba's Δ init). That would be r10.
+
+**2026-10-07 — r09 prepared: bias 0 with a zero gate weight (isolates r04's random gate weight).**
+- `configs/zerow0/sweep_*.yaml` are r08's configs with `decay_bias_init: 2.0 → 0.0`. The gate weight stays zero
+  (`legacy_gate_init: false`), so γ₀ = 0.5 for every token. r04's gate was bias 0 plus the generic random weight
+  N(0, 0.02²), giving γ₀ ≈ 0.5 with a small input dependence (|W·x| ~ 0.3) that also differs between heads. A test
+  checks that r09 and r04 build identical gate biases (0) and differ only in the weight (zero vs random), and that
+  the train block and fingerprint match r08 except `decay_bias_init`.
+- The four seed-0 runs now form a 2 × 2-ish grid over the gate init:
+
+  | | zero weight | small random weight |
+  |---|---|---|
+  | bias 0 (γ₀ 0.5) | **r09** | r04: GLA 0.88, hybrid 1.00 |
+  | bias 2 (γ₀ 0.88) | r08: GLA 0.14, hybrid 1.00 | — |
+  | bias 6 (γ₀ 0.9975) | r07: GLA 0.36, hybrid 0.36 | — |
+
+- **Pre-registered reading** (GLA per-query recall at 32 facts):
+  - **r09 ≥ ~0.80** → the starting γ is what matters. A pure GLA needs to start forgetting (γ₀ ≈ 0.5) and learn to
+    keep, not the reverse. The random weight is incidental.
+  - **r09 ≤ ~0.45** → the small random gate weight matters: input dependence or head symmetry breaking at init.
+  - **The hybrid** should train fine either way (unsaturated). If it doesn't, the bias-2 result needs rethinking.
+- The hybrid is trained too (~1.3 h extra) to keep the grid complete for both architectures.
+
+**2026-10-07 — r08 plan A: an unsaturated gate fixes the hybrid but not the pure GLA.**
+r08 = r07 with the gate bias 6 → 2 (γ₀ 0.88, zero weight). Seed 0; the transformer is r04's.
+
+| facts | GLA r04 / r07 / r08 | hybrid r04 / r07 / r08 |
+|---:|---|---|
+| 2 | 0.999 / 0.978 / 0.851 | 1.000 / 0.979 / 1.000 |
+| 8 | 0.989 / 0.854 / 0.531 | 1.000 / 0.848 / 1.000 |
+| 32 | 0.882 / 0.355 / **0.143** | 1.000 / 0.357 / **1.000** |
+| 64 | 0.489 / 0.082 / 0.079 | 0.997 / 0.113 / 0.988 |
+| 128 | 0.222 / 0.045 / 0.049 | 0.990 / 0.060 / 0.986 |
+
+- **Hybrid: saturation was the cause.** The hybrid recovers completely and trains as fast as r04's (0.50 at step
+  1.5k, 0.99 at 2.5k; r04: 0.53 / 0.98). This fits pass 9: the hybrid needs its linear layers to *forget* (short
+  memory in layer 0, selective resets in layer 1). Starting at 0.88 with a responsive gradient, they can learn
+  that. From 0.9975 they couldn't.
+- **Pure GLA: not explained by saturation.** By the pre-registered rule (≤ 0.45 at 32 facts) saturation is not the
+  whole story. r08's GLA climbs slowly (assoc 0.07 at 1.5k → 0.19 at 8k, still accelerating at 7–8k) and then sits
+  at ~0.18 until the plateau stop at 12k. r04's GLA was also slow but reached 0.55 by 7.5k.
+- **The control is fine:** state_track is 1.00. GLA holds a single overwritten value to 0.97 at 8192 tokens, so it
+  can keep long memory for one variable. What fails is holding many bindings at once.
+- **Why the two architectures differ (hypothesis):** the hybrid's attention does the long-range recall, so its
+  linear layers only need to learn to forget, which bias 2 allows. The pure GLA must also build long-memory layers
+  (r04 layers 2 and 4: γ = 1.000, retention ≈ 0). r04 reached γ ≈ 1 through large input-dependent W·x (bias only
+  +0.1, ‖W‖ ≈ 2.4), not through the bias. r08 and r07 both start with W = 0, and r04 had a random W. That is the
+  remaining difference between r04 and r08 besides the starting γ.
+- **Caveat:** one seed. But r04–r06 agree tightly at 32 facts (0.88–0.97), so 0.14 is far outside seed noise.
+
+**Decision:** the paper's recommendation splits by architecture. For the hybrid, "don't saturate the gate" is
+sufficient. For the pure GLA we need one more ablation: r09 = zero W, bias 0 (γ₀ = 0.5, input-independent at
+init). It differs from r04 only in the initial gate weight. First, passes 8 and 9 on r08 (eval only, ~15 min) to
+see which layers r08's GLA failed to build.
+
+**2026-10-07 — r08 prepared: the same intended init, but unsaturated (bias 2).**
+- `configs/bias2/sweep_*.yaml` are r07's configs with one change: `decay_bias_init: 6.0 → 2.0` for GLA and the
+  hybrid. That puts γ₀ at 0.88 and σ'(2) at 0.105, 42× the gradient at bias 6. `legacy_gate_init: false` and the
+  zero gate weight stay. Seed 0, lr, data, schedule and size match r04 and r07. A test checks that the train block
+  matches r07's, that the fingerprint differs only in `decay_bias_init`, and that built models start with bias 2
+  and zero weight. The transformer is again r04's, via `--reuse`.
+- **Pre-registered reading** (GLA per-query recall at 32 facts: r04 0.88, r07 0.36):
+  - **≥ ~0.80** → saturation was the cause. A responsive start is enough, and the zero initial weight and
+    γ₀ < 1 are fine. Recommend "start the gate unsaturated".
+  - **≈ r07 (≤ ~0.45)** → saturation is not the whole story. Next test: zero vs random initial gate weight
+    (r04's other difference).
+  - **In between** → partial. Check pass 8 for whether layer 0 learned to forget.
+- **After plan A:** run passes 8 and 9 on r08 (audit cell, which now includes `("r08", "configs/bias2")`), so its
+  gates can be compared directly with r04 and r07.
+
+**2026-10-07 — Pass 9 results: recall depends on layer 0 forgetting, in every model.**
+Data: `runs/r0{4,5,6,7}/pass9_clamp.csv`, n = 500, 8 / 32 / 64 facts. Δ = clamped − unclamped per-query recall on
+the same prompts. Paired CIs are all within ±0.01 of Δ, except where noted.
+
+| clamp | GLA r04 / r05 / r06 (Δ at 32 facts) | hybrid r04 / r05 / r06 (Δ at 32 facts) | r07 GLA / hybrid (Δ at 8 facts) |
+|---|---|---|---|
+| keep, all layers | −0.87 / −0.92 / −0.96 → chance | −0.99 / −0.99 / −0.99 → chance | −0.24 / −0.22 |
+| keep L0 | −0.87 / −0.92 / −0.96 → chance | −0.99 / −0.99 / −0.99 → chance | −0.24 / −0.22 |
+| mean L0 | −0.18 / −0.08 / −0.17 | −0.00 / −0.00 / −0.00 | −0.02 / −0.21 |
+| keep L1 | −0.01 / −0.35 / −0.03 | −0.72 / −0.79 / −0.85 | 0.00 / 0.00 |
+| mean L1 | −0.04 / −0.03 / 0.00 | −0.07 / −0.11 / −0.15 (−0.21 to −0.28 at 8 facts) | 0.00 / 0.00 |
+| keep L2 | −0.01 / −0.09 / 0.00 | (attention) | 0.00 |
+| keep L3 | −0.02 / −0.29 / 0.00 | 0.00 / 0.00 / 0.00 | 0.00 / 0.00 |
+| keep L4 | 0.00 / 0.00 / 0.00 | (attention) | 0.00 |
+| all `mean` on L2–L4 | ≤ 0.01 | ≤ 0.00 | ≤ 0.01 |
+
+- **Layer 0's forgetting is necessary.** Pinning layer 0 at "keep" sends all six legacy models (GLA and hybrid,
+  three seeds) to chance (~0.01) at every load. "Keep" on all layers does nothing beyond that.
+- **Amount vs selectivity, from the gentler `mean` clamp:**
+  - **Hybrid layer 0** needs only the *amount* of forgetting (mean clamp costs nothing). It is a short-memory layer.
+  - **GLA layer 0** also needs *selectivity*: mean clamp costs 0.03–0.25.
+  - **Hybrid layer 1** depends on both: keep costs 0.41–0.90, mean costs 0.07–0.28. This is the layer that resets at
+    fact values and holds through distractors.
+  - **Hybrid layer 3** is unused (Δ = 0 either way).
+- **Deeper GLA layers are seed-dependent.** r05 also uses the *amount* of forgetting in layers 1–3 (keep −0.09 to
+  −0.35, mean ≤ −0.03). r04 and r06 barely use them. Same function, different solutions, as pass 8 suggested.
+- **r07 control:** keep clamps on layers 1–4 are no-ops, as predicted, since those gates are already ≈ 0.9975. Layer 0
+  is not: r07 learned a little distractor forgetting there (γ 0.975), and removing it costs 0.15–0.24. So r07's
+  remaining recall also rests on layer-0 forgetting. It just learned far too little of it.
+- **Caveat:** a `keep` clamp moves a layer far from its trained regime (r04 L0 mean γ 0.3 → 0.9975), so a collapse
+  to chance partly reflects the network being knocked off its operating point. The `mean` clamps are the cleaner
+  evidence, and they also show real, layer-specific costs.
+
+**Decision:** the mechanism holds up causally. Recall in these models is built on a fast-forgetting first layer,
+and in places on selective forgetting. The configured init (bias 6) saturates the sigmoid, so the gate never
+learns either. Proposed r08: bias 2, zero weight (γ₀ ≈ 0.88, σ'(2) = 0.105, 42× the gradient at bias 6). If r08
+recovers r04-level recall, saturation, not the zero weights or the starting γ, is the cause, and the paper can
+recommend an init rather than just warn.
+
+**2026-10-07 — Pass 9 built: gate-clamp intervention (eval only).**
+`iota/clamp.py` replaces one GLA layer's gate with a constant per head at eval time and measures per-query recall
+on pass-1-style prompts (8 / 32 / 64 facts, n = 500). Δ is measured against the unclamped model on the same
+prompts, with a paired bootstrap CI over examples. Two clamps per layer, plus `keep` on all layers at once:
+- **`keep`:** γ = σ(6) ≈ 0.9975, the configured init. Removes the layer's forgetting *and* its selectivity.
+- **`mean`:** γ = the head's own average γ on these prompts. Keeps how much the layer forgets, removes what it
+  chooses to forget.
+
+Reading: a drop under `keep` only means the *amount* of forgetting matters; a drop under `mean` too means the
+*selectivity* matters. On r07 every `keep` clamp should be a no-op (built-in control). Tests check that the clamp
+imposes exactly the requested γ, touches no other layer, undoes itself on exit, is a no-op on an intended-init
+model, and that `mean` uses each head's own mean. Notebook audit: `AUDIT_PASSES = "9"` over r04–r07.
+
+**2026-10-07 — Pass 8 results: r07's gates are pinned near 1; the legacy models learned to forget.**
+Data: `runs/r0{4,5,6,7}/pass8_gates.csv` on `kaggle-results`, 500 prompts, 32 facts (8 facts gives the same
+picture). γ = mean ± std over tokens × heads. "Retention" = log10 of the share of a fact's write still in the
+state at the first question (0 = all of it, −3 = a thousandth).
+
+*GLA, r04 (legacy init) vs r07 (configured init):*
+
+| layer | r04 γ fact value | r04 γ distractor | r04 retention | r07 γ fact value | r07 γ distractor | r07 retention |
+|---|---|---|---:|---|---|---:|
+| 0 | 0.40 ± 0.34 | 0.28 ± 0.21 | −141 | 1.000 ± 0.000 | 0.975 ± 0.059 | −1.2 |
+| 1 | 1.000 ± 0.000 | 0.93 ± 0.14 | −3.7 | 0.997 ± 0.009 | 1.000 ± 0.001 | −0.09 |
+| 2 | 1.000 | 1.000 | 0.00 | 0.999 | 1.000 | −0.11 |
+| 3 | 0.997 ± 0.006 | 0.92 ± 0.10 | −3.8 | 0.992 ± 0.023 | 0.998 ± 0.010 | −0.56 |
+| 4 | 1.000 | 1.000 | −0.01 | 0.985 ± 0.027 | 0.999 ± 0.002 | −0.35 |
+
+- **Saturation confirmed, with a correction.** Every r07 gate, in both the GLA and the hybrid, sits at 0.98–1.00
+  with std ≤ 0.06. The gate bias barely moved (6 → 5.6–5.9). But the gate *weights* did learn (‖W‖ 1.2–4.3 per
+  head, the same size as r04's), so the gate is not literally frozen. Rather, a bias of ~6 keeps σ near 1 whatever
+  W·x adds. The prediction "‖W‖ ≈ 0" was wrong; "γ ≈ 1 everywhere" was right.
+- **r07 does not forget facts; it forgets nothing.** Facts keep 6–100% of their write until the question. Its
+  failure is clutter: ~200 distractor tokens and every fact pile up in one state with no way to drop anything.
+- **What all six legacy models learned (r04–r06, GLA and hybrid):**
+  - **Layer 0 forgets fast:** γ 0.12–0.45, retention ≤ −140, so it only sees the last few tokens. It works like a
+    second short convolution.
+  - **Selective forgetting in some layers:** r04 GLA layers 1 and 3 keep facts at 1.00 but let distractors decay
+    (0.93, 0.92). r06 GLA layer 1 shows the same (0.91 vs 0.77). In the hybrid, layer 0 keeps fact values longer
+    than filler in all three seeds (0.25–0.31 vs 0.12–0.19).
+  - **Long-memory layers:** GLA layers with γ ≈ 1.000 and retention ≈ 0, like r07's. r05 instead spreads γ over
+    0.6–0.75, and its layer 3 has bimodal heads, some always 0 and some always 1. There is more than one solution.
+- **Correction to the r07 entry:** in r04–r06, **no linear layer of the hybrid keeps facts until the question**
+  (retention −33 to −195 in all three layers and all seeds). The hybrid's recall must come from its attention
+  layers, and its linear layers do short-range processing. So the earlier hypothesis ("the hybrid's recall was
+  carried by its GLA layers") is wrong. Revised: with the legacy init the hybrid's linear layers become local
+  processors that feed attention; with the configured init they become uniform accumulators, and the hybrid's
+  attention never learns recall. Why that blocks attention is open.
+
+**Decision:** the mechanism is "the configured init pins γ near 1 and the model never learns to forget", not
+"the model forgets facts". This is still correlational. Next: a gate-clamp intervention on r04 (eval only). Clamp
+one layer's γ to σ(6) at a time, and measure the recall drop. That shows which layers' forgetting recall actually
+needs.
+
+**2026-10-07 — Pass 8 built: decay-gate statistics (tests the r07 mechanism, no training).**
+`iota/gates.py` hooks every GLA layer's gate and records γ = σ(g_proj(x)) on pass-1-style prompts (8 and 32
+facts, n = 500). It splits γ by token role: fact key, **fact value**, **distractor**, question, answer. For each
+fact value it also records how much of the write survives to the first question (mean log10 of the product of
+γ), plus each layer's gate bias and weight norm.
+- **Predictions if the saturation story is right:**
+  - r07: γ ≈ 0.9975 on every role, std ≈ 0, bias still ≈ 6, ‖W‖ near 0.
+  - r04–r06: γ varies with the input, with γ(distractor) and γ(fact value) differing and a wide spread.
+- Tests check the role labels against the dataset's answer spans, that a fresh intended-init model reads exactly
+  σ(6) everywhere with std 0, that a fresh legacy model sits around 0.5 and varies, and the retention formula for a
+  constant gate.
+- Notebook `PLAN="audit"` with `AUDIT_PASSES = "8"` runs r04, r05, r06 (main configs) and r07 (`configs/fixinit`).
+
+**2026-10-07 — r07 plan A: the configured gate init kills recall, for GLA and the hybrid.**
+r07 is r04 (seed 0, same lr, data and schedule) with one change: the decay gate keeps its configured init (bias 6,
+zero weight, so γ₀ ≈ 0.9975) instead of being overwritten (bias 0, random weight, γ₀ ≈ 0.5). The transformer is
+r04's checkpoint, reused, and its numbers match r04 to the third decimal, which confirms the pairing.
+
+| facts | GLA r04 → r07 | hybrid r04 → r07 | transformer (both) |
+|---:|---|---|---|
+| 8 | 0.989 → 0.854 | 1.000 → 0.848 | 0.975 |
+| 16 | 0.964 → 0.718 | 1.000 → 0.717 | 0.945 |
+| 32 | 0.882 → 0.355 | 1.000 → 0.357 | 0.842 |
+| 64 | 0.489 → 0.082 | 0.997 → 0.113 | 0.620 |
+| 128 | 0.222 → 0.045 | 0.990 → 0.060 | 0.347 |
+
+- **Training curves (held-out assoc):** r07 GLA starts faster (0.10 vs 0.01 at step 500) but is flat at
+  0.36–0.38 from step ~3.5k to the stop at 10.5k. r04 GLA starts slow and climbs to 0.84. r07 hybrid is flat at
+  ~0.37 by step ~8k; r04 hybrid hit 0.98 by step 2.5k.
+- **The control is unaffected:** state_track is 1.00 for every model. GLA holds 0.93 at 8192 tokens.
+- **The hybrid falls to exactly the GLA curve** (0.357 vs 0.355 at 32 facts, 0.717 vs 0.718 at 16). Its two
+  attention layers do not take over recall, even though a 5-layer transformer learns it to 0.84. Hypothesis: the
+  hybrid's recall in r04–r06 was carried by its GLA layers, and the attention layers never learned a recall
+  circuit of their own.
+- **Likely mechanism (unverified): a saturated sigmoid gate.** At bias 6 the gate's gradient is σ'(6) ≈ 0.0025,
+  101× smaller than σ'(0) = 0.25 at the legacy init. With zero weight it starts input-independent and can barely
+  move, so γ stays ≈ 0.9975 everywhere. That gives near-uniform accumulation with no selective forgetting, and a
+  hard ceiling on how many bindings the state can separate. The legacy init starts in the gate's responsive range
+  and learns input-dependent forgetting. To check: measure γ per layer and per token type on the r04 vs r07
+  checkpoints.
+- **Caveats:** one seed (the effect is 0.5 at 32 facts, far outside r04–r06's seed spread); lr not re-tuned for
+  the new init; plateau early stop. The plateau sits flat for ~7k steps, so more steps would not obviously help.
+
+**Decision:** the "init bug" is a finding, not a footnote. Every r01–r06 result depends on the γ₀ ≈ 0.5 init,
+and the documented init gives the opposite conclusion about linear-attention recall. The paper needs a
+gate-init section. Next: a gate diagnostic to test the saturation mechanism (cheap, no training).
+
+**2026-10-06 — Pass 7 on r04–r06: answering questions does not damage recall. Hypothesis dropped.**
+Numbers: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md) and `figures/seeds/pass7_history.csv` (n = 500 per cell
+per seed). Δ = condition − oracle, paired per item. The hypothesis predicted **neutral > oracle**, especially for GLA.
+
+| model | 32 facts, 15 prior Qs: none* / oracle / neutral / generated | 64 facts, 15 prior Qs: oracle / neutral |
+|---|---|---|
+| GLA | 0.917 / 0.937 / 0.920 / 0.927 | 0.779 / 0.760 |
+| dense | 0.815 / 0.899 / 0.825 / 0.847 | 0.697 / 0.661 |
+| hybrid | 1.00 everywhere | 1.00 |
+
+\* "none" = the 0-prior cell, which uses different items, so it is an unpaired reference.
+
+- **Every sign is the wrong way for the hypothesis.** Correctly answered questions never hurt, in any architecture,
+  cell or seed. For dense attention they *help*, by up to 0.074 (3/3 seeds' CIs exclude 0 at 32 facts / 15 Qs).
+  For GLA, oracle − neutral is +0.00 to +0.02 and mostly inside the CIs. The hybrid sits at ceiling, so it is
+  uninformative.
+- **Order doesn't matter** (reordered within ±0.005). **The model's own answers** fall between oracle and neutral.
+- **Why answered questions help: elimination, a training-distribution prior.** Training prompts never ask the same
+  key twice (`rng.sample` in `dsl.py`), so a model can learn that an already-asked key is not the target. Split the
+  errors into "copies the value of an asked key" vs "any other wrong value":
+  - **Dense, 32 facts / 15 Qs:** copy-errors 0.08–0.12 → 0.02–0.03.
+  - **GLA, same cell:** copy-errors 0.02–0.07 → 0.00–0.03.
+  - **Other errors:** stay flat or rise by ~0.01–0.02 in **both** architectures, as expected if the remaining
+    confusion just moves to the keys that are left.
+- **No recurrent-specific damage.** Dense attention only appends on a question, yet it shows the same small rise in
+  "other" errors as GLA. So the dense → hybrid → linear ladder gives no recurrent-specific signal.
+- **Caveat:** elimination could in principle mask a small GLA write cost. Ruling that out cleanly would need a model
+  trained with repeated-key queries. Given effects of ≤ 0.02, that is not worth a training run now.
+
+**Decision** (the pre-registered rule): oracle-clean histories do not hurt beyond matched filler, so drop the
+"queries write into memory and damage it" direction. Keep the eval (cheap, tested) as a negative result and as a
+note on eval design: multi-query training teaches elimination, so sequential-use evals must control for it.
+Next: r07.
+
+**2026-10-05 — Audit results: passes 5 + 6 on r04–r06 (three seeds, n = 500 per cell).**
+Every number: [`figures/seeds/SEEDS.md`](figures/seeds/SEEDS.md), `figures/seeds/pass5_grid.csv`,
+`figures/seeds/pass6_freerun.csv`. Mean per-query accuracy [min–max over seeds].
+
+*Pass 5, joint load × distance grid (8 queries, true length within ±11 tokens of the column):*
+
+| bindings | GLA 1024 → 8192 | dense 1024 → 2048 | hybrid 1024 → 2048 |
+|---:|---|---|---|
+| 8 | 0.994 → 0.959 | 0.931 → 0.110 | 0.992 → 0.316 |
+| 32 | 0.923 → 0.870 | 0.763 → 0.061 | 0.970 → 0.178 |
+| 64 | 0.759 → 0.706 | 0.581 → 0.049 | 0.878 → 0.149 |
+| 128 | 0.447 [0.34–0.54] → 0.412 | 0.379 [0.29–0.51] → 0.064 | 0.856 → 0.220 |
+
+- **GLA: load and distance are nearly separable, and load dominates.** Going 8 → 128 bindings at 1024 tokens costs
+  0.55. Going 1024 → 8192 tokens costs 0.035–0.053 at *every* load. What breaks the linear model is how many facts
+  it holds, not how far back they are.
+- **Dense and hybrid fail on length at every load.** Both are still fine at 1024 tokens (past the 640 they trained
+  on), drop to 0.05–0.32 at 2048 and to ≤ 0.03 at 4096 and beyond. This is pass 2's result, now shown not to depend
+  on load. The hybrid's recurrent layers do not rescue it: its attention layers set its length limit.
+- **Caveat:** even the shortest column (1024) is past the training length, so every attention cell in this grid
+  extrapolates. That is why the hybrid scores 0.856 at 128 bindings here but 0.984 in pass 1. At 1024 tokens and
+  128 bindings, GLA (0.447) and dense (0.379) overlap across seeds, so the grid does **not** flip pass 1's
+  "dense > GLA at 128". For an in-distribution load × distance panel we would need a ≤ 640 column (128 bindings
+  alone take ~770 tokens, so that column could only go to 64 bindings).
+
+*Pass 6, free-running vs teacher-forced (pass 1's prompts; the model's own answers stay in the context):*
+- **Hybrid:** identical (gap 0.000 on every seed).
+- **GLA:** gap ≤ 0.012 on any seed.
+- **Dense:** loses the most: 0.949 → 0.913 at 16 bindings (worst single seed 0.038).
+- So teacher forcing does not inflate any headline number, and the GLA is barely hurt by its own mistakes staying
+  in context. That is a first hint for pass 7's *generated* condition: earlier errors are unlikely to be what
+  damages linear recall.
+
+*A hint that pass 7 tests properly:* at 64 bindings the GLA scores 0.60 in pass 1 (386 tokens, 16 queries) but
+0.76 in pass 5 (1024 tokens, 8 queries), so it does better on a prompt 2.6× longer. Two things differ: the
+number of queries and how densely the facts are packed. Pass 7 holds both fixed and varies only the history.
+
+**Decision:** the paper's capacity and length claims stand as measured; describe the grid as an extrapolation
+grid. Next: pass 7 on r04–r06 (notebook `PLAN="audit"`, `AUDIT_PASSES = "7"`), then r07.
+
+**2026-10-05 — r07 prepared: the gate-init ablation, paired with r04.**
+- `configs/fixinit/sweep_*.yaml` are r04's configs (seed 0, same lr, data, schedule and size) with one change:
+  `legacy_gate_init: false` for GLA and hybrid. A test checks that the train block and fingerprint differ from
+  the main configs in exactly that way. With the same seed every other weight starts identical and the data
+  stream is the same, so r07 − r04 is a paired comparison.
+- `IOTA_CONFIG_DIR=configs/fixinit` selects them (training, eval fallback, profile). The main configs are
+  untouched, so the r04–r06 checkpoints stay valid for pass 7.
+- The transformer has no gate, so its fixinit config matches r04's exactly, and `--reuse
+  transformer=BanerjeeRohan44/iota-r04` copies r04's checkpoint into the r07 repo instead of retraining. Reuse refuses any checkpoint whose fingerprint doesn't match (tested).
+- lr stays at the legacy-init tuned values: this is a one-factor ablation, not a re-tune. If the fixed init trains
+  much worse at that lr, that is itself the finding, and a re-tune is the follow-up.
+- Plan B now runs passes 2, 4 (n = 1000, as r04) and 5, 6, 7 (n = 500, as the audit), so every r04 number has an
+  r07 partner.
+
+**2026-10-05 — Pass 7 built: matched histories (paper direction, Stage 1 screen).**
+Question: does answering earlier questions change later recall? Every query/answer token also updates a
+recurrent state, so a "read" is a write. Design (`iota/history.py`): per item, a fixed fact prefix
+(SET lines + distractors, exactly 512 tokens), a held-out target key, and a history region of exactly T
+tokens before the same final query at the same absolute position:
+- **neutral:** T distractor tokens
+- **oracle:** n_prior other questions with correct answers
+- **generated:** the same questions with the model's own greedy answers
+- **reordered:** the oracle blocks permuted
+
+Cells: 8/32/64 bindings × 0/3/7/15 prior questions (q < n), ≤ ~610 tokens total, so everything is
+in-distribution. Metrics: final-answer greedy accuracy, true-answer log-prob, error-copies-a-history-value
+rate, and paired Δ vs oracle with an item-bootstrap CI. Dense attention only appends on a question, the
+hybrid partly overwrites and linear fully overwrites, so the three archs form a natural control ladder.
+Tests check the invariants: identical prefix, length and final-query position; target never asked earlier;
+reordered is a permutation; neutral has no questions; generated differs only inside answer spans.
+`aggregate_seeds` reports per-seed Δ and how many seeds' CIs exclude 0. Decision rule (from the draft): if
+oracle-clean histories don't hurt beyond matched filler, drop the "query writes damage memory" hypothesis.
+
+**2026-10-05 — Correction: the GLA decay-gate init never took effect (found in the paper-draft audit).**
+- `GatedLinearAttention.__init__` sets the gate bias to `decay_bias_init` (6.0 → γ ≈ 0.9975) with zero weight.
+  `LMBackbone` then applies its generic init to *every* linear layer, which overwrites that with **bias 0 and
+  random weight (γ = 0.5 at init)**. Confirmed by building the r04–r06 configs: every gate bias is 0.0.
+- So **every linear and hybrid model in r01–r06 trained with γ₀ = 0.5**, not the configured 0.9975. The
+  2026-06-19 entry's "decay-gate init fix" only ever reached the standalone layer that the unit test checks,
+  never a full model. Whatever made GLA learn recall in June, it was not that init.
+- The results stand as measurements, but must be described with the init they actually used. Configs and the
+  paper's method section must not claim γ₀ ≈ 0.9975.
+- **Fix, without rewriting history:** a new model key `legacy_gate_init`, defaulting to `true` (also when the key
+  is absent), reproduces the historical behaviour bit-for-bit (verified: same seed → identical weights to old
+  `main` for all three archs). `legacy_gate_init: false` applies the intended init. The checkpoint fingerprint
+  treats a missing key as `true`, so r01–r06 checkpoints stay valid. Tests cover both paths.
+- Planned ablation: retrain GLA and hybrid with `legacy_gate_init: false` (3 seeds) to measure whether γ₀
+  changes the load/distance trade-off or the seed lottery.
+
+**2026-10-05 — Audit evals for the paper, no retraining needed.**
+- **Pass 5, joint load × distance grid:** {8, 32, 64, 128} bindings × {1024, 2048, 4096, 8192} tokens, with 8
+  queries in every cell. Building it exposed a bookkeeping bias: `seq_len` budgets whitespace *words*, but numbers
+  split into digit tokens, so more bindings mean more tokens (128 bindings at "1024" was ~1270 real tokens).
+  Grid cells now regenerate until the true length is within ±11 tokens of target. (Pass 1's existing cells are
+  unchanged and keep their recorded true lengths.)
+- **Pass 6, free-running vs teacher-forced:** on Pass 1's prompts, the model's own answers stay in the context for
+  later queries. Query 0 is identical under both protocols (tested); a model that memorised its data scores the
+  same either way (tested).
+- Notebook `PLAN="audit"` runs passes 5+6 on r04, r05, r06 in turn (wiping local checkpoints between runs).
+  `aggregate_seeds` and `SUMMARY.md` tabulate both.
+- Also verified for the draft: validation prompts, eval prompts and 60k sampled training prompts do not overlap
+  (val∩eval = 0, train∩eval = 0).
 
 **2026-10-05 — r06 plan B + the final three-seed figure (`figures/seeds/`).**
 Pass 2 with three seeds: GLA recall **0.953 [0.92–0.99] at 8192**, 0.991 at 2048; transformer 0.111 / 0.010;
@@ -409,4 +1013,5 @@ patience only counts after the ramp.
   is marginal, run a second seed before claiming it.
 - **Per-arch lr differs** (GLA 3e-3 vs 1.5e-3). This is allowed by the fairness rule, but
   we need to state how each was tuned.
+- **GLA gate init** (2026-10-05): every r01–r06 run used γ₀ = 0.5, not the configured 0.9975; ablation = r07: the configured init collapses recall (2026-10-07).
 - **Phase 9 (Gradio demo)** not started. It waits for a trustworthy figure.

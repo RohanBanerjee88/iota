@@ -163,3 +163,135 @@ def test_aggregate_seeds_means_ranges_and_keeps_every_seed(tmp_path):
     assert (row["ci_low_pq"], row["ci_high_pq"]) == (0.489, 0.754)  # band = seed range
     assert "r04=0.489" in row["per_seed"] and "r06=OOM" in row["per_seed"]
     assert "r05=0.754" in (out / "SEEDS.md").read_text()
+
+
+def test_fixinit_configs_change_only_the_gate_init(monkeypatch):
+    # r07 = r04 with the intended gate init: same seed/lr/data/size, one flag flipped.
+    # The transformer has no gate, so its fixinit config must match r04's exactly
+    # (that is what lets --reuse take r04's checkpoint instead of retraining it).
+    import yaml
+    import scripts.run_all as ra
+    from iota.util import sweep_config_path
+
+    assert sweep_config_path("hybrid") == os.path.join("configs", "sweep_hybrid.yaml")
+    monkeypatch.setenv("IOTA_CONFIG_DIR", "configs/fixinit")
+    assert sweep_config_path("hybrid") == os.path.join("configs/fixinit", "sweep_hybrid.yaml")
+    assert ra._cfg_path("hybrid") == sweep_config_path("hybrid")
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        main = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))
+        fix = yaml.safe_load(open(f"configs/fixinit/sweep_{arch}.yaml"))
+        assert fix["train"] == dict(main["train"], seed=0), arch   # r04's seed, nothing else
+        fm, ff = ra._fingerprint(main), ra._fingerprint(fix)
+        diff = {k for k in set(fm) | set(ff) if fm.get(k) != ff.get(k)}
+        assert diff == (set() if arch == "transformer" else {"legacy_gate_init"}), arch
+        assert ff["legacy_gate_init"] is (arch == "transformer")
+
+
+def _fake_ckpt(d, cfg, steps=5000):
+    (d / "transformer_sweep.safetensors").write_bytes(b"x")
+    (d / "transformer_sweep.json").write_text(
+        json.dumps({"config": cfg, "history": {"eval_acc": [{"step": steps}]}}))
+
+
+def test_train_reuse_takes_a_matching_checkpoint_and_rejects_a_stale_one(tmp_path, monkeypatch):
+    import argparse
+    import yaml
+    import scripts.run_all as ra
+
+    monkeypatch.setattr(ra, "RESULTS_DIR", str(tmp_path))
+    monkeypatch.setattr(ra, "_publish", lambda *a: True)
+    cfg = dict(yaml.safe_load(open("configs/sweep_transformer.yaml")), vocab_size=99)
+    pushed, trained = [], []
+    remote = {"r07": None, "r04": cfg}
+
+    def pull(run_name, repo, token):
+        if remote[repo] is None:
+            return False
+        _fake_ckpt(tmp_path, remote[repo])
+        return True
+
+    monkeypatch.setattr(ra, "hf_pull", pull)
+    monkeypatch.setattr(ra, "hf_push", lambda run_name, repo, token: pushed.append(repo))
+    import iota.train
+    monkeypatch.setattr(iota.train, "train", lambda c, smoke=False: trained.append(c) or {"best_acc": 1.0})
+    args = argparse.Namespace(only="transformer", no_hf=False, repo="r07", token=None, force=False,
+                              smoke=False, reuse="transformer=r04")
+    ra.stage_train(args)
+    assert trained == [] and pushed == ["r07"]          # reused, and copied to the new repo
+    assert ra.checkpoint_status("transformer")[0] == "ok"
+
+    for f in tmp_path.iterdir():
+        f.unlink()
+    pushed.clear()
+    remote["r04"] = dict(cfg, short_conv=0)              # a different model: must not be reused
+    ra.stage_train(args)
+    assert len(trained) == 1 and pushed == ["r07"]      # trained from scratch, then backed up
+
+
+def test_bias2_configs_change_only_the_gate_bias():
+    # r08 = r07 with the gate started unsaturated: decay_bias_init 6 -> 2, nothing else.
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        r07 = yaml.safe_load(open(f"configs/fixinit/sweep_{arch}.yaml"))
+        r08 = yaml.safe_load(open(f"configs/bias2/sweep_{arch}.yaml"))
+        assert r08["train"] == r07["train"], arch
+        f7, f8 = ra._fingerprint(r07), ra._fingerprint(r08)
+        diff = {k for k in set(f7) | set(f8) if f7.get(k) != f8.get(k)}
+        assert diff == (set() if arch == "transformer" else {"decay_bias_init"}), arch
+        if arch != "transformer":
+            model = build_model(dict(r08, vocab_size=get_tokenizer().vocab_size))
+            gates = [m.g_proj for m in model.modules() if isinstance(m, GatedLinearAttention)]
+            assert gates and all(torch.all(g.bias == 2.0) and torch.all(g.weight == 0) for g in gates)
+
+
+def test_zerow0_configs_differ_from_r04_only_in_the_gate_weight():
+    # r09 = bias 0 with a ZERO gate weight; r04 = bias 0 with the generic RANDOM weight.
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    V = get_tokenizer().vocab_size
+    for arch in ("gated_linear", "hybrid", "transformer"):
+        r08 = yaml.safe_load(open(f"configs/bias2/sweep_{arch}.yaml"))
+        r09 = yaml.safe_load(open(f"configs/zerow0/sweep_{arch}.yaml"))
+        assert r09["train"] == r08["train"], arch
+        f8, f9 = ra._fingerprint(r08), ra._fingerprint(r09)
+        diff = {k for k in set(f8) | set(f9) if f8.get(k) != f9.get(k)}
+        assert diff == (set() if arch == "transformer" else {"decay_bias_init"}), arch
+        if arch == "transformer":
+            continue
+        r04 = yaml.safe_load(open(f"configs/sweep_{arch}.yaml"))   # legacy: same bias 0, random weight
+        torch.manual_seed(0)
+        g09 = [m.g_proj for m in build_model(dict(r09, vocab_size=V)).modules() if isinstance(m, GatedLinearAttention)]
+        torch.manual_seed(0)
+        g04 = [m.g_proj for m in build_model(dict(r04, vocab_size=V)).modules() if isinstance(m, GatedLinearAttention)]
+        for a, b in zip(g09, g04):
+            assert torch.all(a.bias == 0) and torch.all(b.bias == 0)
+            assert torch.all(a.weight == 0) and b.weight.abs().max() > 0
+
+
+def test_seed_replicate_folders_are_gla_only_and_differ_only_in_seed(monkeypatch):
+    # r10-r13: GLA-only seed replicates of r09 (bias 0) and r08 (bias 2), seeds 1 and 2.
+    import yaml
+    import scripts.run_all as ra
+
+    src = {"bias0": "configs/zerow0", "bias2": "configs/bias2"}
+    for b in ("bias0", "bias2"):
+        base = yaml.safe_load(open(f"{src[b]}/sweep_gated_linear.yaml"))
+        for seed in (1, 2):
+            d = f"configs/seeds/{b}_s{seed}"
+            assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
+            cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))
+            assert cfg["train"] == dict(base["train"], seed=seed)
+            assert ra._fingerprint(cfg) == ra._fingerprint(base)
+            monkeypatch.setenv("IOTA_CONFIG_DIR", d)
+            assert ra._archs() == ["gated_linear"]          # every stage touches only the GLA
+    monkeypatch.delenv("IOTA_CONFIG_DIR")
+    assert ra._archs() == ra.ARCH_ORDER

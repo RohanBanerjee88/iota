@@ -1,0 +1,33 @@
+
+##### eval_p13 started 2026-10-11 02:03:40 UTC argv=--stage eval --passes 1,3 --repo BanerjeeRohan44/iota-r13 --run-id r13
+
+### STAGE eval  (passes [1, 3], device=cuda)
+
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 1 -> experiments/results/pass1_capacity.csv
+  pass1 gated_linear_sweep sweep=2     true_len=   256 exact=0.555 per_q=0.776 CI_pq=[0.761,0.792]
+  pass1 gated_linear_sweep sweep=4     true_len=   256 exact=0.089 per_q=0.608 CI_pq=[0.595,0.620]
+  pass1 gated_linear_sweep sweep=8     true_len=   256 exact=0.001 per_q=0.474 CI_pq=[0.465,0.482]
+  pass1 gated_linear_sweep sweep=16    true_len=   256 exact=0.000 per_q=0.343 CI_pq=[0.338,0.349]
+  pass1 gated_linear_sweep sweep=32    true_len=   289 exact=0.000 per_q=0.149 CI_pq=[0.144,0.154]
+  pass1 gated_linear_sweep sweep=64    true_len=   386 exact=0.000 per_q=0.068 CI_pq=[0.064,0.071]
+  pass1 gated_linear_sweep sweep=128   true_len=   773 exact=0.000 per_q=0.024 CI_pq=[0.022,0.027]
+wrote experiments/results/pass1_capacity.csv (7 rows)
+  [hf] pushed pass1_capacity.csv
+  [hf] pushed sanity_indist.csv
+
+--- pass 3 -> experiments/results/pass3_control.csv
+  pass3 gated_linear_sweep sweep=128   true_len=   136 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=256   true_len=   264 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=512   true_len=   520 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=1024  true_len=  1032 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=2048  true_len=  2056 exact=1.000 per_q=1.000 CI_pq=[1.000,1.000]
+  pass3 gated_linear_sweep sweep=4096  true_len=  4104 exact=0.999 per_q=0.999 CI_pq=[0.997,1.000]
+  pass3 gated_linear_sweep sweep=8192  true_len=  8200 exact=0.908 per_q=0.908 CI_pq=[0.890,0.926]
+wrote experiments/results/pass3_control.csv (7 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+  [hf] pushed pass3_control.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv

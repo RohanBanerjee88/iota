@@ -5,7 +5,7 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-10-10)
+## Where we are (2026-10-11)
 
 **Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
 [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
@@ -38,13 +38,17 @@ Seed 1 (r10, r11; 2026-10-10) kept the direction but shrank the gap. Bias 0 beat
 seed-dependent, while "bias 0 learns recall faster and better" holds on both seeds. Layer 0's forgetting is
 necessary in all 12 GLA/hybrid models tested (every run except r07, whose gates never learned to forget).
 
-**Next:** seed 2 (r12, r13; batch 2, ~6 h) decides how big the effect is, then the write-up.
+Seed 2 (r12, r13; 2026-10-11) matched seed 0: bias 0 0.88 vs bias 2 0.15 at 32 facts. Over three seeds, bias 0
+beats bias 2 at every load on every seed (mean 0.83 vs 0.27 at 32 facts). The pre-registered thresholds hold on 2
+of 3 seeds, with seed 1 in between. The gate-init study is complete for this scale.
+
+**Next:** the write-up (results draft + an init-study figure); optional: a second model scale.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
-| r12–r13 | — | `configs/seeds/` | prepared | seed-2 replicates: r12 bias 0, r13 bias 2 (GLA only) | notebook `PLAN="seeds"`, `SEED_BATCH = 2` |
+| r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
 | r10–r11 | 2026-10-10 | `9150b4e` | seeds batch 1 ✅ (+ pass 8, 9; r09 audit) | seed 1: GLA bias 0 0.75 @32 vs bias 2 0.52 (seed 0: 0.86 vs 0.14); both still improving at the 15k cap; keep-L0 → chance in both | direction holds, size is seed-dependent; run seed 2 |
 | r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
 | r08 audit | 2026-10-07 | `c3632aa` | pass 8+9 on r08 | GLA built long-memory layers (L1/L2 γ = 1.000) and a forgetting L0, but L0 forgets less (γ 0.5–0.8) and keeps filler over facts; keep-L0 → chance in GLA and hybrid; gate biases stay within ~0.2 of init in every run | the init bias sets each layer's baseline timescale; r09 next |
@@ -67,6 +71,54 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-11 — Seed 2 (r12, r13): the gate-init effect replicates. Three-seed summary.**
+GLA only, zero gate weight, seeds 0 / 1 / 2. Per-query recall (pass 1), with the mean in brackets:
+
+| facts | bias 0 (γ₀ 0.5): r09 / r10 / r12 | bias 2 (γ₀ 0.88): r08 / r11 / r13 | gap per seed | legacy (r04–r06) |
+|---:|---|---|---|---|
+| 2 | 1.000 / 0.998 / 1.000 (0.999) | 0.851 / 0.988 / 0.776 (0.872) | +0.15 / +0.01 / +0.22 | (1.000) |
+| 8 | 0.991 / 0.971 / 0.989 (0.984) | 0.531 / 0.905 / 0.474 (0.637) | +0.46 / +0.07 / +0.52 | (0.994) |
+| 16 | 0.963 / 0.912 / 0.970 (0.948) | 0.360 / 0.765 / 0.343 (0.489) | +0.60 / +0.15 / +0.63 | (0.981) |
+| 32 | 0.858 / 0.752 / 0.883 (**0.831**) | 0.143 / 0.515 / 0.149 (**0.269**) | +0.71 / +0.24 / +0.73 | (0.929) |
+| 64 | 0.512 / 0.419 / 0.637 (0.523) | 0.079 / 0.096 / 0.068 (0.081) | +0.43 / +0.32 / +0.57 | (0.599) |
+| 128 | 0.222 / 0.184 / 0.309 (0.238) | 0.049 / 0.050 / 0.024 (0.041) | +0.17 / +0.13 / +0.29 | (0.328) |
+
+- **Pre-registered reading (bias 0 ≥ ~0.80 and bias 2 ≤ ~0.45 at 32 facts, per seed):** met on seeds 0 and 2;
+  seed 1 is in between (0.75 / 0.52).
+  - **Holds on every seed:** bias 0 beats bias 2 at every load. The gap is never negative, ranging +0.01 to +0.73
+    and largest at 16–64 facts.
+  - **Claim:** "starting the gate at 0.5 rather than 0.88 makes a pure GLA learn multi-binding recall much more
+    reliably: 3/3 seeds better, 2/3 by more than 0.7 at 32 facts". Three seeds don't support a formal significance
+    claim (a sign test on 3/3 gives p = 0.125), but the per-seed gaps are far outside the n = 1000 eval CIs (±0.02).
+- **Learning speed (steps to first reach 0.5 held-out recall):** bias 0 took 5k / 10.5k / 5.5k; bias 2 took never /
+  13k / never. r12 hit 0.85 at the 15k cap and r13 sat at 0.10–0.18 the whole way. Legacy took 7k / 6.5k / 4.5k.
+- **Bias 0 is within legacy's range at low load and slightly below at high load** (0.83 vs 0.93 mean at 32 facts;
+  overlapping seeds: r12 0.883 > r04 0.882). So the zero vs small-random gate weight makes at most a small
+  difference, below the seed spread.
+- **Layer-0 retention separates the two inits cleanly on all six runs** (log10 share of a fact left at the first
+  question):
+  - bias 0: −155 / −145 / −182 (layer-0 bias −0.1 / −0.1 / −0.1)
+  - bias 2: −71 / −82 / −52 (layer-0 bias +1.8 / +1.8 / +1.7)
+
+  The bias stays where it started, and layer 0 forgets about twice as fast (in log terms) when started at 0.5. The
+  two failed bias-2 runs (r08, r13) both have **reversed** layer-0 selectivity: they keep filler longer than facts
+  (0.77 vs 0.48; 0.79 vs 0.28). The partial success r11 is non-selective (0.65 / 0.68). Every bias-0 run keeps
+  facts ≥ filler in layer 0 (r12: 0.37 vs 0.11).
+- **Clamps:** keep-L0 sends r12 and r13 to chance, as for every other trained model. That makes **14 of 14** with
+  r12 and r13 (all except r07). r12 also leans on deeper layers' forgetting (keep-L3 −0.73 to −0.79, keep-L1 −0.19
+  to −0.30). Its middle layers sit at γ 0.4–0.6, another solution again. r13's deep layers are all γ = 1.00 and
+  clamp-neutral, like r08's.
+- **Control:** state_track is 1.00 in-distribution for all six. r12 / r13 hold 0.79 / 0.91 at 8192 tokens.
+
+**Decision:** the gate-init study is done at this scale. The paper section:
+1. Bias barely moves in training, so the starting bias sets each layer's timescale.
+2. γ₀ = 0.5 vs 0.88: better on 3/3 seeds, by more than 0.7 on 2/3.
+3. γ₀ = 0.9975 fails for both GLA and hybrid (one seed).
+4. All 14 trained models depend on a fast-forgetting layer 0.
+5. Failed runs show a slow, filler-keeping layer 0.
+
+The r04–r06 headline results stand and can be described with the clean bias-0 init. Next: write-up.
 
 **2026-10-10 — Seed 1 of the gate-init contrast (r10, r11) + gate checks on r09–r11: the direction holds, the size does not.**
 GLA only, zero gate weight. Per-query recall (pass 1):

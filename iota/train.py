@@ -80,6 +80,19 @@ def _save(model, cfg: Dict, history, run_name: str):
     return weights
 
 
+def _save_history(history, run_name: str, status: str, best_step) -> None:
+    """The COMPLETE eval history, rewritten after every eval.
+
+    `{run}.json` holds the history as of the best checkpoint only (it is written when
+    the checkpoint is), so it silently drops every eval after the best one. This file
+    is the training record: every eval up to the last step, plus why training ended."""
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    evals = history.get("eval_acc", [])
+    with open(os.path.join(RESULTS_DIR, f"{run_name}_history.json"), "w") as fh:
+        json.dump({"run_name": run_name, "status": status, "best_step": best_step,
+                   "last_step": evals[-1]["step"] if evals else 0, "eval_acc": evals}, fh, indent=1)
+
+
 def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     """Train to PLATEAU on the mixed curriculum (Phase 6 sweep model).
 
@@ -129,7 +142,8 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
           f"max_steps={max_steps} bs={batch_size} patience={patience}", flush=True)
 
     history = {"eval_acc": []}
-    best_acc, bad, cursor, t0 = -1.0, 0, 0, time.time()
+    best_acc, best_step, bad, cursor, t0 = -1.0, None, 0, 0, time.time()
+    status = "max_steps"
     for step in range(max_steps):
         model.train()
         lr = _lr_at(step, base_lr, warmup, max_steps)
@@ -172,7 +186,10 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
                   f"bal {acc:.3f} [{mode_str}] exact {exact:.3f} diff {difficulty:.2f} "
                   f"{'*' if improved else ''} ({time.time()-t0:.0f}s)", flush=True)
             if improved:
-                best_acc, bad = acc, 0
+                best_acc, best_step = acc, step + 1
+            _save_history(history, run_name, "running", best_step)
+            if improved:
+                bad = 0
                 if not smoke:
                     _save(model, cfg, history, run_name)  # checkpoint the best
             elif difficulty >= 1.0:
@@ -183,7 +200,9 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
                 bad += 1
                 if bad >= patience:
                     print(f"[sweep] {cfg['arch']} plateaued (patience {patience}) -> stop", flush=True)
+                    status = "plateau"
                     break
+    _save_history(history, run_name, status, best_step)
     if smoke:
         _save(model, cfg, history, run_name)
     print(f"[sweep] {cfg['arch']} BEST plateau_acc = {best_acc:.4f} -> {RESULTS_DIR}/{run_name}", flush=True)

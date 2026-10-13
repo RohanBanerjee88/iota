@@ -209,15 +209,26 @@ class GatedLinearAttention(nn.Module):
         return self.out(self.drop(o))
 
 
+def layer_values(v, n_layers: int, name: str) -> list:
+    """A per-block setting: one number for every block, or a list with one entry per
+    block (indexed by block, so in a hybrid the entries at attention blocks are unused)."""
+    if isinstance(v, (list, tuple)):
+        if len(v) != n_layers:
+            raise ValueError(f"{name} has {len(v)} entries for {n_layers} layers")
+        return [float(x) for x in v]
+    return [float(v)] * n_layers
+
+
 class GatedLinearLM(SeqModel):
     def __init__(self, vocab_size, d_model, n_layers, n_heads, d_ff, chunk_size=64, dropout=0.0,
                  decay_bias_init=6.0, short_conv=0, legacy_gate_init=True, **_):
         super().__init__()
+        biases = layer_values(decay_bias_init, n_layers, "decay_bias_init")
         blocks = [
             Block(d_model,
-                  GatedLinearAttention(d_model, n_heads, chunk_size, dropout, decay_bias_init, short_conv),
+                  GatedLinearAttention(d_model, n_heads, chunk_size, dropout, biases[i], short_conv),
                   d_ff, dropout)
-            for _ in range(n_layers)
+            for i in range(n_layers)
         ]
         self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout, legacy_gate_init)
 

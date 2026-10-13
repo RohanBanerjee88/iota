@@ -11,7 +11,8 @@ stage, the run's small artifacts are committed to a dedicated branch:
         SUMMARY.md              human + Claude readable digest (regenerated each sync)
         env.json                device, torch, code commit, last stage
         syncs.log               one line per sync (what stage, when, which commit)
-        *_sweep.json            per-model training history (per-mode accuracy curve)
+        *_sweep.json            per-model training history up to the best checkpoint
+        *_sweep_history.json    the complete eval history (every eval, why training stopped)
         pass*_*.csv, cost_profile.csv, money_figure*.png/pdf
         logs/<stage>.log        full stdout of each stage
 
@@ -182,7 +183,7 @@ def _train_section(run_dir: str) -> List[str]:
         lines.append(f"| {arch} | {best.get('step')} | {_fmt(best.get('balanced'))} | "
                      f"{_fmt(assoc)} | {_fmt(state)} | {_fmt(best.get('exact'))} | {lr} | {verdict} |")
     lines += ["", "Healthy = assoc high **and** state well above chance (~0.01). "
-              "Full per-eval curves are in `logs/train.log` and the `*_sweep.json` files.", ""]
+              "Full per-eval curves are in `*_sweep_history.json` (and `logs/train.log`); `*_sweep.json` stops at the best checkpoint.", ""]
     return lines
 
 
@@ -393,6 +394,33 @@ def _clamp_section(run_dir: str) -> List[str]:
     return lines
 
 
+def _replay_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass10_replay.csv"))
+    if not rows:
+        return []
+    lines = ["## 4h. Gate replay (Pass 10): does the timing of forgetting matter?", "",
+             "One layer's recorded gates over the context span are replayed unchanged, shuffled in time "
+             "(same values, same product), replaced by their geometric mean (same product, no timing) or "
+             "their arithmetic mean (forgets less). Per-query recall, Δ vs baseline [paired 95% CI].", ""]
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        lines += [f"**{m}**", "", "| facts | layer | baseline | replay | shuffle (range) | geomean | arith |",
+                  "|---:|---|---:|---|---|---|---|"]
+        keys = sorted({(int(r["n_bindings"]), r["layer"]) for r in mine})
+        for nb, layer in keys:
+            by = {r["condition"]: r for r in mine if int(r["n_bindings"]) == nb and r["layer"] == layer}
+            def c(k):
+                if k not in by:
+                    return "–"
+                r = by[k]
+                extra = f" ({_fmt(r['shuffle_min'], 2)}–{_fmt(r['shuffle_max'], 2)})" if k == "shuffle" else ""
+                return f"{_fmt(r['per_query'])}{extra} ({float(r['delta']):+.3f} [{_fmt(r['delta_ci_low'], 2)}, {_fmt(r['delta_ci_high'], 2)}])"
+            lines.append(f"| {nb} | {layer} | {_fmt(by['baseline']['per_query'])} | {c('replay')} | {c('shuffle')} | "
+                         f"{c('geomean')} | {c('arith')} |")
+        lines.append("")
+    return lines
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -468,6 +496,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _history_section(run_dir)
         + _gates_section(run_dir)
         + _clamp_section(run_dir)
+        + _replay_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

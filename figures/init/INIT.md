@@ -17,19 +17,21 @@ every run; only the decay gate's initial bias (and, for legacy, a small random g
 
 ## Per run
 
-| run | init | seed | recall @32 | recall @64 | steps to 0.5 | layer-0 retention (log10) | layer-0 bias | keep-L0 Δ @32 |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| r04 | legacy (bias 0, random W) | 0 | 0.882 | 0.489 | 7000 | -141 | -0.04 | -0.872 |
-| r05 | legacy (bias 0, random W) | 1 | 0.935 | 0.754 | 6500 | -142 | -0.11 | -0.918 |
-| r06 | legacy (bias 0, random W) | 2 | 0.971 | 0.555 | 4500 | -165 | -0.07 | -0.958 |
-| r09 | γ₀ = 0.5 (bias 0) | 0 | 0.858 | 0.512 | 5000 | -155 | -0.06 | -0.848 |
-| r10 | γ₀ = 0.5 (bias 0) | 1 | 0.752 | 0.419 | 10500 | -145 | -0.08 | -0.747 |
-| r12 | γ₀ = 0.5 (bias 0) | 2 | 0.883 | 0.637 | 5500 | -182 | -0.06 | -0.882 |
-| r08 | γ₀ = 0.88 (bias 2) | 0 | 0.143 | 0.079 | never | -71 | +1.79 | -0.134 |
-| r11 | γ₀ = 0.88 (bias 2) | 1 | 0.515 | 0.096 | 13000 | -82 | +1.78 | -0.498 |
-| r13 | γ₀ = 0.88 (bias 2) | 2 | 0.149 | 0.068 | never | -52 | +1.72 | -0.145 |
-| r07 | γ₀ = 0.9975 (bias 6) | 0 | 0.355 | 0.082 | never | -1 | +5.82 | -0.178 |
+| run | init | seed | recall @32 | recall @64 | steps to 0.5 | best step | last step (stop) | layer-0 retention (log10) | layer-0 bias | keep-L0 Δ @32 |
+|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| r04 | legacy (bias 0, random W) | 0 | 0.882 | 0.489 | 7000 | 15000 | 15000 (15k cap) | -141 | -0.04 | -0.872 |
+| r05 | legacy (bias 0, random W) | 1 | 0.935 | 0.754 | 6500 | 15000 | 15000 (15k cap) | -142 | -0.11 | -0.918 |
+| r06 | legacy (bias 0, random W) | 2 | 0.971 | 0.555 | 4500 | 12500 | 15000 (15k cap) | -165 | -0.07 | -0.958 |
+| r09 | γ₀ = 0.5 (bias 0) | 0 | 0.858 | 0.512 | 5000 | 14500 | 15000 (15k cap) | -155 | -0.06 | -0.848 |
+| r10 | γ₀ = 0.5 (bias 0) | 1 | 0.752 | 0.419 | 10500 | 15000 | 15000 (15k cap) | -145 | -0.08 | -0.747 |
+| r12 | γ₀ = 0.5 (bias 0) | 2 | 0.883 | 0.637 | 5500 | 15000 | 15000 (15k cap) | -182 | -0.06 | -0.882 |
+| r08 | γ₀ = 0.88 (bias 2) | 0 | 0.143 | 0.079 | never | 8000 | 12000 (plateau) | -71 | +1.79 | -0.134 |
+| r11 | γ₀ = 0.88 (bias 2) | 1 | 0.515 | 0.096 | 13000 | 14000 | 15000 (15k cap) | -82 | +1.78 | -0.498 |
+| r13 | γ₀ = 0.88 (bias 2) | 2 | 0.149 | 0.068 | never | 15000 | 15000 (15k cap) | -52 | +1.72 | -0.145 |
+| r07 | γ₀ = 0.9975 (bias 6) | 0 | 0.355 | 0.082 | never | 10500 | 14500 (plateau) | -1 | +5.82 | -0.178 |
 
 Steps to 0.5 = first eval (every 500 steps) where held-out multi-query recall reaches 0.5; 15,000-step cap.
+Curves and last step come from the complete training record (history file, or the longest train.log in the
+branch history), not the best-checkpoint history; best step = the checkpoint that was evaluated.
 Layer-0 retention = mean log10 share of a fact value's write still in layer 0's state at the first question.
 keep-L0 Δ = recall change when layer 0's gate is clamped to σ(6) at eval time (pass 9).

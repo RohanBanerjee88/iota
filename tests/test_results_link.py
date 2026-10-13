@@ -295,3 +295,41 @@ def test_seed_replicate_folders_are_gla_only_and_differ_only_in_seed(monkeypatch
             assert ra._archs() == ["gated_linear"]          # every stage touches only the GLA
     monkeypatch.delenv("IOTA_CONFIG_DIR")
     assert ra._archs() == ra.ARCH_ORDER
+
+
+def test_per_layer_bias_configs_build_the_intended_gates():
+    # r14-r17 (appendix A.3): bias 0 in the first layer and 2 above, or the reverse;
+    # r20/r21 (A.2): r09/r08 with a 30k budget and early stopping off.
+    import pytest
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention, layer_values
+
+    V = get_tokenizer().vocab_size
+    base = yaml.safe_load(open("configs/zerow0/sweep_gated_linear.yaml"))
+    want = {"low_first": [0.0, 2.0, 2.0, 2.0, 2.0], "high_first": [2.0, 0.0, 0.0, 0.0, 0.0]}
+    for cond, biases in want.items():
+        for seed in (0, 1):
+            d = f"configs/layerinit/{cond}_s{seed}"
+            assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
+            cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))
+            assert cfg["train"] == dict(base["train"], seed=seed)
+            fb, fc = ra._fingerprint(base), ra._fingerprint(cfg)
+            assert {k for k in set(fb) | set(fc) if fb.get(k) != fc.get(k)} == {"decay_bias_init"}
+            gates = [m.g_proj for m in build_model(dict(cfg, vocab_size=V)).modules()
+                     if isinstance(m, GatedLinearAttention)]
+            assert [float(g.bias[0].detach()) for g in gates] == biases
+            assert all(torch.all(g.weight == 0) for g in gates)
+    for b, bias in (("0", 0.0), ("2", 2.0)):
+        cfg = yaml.safe_load(open(f"configs/long/bias{b}/sweep_gated_linear.yaml"))
+        assert cfg["decay_bias_init"] == bias
+        assert cfg["train"] == dict(base["train"], max_steps=30000, patience=1000)
+    # a hybrid takes the list per BLOCK; attention blocks ignore their entry
+    hyb = dict(yaml.safe_load(open("configs/zerow0/sweep_hybrid.yaml")), vocab_size=V,
+               decay_bias_init=[1.0, 3.0, 9.0, 4.0, 9.0])
+    assert [float(m.g_proj.bias[0].detach()) for m in build_model(hyb).modules()
+            if isinstance(m, GatedLinearAttention)] == [1.0, 3.0, 4.0]
+    with pytest.raises(ValueError):
+        layer_values([0.0, 1.0], 5, "decay_bias_init")

@@ -18,6 +18,7 @@ import csv
 import io
 import json
 import os
+import re
 import statistics as st
 import subprocess
 
@@ -43,6 +44,35 @@ def _show(ref: str, path: str) -> str:
     return subprocess.check_output(["git", "show", f"{ref}:{path}"], stderr=subprocess.DEVNULL).decode()
 
 
+STEP_RE = re.compile(r"\[sweep\] gated_linear step\s+(\d+) .*?\[assoc ([\d.]+)")
+
+
+def full_curve(ref: str, run: str) -> list:
+    """Every held-out eval of a run's GLA training, as [(step, assoc recall)].
+
+    `{run}.json` stops at the best checkpoint (r07's at 10.5k of 14.5k steps), so read
+    the complete record instead: `gated_linear_sweep_history.json` for runs that write
+    it, otherwise the train.log -- taking the LONGEST version in the branch history,
+    because a later session that only re-evaluated can overwrite it (r08's log was)."""
+    try:
+        h = json.loads(_show(ref, f"runs/{run}/gated_linear_sweep_history.json"))
+        return [(e["step"], e.get("by_mode", {}).get("assoc_recall", 0.0)) for e in h["eval_acc"]]
+    except subprocess.CalledProcessError:
+        pass
+    commits = subprocess.check_output(
+        ["git", "log", "--format=%H", ref, "--", f"runs/{run}/logs/train.log"]).decode().split()
+    best: list = []
+    for c in commits:
+        try:
+            text = _show(c, f"runs/{run}/logs/train.log")
+        except subprocess.CalledProcessError:
+            continue
+        curve = [(int(m.group(1)), float(m.group(2))) for m in STEP_RE.finditer(text)]
+        if len(curve) > len(best):
+            best = curve
+    return best
+
+
 def _csv(ref, path):
     return list(csv.DictReader(io.StringIO(_show(ref, path))))
 
@@ -55,7 +85,9 @@ def load(ref: str = "origin/kaggle-results") -> list:
             p1 = {int(r["n_bindings"]): float(r["accuracy_per_query"])
                   for r in _csv(ref, f"{base}/pass1_capacity.csv") if r["model"].startswith("gated_linear")}
             hist = json.loads(_show(ref, f"{base}/gated_linear_sweep.json"))["history"]["eval_acc"]
-            curve = [(e["step"], e.get("by_mode", {}).get("assoc_recall", 0.0)) for e in hist]
+            curve = full_curve(ref, run) or [(e["step"], e.get("by_mode", {}).get("assoc_recall", 0.0))
+                                             for e in hist]
+            best_step = hist[-1]["step"] if hist else None
             to_half = next((s for s, v in curve if v >= 0.5), None)
             g = [r for r in _csv(ref, f"{base}/pass8_gates.csv")
                  if r["model"].startswith("gated_linear") and r["n_bindings"] == "32"
@@ -65,7 +97,9 @@ def load(ref: str = "origin/kaggle-results") -> list:
             rows.append({"run": run, "init": init, "gamma0": GAMMA0[init], "seed": seed,
                          **{f"recall_{nb}": p1[nb] for nb in LOADS},
                          "steps_to_0.5": to_half if to_half is not None else "",
-                         "final_step": curve[-1][0], "final_heldout": round(curve[-1][1], 3),
+                         "best_step": best_step, "last_step": curve[-1][0],
+                         "stopped": "15k cap" if curve[-1][0] >= 15000 else "plateau",
+                         "final_heldout": round(curve[-1][1], 3),
                          "l0_log10_retention": float(g["fact_log10_retention"]),
                          "l0_bias": float(g["bias_mean"]),
                          "keep_l0_delta_32": float(c["delta"]), "curve": curve})
@@ -90,13 +124,16 @@ def write_tables(rows, out):
             cells.append(f"{st.mean(v):.3f} [{min(v):.2f}–{max(v):.2f}]" if len(v) > 1 else f"{v[0]:.3f} (1 seed)")
         md.append(f"| {nb} | " + " | ".join(cells) + " |")
     md += ["", "## Per run", "",
-           "| run | init | seed | recall @32 | recall @64 | steps to 0.5 | layer-0 retention (log10) | layer-0 bias | keep-L0 Δ @32 |",
-           "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
+           "| run | init | seed | recall @32 | recall @64 | steps to 0.5 | best step | last step (stop) | layer-0 retention (log10) | layer-0 bias | keep-L0 Δ @32 |",
+           "|---|---|---:|---:|---:|---:|---:|---|---:|---:|---:|"]
     for r in rows:
         md.append(f"| {r['run']} | {LABEL[r['init']]} | {r['seed']} | {r['recall_32']:.3f} | {r['recall_64']:.3f} | "
-                  f"{r['steps_to_0.5'] or 'never'} | {r['l0_log10_retention']:.0f} | {r['l0_bias']:+.2f} | "
+                  f"{r['steps_to_0.5'] or 'never'} | {r['best_step']} | {r['last_step']} ({r['stopped']}) | "
+                  f"{r['l0_log10_retention']:.0f} | {r['l0_bias']:+.2f} | "
                   f"{r['keep_l0_delta_32']:+.3f} |")
     md += ["", "Steps to 0.5 = first eval (every 500 steps) where held-out multi-query recall reaches 0.5; 15,000-step cap.",
+           "Curves and last step come from the complete training record (history file, or the longest train.log in the",
+           "branch history), not the best-checkpoint history; best step = the checkpoint that was evaluated.",
            "Layer-0 retention = mean log10 share of a fact value's write still in layer 0's state at the first question.",
            "keep-L0 Δ = recall change when layer 0's gate is clamped to σ(6) at eval time (pass 9)."]
     with open(os.path.join(out, "INIT.md"), "w") as fh:
@@ -156,6 +193,9 @@ def make_figure(rows, out):
             s, v = zip(*r["curve"])
             ax.plot([x / 1000 for x in s], v, color=COLOR[init], linewidth=1.6 if init == "bias0" else 1.3,
                     alpha=0.95 if init != "legacy" else 0.85, linestyle="--" if init == "bias6" else "-")
+            if r["best_step"] in s:  # the checkpoint every other panel evaluates
+                ax.plot(r["best_step"] / 1000, v[s.index(r["best_step"])], marker="o", markersize=3.5,
+                        color=COLOR[init], markeredgecolor="white", markeredgewidth=0.6, zorder=3)
     ax.axhline(0.5, color=INK2, linewidth=0.8, linestyle=":")
     ax.text(0.2, 0.515, "0.5", fontsize=7.5, color=INK2)
     ax.set_xlim(0, 15.5)
@@ -163,7 +203,7 @@ def make_figure(rows, out):
     ax.set_xlabel("training step (thousands)")
     ax.set_ylabel("held-out recall, full difficulty")
     style(ax, "B · γ₀ = 0.5 learns faster",
-          "held-out recall per run · 0.5 at 5–10.5k steps vs 13k or never")
+          "full training record per run · dot = evaluated checkpoint")
 
     # C: mechanism
     ax = axes[2]

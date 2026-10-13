@@ -9,7 +9,7 @@ transformer-level recall accuracy at materially lower cost than full dense.
 from __future__ import annotations
 
 from .base import Block, LMBackbone, SeqModel
-from .gated_linear import GatedLinearAttention
+from .gated_linear import GatedLinearAttention, layer_values
 from .transformer import CausalSelfAttention
 
 
@@ -32,12 +32,13 @@ class HybridLM(SeqModel):
         super().__init__()
         full = set(full_attention_layers)
         self.full_attention_layers = sorted(full)
+        biases = layer_values(decay_bias_init, n_layers, "decay_bias_init")
         blocks = []
         for i in range(n_layers):
             if i in full:
                 mixer = CausalSelfAttention(d_model, n_heads, dropout, short_conv=short_conv)
             else:
-                mixer = GatedLinearAttention(d_model, n_heads, chunk_size, dropout, decay_bias_init,
+                mixer = GatedLinearAttention(d_model, n_heads, chunk_size, dropout, biases[i],
                                              short_conv)
             blocks.append(Block(d_model, mixer, d_ff, dropout))
         self.backbone = LMBackbone(vocab_size, d_model, blocks, dropout, legacy_gate_init)

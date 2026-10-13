@@ -5,7 +5,7 @@ its outcome and what we changed because of it. The raw numbers for each run live
 [`kaggle-results`](https://github.com/RohanBanerjee88/iota/tree/kaggle-results) branch
 under `runs/<run_id>/SUMMARY.md`. This file holds the *decisions*.
 
-## Where we are (2026-10-11)
+## Where we are (2026-10-13)
 
 **Done:** the deliverable figure exists, with three seeds and every run passing the sanity gate:
 [`figures/seeds/money_figure_seeds.png`](figures/seeds/money_figure_seeds.png), with every number in
@@ -30,8 +30,9 @@ r08 (2026-10-07) split the answer. With the gate unsaturated (bias 2) the **hybr
 
 r09 (2026-10-08) closed the init question. With a zero gate weight, bias 0 reproduces r04: GLA 0.86 at 32 facts
 (r04 0.88), and the hybrid scores 1.00. Bias 2 fails the GLA (0.14) and bias 6 fails both. So the starting gate
-bias, not r04's random gate weight, decides whether a pure GLA learns recall. That also means r04–r06's "buggy"
-init is equivalent to a clean, documentable one: bias 0, zero weight.
+bias decides whether a pure GLA learns recall. Correction (2026-10-13): r04–r06's init (bias 0 + random
+weight) is NOT equivalent to bias 0 with a zero weight; it is 0.10 better at 32 facts on paired seeds. It is still a
+standard, documentable init, and Results 1–3 keep that label.
 
 Seed 1 (r10, r11; 2026-10-10) kept the direction but shrank the gap. Bias 0 beat bias 2 at every load (32 facts:
 0.75 vs 0.52; seed 0: 0.86 vs 0.14), but neither met its pre-registered threshold. So "bias 2 fails" is
@@ -42,12 +43,23 @@ Seed 2 (r12, r13; 2026-10-11) matched seed 0: bias 0 0.88 vs bias 2 0.15 at 32 f
 beats bias 2 at every load on every seed (mean 0.83 vs 0.27 at 32 facts). The pre-registered thresholds hold on 2
 of 3 seeds, with seed 1 in between. The gate-init study is complete for this scale.
 
-**Next:** the write-up. The results draft and the init-study figure (`figures/init/`) exist; open items are a second model scale and the related-work check.
+**Writing status (2026-10-13):** a scoped paper draft exists outside the repo, kept private until the preprint.
+Working title: "When does longer initial memory hurt recall learning?". The explanation of the init effect is still
+open.
+
+**Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
+1. pass 10 gate-replay controls on r04–r13 (~15 min)
+2. per-layer init r14–r17 (~11 h)
+3. lr probe r18/r19 (~6.5 h)
+4. 30k-step pair r20/r21 (~10.5 h)
+
+Then a second model scale.
 
 ## Run log
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r14–r21 | — | `configs/layerinit/`, `configs/long/` | prepared | r14–r17 per-layer init (bias 0 first + 2 above / reverse, seeds 0–1); r18/r19 lr probe (bias 0 / 2); r20/r21 30k steps (bias 0 / 2) | notebook `PLAN="exp"`, cell 9d |
 | r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
 | r10–r11 | 2026-10-10 | `9150b4e` | seeds batch 1 ✅ (+ pass 8, 9; r09 audit) | seed 1: GLA bias 0 0.75 @32 vs bias 2 0.52 (seed 0: 0.86 vs 0.14); both still improving at the 15k cap; keep-L0 → chance in both | direction holds, size is seed-dependent; run seed 2 |
 | r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
@@ -71,6 +83,56 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-13 — Step 0 for the follow-up experiments (paper appendix A), no GPU.**
+An external review of the draft found five problems. All are confirmed against the data:
+1. **The legacy init is not equivalent to bias 0 with a zero weight.** At 32 facts all three paired seeds are lower
+   with the zero weight (0.88→0.86, 0.94→0.75, 0.97→0.88). At 64–128 facts the change is mixed. The 2026-10-08 entry's
+   "random weight incidental" was too strong.
+2. **The arithmetic-mean clamp is not a selectivity test.** Gates multiply, so it also changes total retention.
+3. **Layer-0 retention is that layer's write coefficient only.** It says nothing about what the network as a whole
+   keeps.
+4. **"Never" in pass 7 is wrong.** 8 seed-level cells have filler slightly ahead, by at most +0.018, all within CI.
+5. **Training curves were truncated.** They stopped at the best checkpoint (r07 at 10.5k of 14.5k), and r08's log had
+   been overwritten by its re-run.
+
+Built:
+- **Full training record:** `train_sweep` now rewrites `<run>_history.json` after every eval, with every eval, the
+  best step and the stop reason (`max_steps` / `plateau`). It is published and backed up to HF; tested.
+- **Figure fix:** `scripts/init_study.py` reads curves from that file. For older runs it uses the *longest* train.log
+  version in the results-branch history, which recovers r08: it trained to 12,000 steps (plateau stop), with recall
+  stuck at 0.18–0.19. Panel B now shows full trajectories with the evaluated checkpoint marked, and `INIT.md` lists
+  best step, last step and stop reason per run.
+- **Pass 10, `iota/replay.py` (appendix A.1):** per GLA layer, the recorded gate logits over the context span are
+  replaced, with the query/answer suffix kept:
+
+  | condition | what it changes |
+  |---|---|
+  | replay | nothing; it must reproduce the baseline bit for bit (tested) |
+  | shuffle | time order, permuted per prompt and head, 3 permutations; keeps the values and the span product |
+  | geomean | one constant per prompt and head with the same span product, computed in the forward's own floored log form |
+  | arith | the arithmetic mean, which forgets less (Jensen) |
+
+  Reports per-query recall, paired Δ with CI, shuffle range and the context log10 product per condition. Wired as
+  `--passes 10` and SUMMARY §4h.
+- **Per-layer gate bias:** `decay_bias_init` may be a list with one entry per block (`layer_values`; in a hybrid the
+  attention blocks ignore theirs).
+- **Configs:**
+
+  | runs | what | config folder |
+  |---|---|---|
+  | r14 / r16 | bias [0, 2, 2, 2, 2] (low-first), seeds 0 / 1 | `configs/layerinit/` |
+  | r15 / r17 | bias [2, 0, 0, 0, 0] (high-first), seeds 0 / 1 | `configs/layerinit/` |
+  | r20 / r21 | r09 / r08 with 30k steps and early stopping off; the cosine schedule stretches too, noted in the config | `configs/long/` |
+  | r18 / r19 | lr probe {7.5e-4, 1.5e-3, 3e-3} × 6k steps on `configs/zerow0` / `configs/bias2` via `--stage tune --only gated_linear` | (existing folders) |
+
+  Tests pin each config's one difference and the built per-layer biases.
+- **Notebook:** `PLAN="exp"` + cell 9d with batches `layer_s0`, `layer_s1`, `lr_b0`, `lr_b2`, `long_b0`, `long_b2`.
+  The audit cell runs pass 10 over r04–r13, each against its own config folder.
+- **Pre-registered readings** are the draft's appendix A:
+  - A.3: low-first works and high-first fails → the first layer needs to start forgetting; both fail →
+    coordination; both work → the first layer alone does not explain it.
+  - A.1: shuffle ≈ replay → timing does not matter.
 
 **2026-10-11 — Write-up started: init-study figure + results draft.**
 - `scripts/init_study.py` reads r04–r13 from `kaggle-results` and writes `figures/init/`:

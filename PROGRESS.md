@@ -48,7 +48,7 @@ Working title: "When does longer initial memory hurt recall learning?". The expl
 open.
 
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
-1. pass 10 gate-replay controls on r04–r13 (~15 min)
+1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init r14–r17 (~11 h)
 3. lr probe r18/r19 (~6.5 h)
 4. 30k-step pair r20/r21 (~10.5 h)
@@ -59,6 +59,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| pass 10 | 2026-10-13 | `1adea93` | gate replay on r04–r13 | replay exact everywhere; GLA layer 0 with its forgetting total held fixed but its timing removed: −0.15 to −0.61 at 32 facts (shuffle) in all 6 bias-0/legacy runs; hybrid L1 needs the amount, not the timing | timing of layer-0 forgetting is used; earlier hybrid-L1 'selectivity' claim corrected |
 | r14–r21 | — | `configs/layerinit/`, `configs/long/` | prepared | r14–r17 per-layer init (bias 0 first + 2 above / reverse, seeds 0–1); r18/r19 lr probe (bias 0 / 2); r20/r21 30k steps (bias 0 / 2) | notebook `PLAN="exp"`, cell 9d |
 | r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
 | r10–r11 | 2026-10-10 | `9150b4e` | seeds batch 1 ✅ (+ pass 8, 9; r09 audit) | seed 1: GLA bias 0 0.75 @32 vs bias 2 0.52 (seed 0: 0.86 vs 0.14); both still improving at the 15k cap; keep-L0 → chance in both | direction holds, size is seed-dependent; run seed 2 |
@@ -83,6 +84,43 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-13 — Pass 10 (gate replay, appendix A.1) on r04–r13: the timing of layer-0 forgetting matters.**
+Data: `runs/r04…r13/pass10_replay.csv` (500 prompts, 8 and 32 facts, every GLA layer, 3 shuffles).
+- **Harness checks pass.** Replay reproduces the baseline exactly in every model, layer and cell (Δ = 0). Shuffle and
+  geomean keep the context-span log product equal to the baseline's. Arith forgets less (e.g. r09 layer 0: −244 →
+  −160 in log10).
+- **GLA layer 0, 32 facts:** Δ vs baseline when only the *timing* changes. Shuffle keeps the same values and the same
+  total. Geomean keeps the same total with no timing at all.
+
+  | run | init | baseline | shuffle | geomean | arith |
+  |---|---|---:|---:|---:|---:|
+  | r04 / r05 / r06 | legacy s0 / s1 / s2 | 0.88 / 0.93 / 0.97 | −0.44 / −0.28 / −0.50 | −0.40 / −0.19 / −0.47 | −0.24 / −0.11 / −0.20 |
+  | r09 / r10 / r12 | bias 0, s0 / s1 / s2 | 0.86 / 0.76 / 0.89 | −0.55 / −0.61 / −0.15 | −0.45 / −0.54 / −0.09 | −0.26 / −0.50 / −0.06 |
+  | r08 / r11 / r13 | bias 2, s0 / s1 / s2 | 0.14 / 0.51 / 0.15 | −0.02 / −0.41 / −0.07 | +0.01 / −0.34 / −0.03 | −0.01 / −0.44 / −0.06 |
+  | r07 | bias 6 | 0.36 | −0.06 | −0.05 | −0.06 |
+
+  At 8 facts the pattern is the same (shuffle −0.07 to −0.74). Shuffle ranges across the 3 permutations are within
+  0.01.
+- **Reading (pre-registered A.1): shuffle ≪ replay, so WHEN layer 0 forgets matters, not only how much.** With layer
+  0's total forgetting held exactly fixed, removing its alignment with the tokens costs 0.15–0.61 at 32 facts in all
+  six bias-0/legacy GLA runs, and 0.41 in the partly working bias-2 run (r11). Geomean costs nearly as much as
+  shuffle, so the alignment itself is used, not just the absence of misplaced forgetting.
+- **Deeper GLA layers:** mostly |Δ| ≤ 0.01. Exceptions: r04 L1 (−0.07), r05 L1 (−0.04), r11 L3 (−0.07 at 32,
+  −0.11 at 8) and r12 L1–L3 (shuffle −0.03 to −0.12, geomean ≤ −0.04). Again there is more than one solution.
+- **Correction (hybrid):**
+  - **Layer 0:** timing does not matter (shuffle and geomean ≈ 0), consistent with pass 9's "amount only".
+  - **Layer 1:** geomean is nearly harmless (−0.00 to −0.09 at 8 facts). Shuffle costs −0.12 to −0.23, and arith,
+    which forgets less, costs −0.20 to −0.31. So hybrid layer 1 needs the right *amount* of forgetting, and
+    misaligned forgetting hurts, but aligned timing is not required.
+  - The 2026-10-07 claim that hybrid layer 1 "needs both amount and selectivity" came from the confounded arith
+    clamp and is withdrawn.
+- **Caveats:**
+  - Matching the span product does not match each fact's remaining decay. A shuffle can put a low gate right after a
+    fact. So "alignment matters" is shown under this intervention, not decomposed into selectivity versus
+    interference.
+  - These are eval-time interventions on trained checkpoints. They show the trained GLA *uses* token-aligned forgetting
+    in layer 0. They do not show that the init effect arises from learning it. That is r14–r17's job.
 
 **2026-10-13 — Step 0 for the follow-up experiments (paper appendix A), no GPU.**
 An external review of the draft found five problems. All are confirmed against the data:

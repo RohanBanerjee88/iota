@@ -1,0 +1,22 @@
+
+##### eval_p10 started 2026-10-13 19:36:19 UTC argv=--stage eval --passes 10 --n 500 --repo BanerjeeRohan44/iota-r10 --run-id r10
+
+### STAGE eval  (passes [10], device=cuda)
+
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 10 -> experiments/results/pass10_replay.csv
+  pass10 gated_linear_sweep nb=8   L0  baseline=0.961 replay=0.961 shuffle=0.233 geomean=0.440 arith=0.266
+  pass10 gated_linear_sweep nb=8   L1  baseline=0.961 replay=0.961 shuffle=0.961 geomean=0.962 arith=0.962
+  pass10 gated_linear_sweep nb=8   L2  baseline=0.961 replay=0.961 shuffle=0.961 geomean=0.961 arith=0.961
+  pass10 gated_linear_sweep nb=8   L3  baseline=0.961 replay=0.961 shuffle=0.960 geomean=0.961 arith=0.960
+  pass10 gated_linear_sweep nb=8   L4  baseline=0.961 replay=0.961 shuffle=0.960 geomean=0.960 arith=0.960
+  pass10 gated_linear_sweep nb=32  L0  baseline=0.758 replay=0.758 shuffle=0.149 geomean=0.219 arith=0.254
+  pass10 gated_linear_sweep nb=32  L1  baseline=0.758 replay=0.758 shuffle=0.756 geomean=0.756 arith=0.755
+  pass10 gated_linear_sweep nb=32  L2  baseline=0.758 replay=0.758 shuffle=0.758 geomean=0.759 arith=0.758
+  pass10 gated_linear_sweep nb=32  L3  baseline=0.758 replay=0.758 shuffle=0.748 geomean=0.758 arith=0.756
+  pass10 gated_linear_sweep nb=32  L4  baseline=0.758 replay=0.758 shuffle=0.758 geomean=0.758 arith=0.758
+wrote experiments/results/pass10_replay.csv (50 rows)
+  [hf] pushed pass10_replay.csv

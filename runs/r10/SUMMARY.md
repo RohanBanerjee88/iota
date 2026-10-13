@@ -1,7 +1,7 @@
 # iota run `r10`
 
-- **updated:** 2026-10-10 04:47 UTC (last stage: `eval 8,9`)
-- **code:** `9150b4e` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-13 19:37 UTC (last stage: `eval 10`)
+- **code:** `1adea93` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
@@ -12,7 +12,7 @@
 | gated_linear | 15000 | 0.863 | 0.726 | 1.000 | 0.538 | 0.0015 | ok |
 | hybrid | – | – | – | – | – | – | not trained yet |
 
-Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `logs/train.log` and the `*_sweep.json` files.
+Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `*_sweep_history.json` (and `logs/train.log`); `*_sweep.json` stops at the best checkpoint.
 
 ## 1b. Sanity gate — each model on its own training distribution
 
@@ -91,6 +91,25 @@ Per-query recall with one GLA layer's gate replaced by a constant: `keep` = σ(6
 | mean_L3 | 0.970 (-0.002 [-0.01, +0.00]) | 0.742 (-0.013 [-0.02, -0.01]) | 0.407 (-0.013 [-0.02, -0.01]) |
 | keep_L4 | 0.972 (+0.000 [-0.00, +0.00]) | 0.746 (-0.009 [-0.01, -0.01]) | 0.401 (-0.019 [-0.03, -0.01]) |
 | mean_L4 | 0.972 (-0.001 [-0.00, +0.00]) | 0.755 (-0.000 [-0.00, +0.00]) | 0.420 (-0.001 [-0.00, +0.00]) |
+
+## 4h. Gate replay (Pass 10): does the timing of forgetting matter?
+
+One layer's recorded gates over the context span are replayed unchanged, shuffled in time (same values, same product), replaced by their geometric mean (same product, no timing) or their arithmetic mean (forgets less). Per-query recall, Δ vs baseline [paired 95% CI].
+
+**gated_linear**
+
+| facts | layer | baseline | replay | shuffle (range) | geomean | arith |
+|---:|---|---:|---|---|---|---|
+| 8 | L0 | 0.961 | 0.961 (+0.000 [0.00, 0.00]) | 0.233 (0.23–0.23) (-0.728 [-0.74, -0.72]) | 0.440 (-0.521 [-0.54, -0.50]) | 0.266 (-0.695 [-0.71, -0.68]) |
+| 8 | L1 | 0.961 | 0.961 (+0.000 [0.00, 0.00]) | 0.961 (0.96–0.96) (+0.000 [-0.00, 0.00]) | 0.962 (+0.001 [-0.00, 0.00]) | 0.962 (+0.001 [-0.00, 0.00]) |
+| 8 | L2 | 0.961 | 0.961 (+0.000 [0.00, 0.00]) | 0.961 (0.96–0.96) (-0.000 [-0.00, 0.00]) | 0.961 (-0.000 [-0.00, 0.00]) | 0.961 (-0.000 [-0.00, 0.00]) |
+| 8 | L3 | 0.961 | 0.961 (+0.000 [0.00, 0.00]) | 0.960 (0.96–0.96) (-0.001 [-0.00, 0.00]) | 0.961 (-0.001 [-0.00, 0.00]) | 0.960 (-0.001 [-0.00, 0.00]) |
+| 8 | L4 | 0.961 | 0.961 (+0.000 [0.00, 0.00]) | 0.960 (0.96–0.96) (-0.001 [-0.00, 0.00]) | 0.960 (-0.001 [-0.00, 0.00]) | 0.960 (-0.001 [-0.00, 0.00]) |
+| 32 | L0 | 0.758 | 0.758 (+0.000 [0.00, 0.00]) | 0.149 (0.15–0.15) (-0.609 [-0.62, -0.60]) | 0.219 (-0.538 [-0.55, -0.53]) | 0.254 (-0.504 [-0.52, -0.49]) |
+| 32 | L1 | 0.758 | 0.758 (+0.000 [0.00, 0.00]) | 0.756 (0.76–0.76) (-0.002 [-0.00, 0.00]) | 0.756 (-0.002 [-0.01, 0.00]) | 0.755 (-0.002 [-0.01, 0.00]) |
+| 32 | L2 | 0.758 | 0.758 (+0.000 [0.00, 0.00]) | 0.758 (0.76–0.76) (+0.000 [-0.00, 0.00]) | 0.759 (+0.001 [-0.00, 0.00]) | 0.758 (+0.000 [-0.00, 0.00]) |
+| 32 | L3 | 0.758 | 0.758 (+0.000 [0.00, 0.00]) | 0.748 (0.74–0.75) (-0.010 [-0.01, -0.01]) | 0.758 (+0.000 [-0.00, 0.00]) | 0.756 (-0.002 [-0.01, 0.00]) |
+| 32 | L4 | 0.758 | 0.758 (+0.000 [0.00, 0.00]) | 0.758 (0.76–0.76) (+0.000 [-0.00, 0.00]) | 0.758 (+0.000 [-0.00, 0.00]) | 0.758 (+0.000 [-0.00, 0.00]) |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

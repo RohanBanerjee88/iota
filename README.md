@@ -4,6 +4,7 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
+| [r11](runs/r11/SUMMARY.md) | 2026-10-13 19:39 UTC | eval 10 | Tesla T4 | `1adea93` |
 | [r10](runs/r10/SUMMARY.md) | 2026-10-13 19:37 UTC | eval 10 | Tesla T4 | `1adea93` |
 | [r09](runs/r09/SUMMARY.md) | 2026-10-13 19:36 UTC | eval 10 | Tesla T4 | `1adea93` |
 | [r08](runs/r08/SUMMARY.md) | 2026-10-13 19:33 UTC | eval 10 | Tesla T4 | `1adea93` |
@@ -13,7 +14,6 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 | [r04](runs/r04/SUMMARY.md) | 2026-10-13 19:24 UTC | eval 10 | Tesla T4 | `1adea93` |
 | [r13](runs/r13/SUMMARY.md) | 2026-10-11 02:07 UTC | eval 8,9 | Tesla T4 | `ccb5ac0` |
 | [r12](runs/r12/SUMMARY.md) | 2026-10-10 23:29 UTC | eval 8,9 | Tesla T4 | `ccb5ac0` |
-| [r11](runs/r11/SUMMARY.md) | 2026-10-10 07:28 UTC | eval 8,9 | Tesla T4 | `9150b4e` |
 | [r09-smoke](runs/r09-smoke/SUMMARY.md) | 2026-10-07 19:06 UTC | plot | Tesla T4 | `494960f` |
 | [r08-smoke](runs/r08-smoke/SUMMARY.md) | 2026-10-07 17:43 UTC | plot | Tesla T4 | `5568695` |
 | [r07-smoke](runs/r07-smoke/SUMMARY.md) | 2026-10-06 19:20 UTC | plot | Tesla T4 | `d5e5191` |

@@ -1,7 +1,7 @@
 # iota run `r09`
 
-- **updated:** 2026-10-10 20:52 UTC (last stage: `eval 4`)
-- **code:** `ccb5ac0` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-10-13 19:22 UTC (last stage: `eval 4`)
+- **code:** `1adea93` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
@@ -12,7 +12,7 @@
 | gated_linear | 14500 | 0.907 | 0.815 | 1.000 | 0.634 | 0.0015 | ok |
 | hybrid | 5000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.00075 | ok |
 
-Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `logs/train.log` and the `*_sweep.json` files.
+Healthy = assoc high **and** state well above chance (~0.01). Full per-eval curves are in `*_sweep_history.json` (and `logs/train.log`); `*_sweep.json` stops at the best checkpoint.
 
 ## 1b. Sanity gate — each model on its own training distribution
 

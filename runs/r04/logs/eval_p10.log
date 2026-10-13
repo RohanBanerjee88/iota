@@ -1,0 +1,36 @@
+
+##### eval_p10 started 2026-10-13 19:22:24 UTC argv=--stage eval --passes 10 --n 500 --repo BanerjeeRohan44/iota-r04 --run-id r04
+
+### STAGE eval  (passes [10], device=cuda)
+
+  [hf] pulled hybrid_sweep.safetensors
+  [hf] pulled hybrid_sweep.json
+  loaded hybrid_sweep (trained 4500 steps)
+  [hf] pulled transformer_sweep.safetensors
+  [hf] pulled transformer_sweep.json
+  loaded transformer_sweep (trained 14000 steps)
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 10 -> experiments/results/pass10_replay.csv
+  pass10 hybrid_sweep       nb=8   L0  baseline=0.999 replay=0.999 shuffle=1.000 geomean=1.000 arith=1.000
+  pass10 hybrid_sweep       nb=8   L1  baseline=0.999 replay=0.999 shuffle=0.875 geomean=0.991 arith=0.804
+  pass10 hybrid_sweep       nb=8   L3  baseline=0.999 replay=0.999 shuffle=0.999 geomean=0.999 arith=0.999
+  pass10 transformer_sweep  no gated-linear layers -- skipped
+  pass10 gated_linear_sweep nb=8   L0  baseline=0.988 replay=0.988 shuffle=0.752 geomean=0.787 arith=0.838
+  pass10 gated_linear_sweep nb=8   L1  baseline=0.988 replay=0.988 shuffle=0.958 geomean=0.958 arith=0.962
+  pass10 gated_linear_sweep nb=8   L2  baseline=0.988 replay=0.988 shuffle=0.988 geomean=0.988 arith=0.988
+  pass10 gated_linear_sweep nb=8   L3  baseline=0.988 replay=0.988 shuffle=0.988 geomean=0.987 arith=0.987
+  pass10 gated_linear_sweep nb=8   L4  baseline=0.988 replay=0.988 shuffle=0.988 geomean=0.988 arith=0.988
+  pass10 hybrid_sweep       nb=32  L0  baseline=1.000 replay=1.000 shuffle=0.998 geomean=0.999 arith=1.000
+  pass10 hybrid_sweep       nb=32  L1  baseline=1.000 replay=1.000 shuffle=0.969 geomean=0.999 arith=0.974
+  pass10 hybrid_sweep       nb=32  L3  baseline=1.000 replay=1.000 shuffle=1.000 geomean=1.000 arith=1.000
+  pass10 transformer_sweep  no gated-linear layers -- skipped
+  pass10 gated_linear_sweep nb=32  L0  baseline=0.883 replay=0.883 shuffle=0.441 geomean=0.484 arith=0.640
+  pass10 gated_linear_sweep nb=32  L1  baseline=0.883 replay=0.883 shuffle=0.817 geomean=0.819 arith=0.824
+  pass10 gated_linear_sweep nb=32  L2  baseline=0.883 replay=0.883 shuffle=0.883 geomean=0.883 arith=0.883
+  pass10 gated_linear_sweep nb=32  L3  baseline=0.883 replay=0.883 shuffle=0.878 geomean=0.878 arith=0.877
+  pass10 gated_linear_sweep nb=32  L4  baseline=0.883 replay=0.883 shuffle=0.883 geomean=0.883 arith=0.883
+wrote experiments/results/pass10_replay.csv (80 rows)
+  [hf] pushed pass10_replay.csv

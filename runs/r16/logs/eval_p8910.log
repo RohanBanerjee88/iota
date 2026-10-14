@@ -1,0 +1,98 @@
+
+##### eval_p8910 started 2026-10-14 22:08:17 UTC argv=--stage eval --passes 8,9,10 --n 500 --repo BanerjeeRohan44/iota-r16 --run-id r16
+
+### STAGE eval  (passes [8, 9, 10], device=cuda)
+
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 8 -> experiments/results/pass8_gates.csv
+  pass8 gated_linear_sweep nb=8   backbone.blocks.0.mixer set_value=0.125±0.082 distractor=0.426±0.253 bias=-0.07 |W|=1.582
+  pass8 gated_linear_sweep nb=8   backbone.blocks.1.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+1.94 |W|=3.656
+  pass8 gated_linear_sweep nb=8   backbone.blocks.2.mixer set_value=0.999±0.003 distractor=1.000±0.001 bias=+2.17 |W|=3.523
+  pass8 gated_linear_sweep nb=8   backbone.blocks.3.mixer set_value=0.979±0.051 distractor=0.942±0.105 bias=+1.96 |W|=2.313
+  pass8 gated_linear_sweep nb=8   backbone.blocks.4.mixer set_value=0.974±0.059 distractor=0.877±0.148 bias=+2.16 |W|=3.364
+  pass8 gated_linear_sweep nb=32  backbone.blocks.0.mixer set_value=0.124±0.082 distractor=0.428±0.254 bias=-0.07 |W|=1.582
+  pass8 gated_linear_sweep nb=32  backbone.blocks.1.mixer set_value=1.000±0.000 distractor=1.000±0.000 bias=+1.94 |W|=3.656
+  pass8 gated_linear_sweep nb=32  backbone.blocks.2.mixer set_value=0.999±0.002 distractor=1.000±0.001 bias=+2.17 |W|=3.523
+  pass8 gated_linear_sweep nb=32  backbone.blocks.3.mixer set_value=0.989±0.031 distractor=0.963±0.068 bias=+1.96 |W|=2.313
+  pass8 gated_linear_sweep nb=32  backbone.blocks.4.mixer set_value=0.983±0.042 distractor=0.921±0.094 bias=+2.16 |W|=3.364
+wrote experiments/results/pass8_gates.csv (50 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass3_control.csv
+  [hf] pushed pass8_gates.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv
+
+--- pass 9 -> experiments/results/pass9_clamp.csv
+  pass9 gated_linear_sweep nb=8   none       recall=0.949 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=8   keep_all   recall=0.017 delta=-0.931 [-0.940, -0.923]
+  pass9 gated_linear_sweep nb=8   keep_L0    recall=0.018 delta=-0.931 [-0.939, -0.922]
+  pass9 gated_linear_sweep nb=8   mean_L0    recall=0.431 delta=-0.517 [-0.533, -0.502]
+  pass9 gated_linear_sweep nb=8   keep_L1    recall=0.950 delta=+0.002 [-0.001, +0.004]
+  pass9 gated_linear_sweep nb=8   mean_L1    recall=0.949 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=8   keep_L2    recall=0.943 delta=-0.006 [-0.009, -0.002]
+  pass9 gated_linear_sweep nb=8   mean_L2    recall=0.950 delta=+0.001 [-0.000, +0.003]
+  pass9 gated_linear_sweep nb=8   keep_L3    recall=0.949 delta=-0.000 [-0.003, +0.003]
+  pass9 gated_linear_sweep nb=8   mean_L3    recall=0.943 delta=-0.005 [-0.009, -0.002]
+  pass9 gated_linear_sweep nb=8   keep_L4    recall=0.927 delta=-0.022 [-0.027, -0.016]
+  pass9 gated_linear_sweep nb=8   mean_L4    recall=0.863 delta=-0.086 [-0.096, -0.077]
+  pass9 gated_linear_sweep nb=32  none       recall=0.665 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=32  keep_all   recall=0.011 delta=-0.654 [-0.663, -0.644]
+  pass9 gated_linear_sweep nb=32  keep_L0    recall=0.011 delta=-0.654 [-0.663, -0.643]
+  pass9 gated_linear_sweep nb=32  mean_L0    recall=0.218 delta=-0.447 [-0.459, -0.436]
+  pass9 gated_linear_sweep nb=32  keep_L1    recall=0.598 delta=-0.067 [-0.074, -0.059]
+  pass9 gated_linear_sweep nb=32  mean_L1    recall=0.665 delta=+0.000 [-0.001, +0.001]
+  pass9 gated_linear_sweep nb=32  keep_L2    recall=0.651 delta=-0.014 [-0.019, -0.009]
+  pass9 gated_linear_sweep nb=32  mean_L2    recall=0.668 delta=+0.003 [+0.000, +0.005]
+  pass9 gated_linear_sweep nb=32  keep_L3    recall=0.662 delta=-0.003 [-0.007, +0.001]
+  pass9 gated_linear_sweep nb=32  mean_L3    recall=0.664 delta=-0.001 [-0.005, +0.003]
+  pass9 gated_linear_sweep nb=32  keep_L4    recall=0.649 delta=-0.016 [-0.022, -0.010]
+  pass9 gated_linear_sweep nb=32  mean_L4    recall=0.614 delta=-0.051 [-0.058, -0.044]
+  pass9 gated_linear_sweep nb=64  none       recall=0.320 delta=+0.000 [+0.000, +0.000]
+  pass9 gated_linear_sweep nb=64  keep_all   recall=0.011 delta=-0.309 [-0.319, -0.299]
+  pass9 gated_linear_sweep nb=64  keep_L0    recall=0.010 delta=-0.310 [-0.320, -0.300]
+  pass9 gated_linear_sweep nb=64  mean_L0    recall=0.100 delta=-0.220 [-0.231, -0.209]
+  pass9 gated_linear_sweep nb=64  keep_L1    recall=0.227 delta=-0.093 [-0.103, -0.084]
+  pass9 gated_linear_sweep nb=64  mean_L1    recall=0.320 delta=+0.000 [-0.001, +0.001]
+  pass9 gated_linear_sweep nb=64  keep_L2    recall=0.308 delta=-0.013 [-0.017, -0.008]
+  pass9 gated_linear_sweep nb=64  mean_L2    recall=0.322 delta=+0.002 [+0.000, +0.004]
+  pass9 gated_linear_sweep nb=64  keep_L3    recall=0.324 delta=+0.004 [+0.000, +0.008]
+  pass9 gated_linear_sweep nb=64  mean_L3    recall=0.319 delta=-0.001 [-0.004, +0.002]
+  pass9 gated_linear_sweep nb=64  keep_L4    recall=0.307 delta=-0.013 [-0.021, -0.006]
+  pass9 gated_linear_sweep nb=64  mean_L4    recall=0.307 delta=-0.013 [-0.019, -0.007]
+wrote experiments/results/pass9_clamp.csv (36 rows)
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass3_control.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass8_gates.csv
+  [hf] pushed pass9_clamp.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv
+
+--- pass 10 -> experiments/results/pass10_replay.csv
+  pass10 gated_linear_sweep nb=8   L0  baseline=0.956 replay=0.956 shuffle=0.496 geomean=0.654 arith=0.532
+  pass10 gated_linear_sweep nb=8   L1  baseline=0.956 replay=0.956 shuffle=0.956 geomean=0.956 arith=0.956
+  pass10 gated_linear_sweep nb=8   L2  baseline=0.956 replay=0.956 shuffle=0.957 geomean=0.957 arith=0.957
+  pass10 gated_linear_sweep nb=8   L3  baseline=0.956 replay=0.956 shuffle=0.957 geomean=0.957 arith=0.956
+  pass10 gated_linear_sweep nb=8   L4  baseline=0.956 replay=0.956 shuffle=0.955 geomean=0.955 arith=0.955
+  pass10 gated_linear_sweep nb=32  L0  baseline=0.667 replay=0.667 shuffle=0.222 geomean=0.307 arith=0.246
+  pass10 gated_linear_sweep nb=32  L1  baseline=0.667 replay=0.667 shuffle=0.667 geomean=0.667 arith=0.667
+  pass10 gated_linear_sweep nb=32  L2  baseline=0.667 replay=0.667 shuffle=0.666 geomean=0.666 arith=0.666
+  pass10 gated_linear_sweep nb=32  L3  baseline=0.667 replay=0.667 shuffle=0.665 geomean=0.665 arith=0.665
+  pass10 gated_linear_sweep nb=32  L4  baseline=0.667 replay=0.667 shuffle=0.662 geomean=0.662 arith=0.662
+wrote experiments/results/pass10_replay.csv (50 rows)
+  [hf] pushed pass10_replay.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass1_capacity.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass3_control.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass8_gates.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed pass9_clamp.csv
+No files have been modified since last commit. Skipping to prevent empty commit.
+  [hf] pushed sanity_indist.csv

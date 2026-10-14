@@ -49,7 +49,7 @@ open.
 
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
-2. per-layer init r14–r17 (~11 h)
+2. per-layer init: seed 0 (r14, r15) done 2026-10-14, no single-layer explanation (see entry); seed 1 (r16, r17) next (~5.5 h)
 3. lr probe r18/r19 (~6.5 h)
 4. 30k-step pair r20/r21 (~10.5 h)
 
@@ -59,6 +59,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r14–r15 | 2026-10-14 | `04ff3c6` | layer_s0 ✅ (+ pass 8, 9, 10) | seed 0 @32 facts: uniform bias 0 0.86, low-first 0.44, high-first 0.52, uniform bias 2 0.14; both mixed inits land in between | not a first-layer-only effect; costs roughly add; run seed 1 |
 | pass 10 | 2026-10-13 | `1adea93` | gate replay on r04–r13 | replay exact everywhere; GLA layer 0 with its forgetting total held fixed but its timing removed: −0.15 to −0.61 at 32 facts (shuffle) in all 6 bias-0/legacy runs; hybrid L1 needs the amount, not the timing | timing of layer-0 forgetting is used; earlier hybrid-L1 'selectivity' claim corrected |
 | r14–r21 | — | `configs/layerinit/`, `configs/long/` | prepared | r14–r17 per-layer init (bias 0 first + 2 above / reverse, seeds 0–1); r18/r19 lr probe (bias 0 / 2); r20/r21 30k steps (bias 0 / 2) | notebook `PLAN="exp"`, cell 9d |
 | r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
@@ -84,6 +85,43 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-14 — Per-layer init, seed 0 (r14, r15; appendix A.3): no single-layer explanation.**
+GLA only, zero gate weight, seed 0, same everything as r09/r08 except the per-block starting bias.
+
+| facts | uniform bias 0 (r09) | **low-first** [0,2,2,2,2] (r14) | **high-first** [2,0,0,0,0] (r15) | uniform bias 2 (r08) |
+|---:|---:|---:|---:|---:|
+| 8 | 0.991 | 0.872 | 0.924 | 0.531 |
+| 16 | 0.963 | 0.739 | 0.807 | 0.360 |
+| 32 | 0.858 | **0.442** | **0.522** | 0.143 |
+| 64 | 0.512 | 0.219 | 0.192 | 0.079 |
+| 128 | 0.222 | 0.089 | 0.080 | 0.049 |
+
+- **Pre-registered reading.** Low-first does not approach uniform bias 0 (0.44 vs 0.86), and high-first does not stay
+  weak (0.52, above low-first). Both mixed inits land in between. So **the first layer alone does not explain the init
+  effect**: the starting timescale of the upper layers matters about as much.
+- **The costs roughly add at 32 facts.** Starting the upper layers slow costs 0.42 (0.86 → 0.44). Starting layer 0
+  slow costs 0.34 (0.86 → 0.52). Together that is 0.76, close to the uniform bias-2 cost of 0.72. This is one seed;
+  seed 1 tests whether it holds.
+- **Training:** both mixed runs first reach 0.25 at 8–9k steps (uniform bias 0: 4k). r15 reaches 0.5 at 14.5k; r14 never
+  does (0.45 at the 15k cap). Both were still creeping up at the cap.
+- **Gates (pass 8):** again each bias stays near its init.
+  - **r14:** layer 0 (started at 0.5) learns to forget (retention −79), but with **reversed** selectivity, keeping
+    filler longer than facts (0.51 vs 0.33), unlike r09's layer 0 (−155, 0.25 vs 0.27). The upper layers (started at
+    0.88) sit at γ = 1.00. So the upper layers' init changes what layer 0 learns.
+  - **r15:** layer 0 (started at 0.88) stays slow (retention −86, bias +1.7). The upper layers (started at 0.5) take
+    over forgetting: layers 1, 2 and 4 sit at γ 0.45–0.78. The network moves the fast-forgetting job up the stack.
+- **Clamps / replay (passes 9, 10, 32 facts):**
+  - **Layer 0 is still necessary in both:** keep-L0 costs −0.42 (r14) and −0.52 (r15), and its timing matters (shuffle
+    −0.25 / −0.30, geomean −0.18 / −0.18).
+  - **r15 also depends on its upper layers' forgetting:** keep-L1 −0.30, keep-L2 −0.35, with layer 2's timing used
+    (shuffle −0.10). This is the relocation seen in pass 8.
+- **Control:** 1.00 in-distribution for both; r15 holds 1.00 to 8192 tokens, r14 0.62.
+
+**Decision:** the "first layer needs to start forgetting" hypothesis is not supported. The better description is
+that every layer's starting timescale matters, the costs of slow starts roughly add, and a slow-started first layer
+can be partly compensated by faster upper layers. Next: seed 1 (r16, r17) to check the ordering and the additivity.
+On seed 1 the uniform gap was small (0.75 vs 0.52), so the mixed runs may be hard to separate there.
 
 **2026-10-13 — Pass 10 (gate replay, appendix A.1) on r04–r13: the timing of layer-0 forgetting matters.**
 Data: `runs/r04…r13/pass10_replay.csv` (500 prompts, 8 and 32 facts, every GLA layer, 3 shuffles).

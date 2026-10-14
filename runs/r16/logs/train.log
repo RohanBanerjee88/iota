@@ -61,3 +61,13 @@
   [hf] pushed gated_linear_sweep.safetensors
   [hf] pushed gated_linear_sweep.json
   [hf] pushed gated_linear_sweep_history.json
+  [sync] published 3 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r16
+
+========================================================================
+=== TRAIN SUMMARY
+========================================================================
+  gated_linear   [ok] step 15000: assoc_recall=0.638 state_track=1.000  (balanced 0.8192)
+
+Healthy = assoc high AND state well above chance (~0.01).
+If state is still ~0.01 the control never learned -- stop and fix that
+before trusting any figure.

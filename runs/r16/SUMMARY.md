@@ -1,6 +1,6 @@
 # iota run `r16`
 
-- **updated:** 2026-10-14 22:05 UTC (last stage: `train:gated_linear`)
+- **updated:** 2026-10-14 22:05 UTC (last stage: `train`)
 - **code:** `0df1f56` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 

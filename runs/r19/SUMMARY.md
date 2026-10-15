@@ -1,6 +1,6 @@
 # iota run `r19`
 
-- **updated:** 2026-10-15 05:28 UTC (last stage: `tune:gated_linear:0.0015`)
+- **updated:** 2026-10-15 06:08 UTC (last stage: `tune:gated_linear:0.003`)
 - **code:** `3f12ce3` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -10,6 +10,7 @@
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | gated_linear ★ | 0.00075 | 0.670 | 0.340 | 1.000 | 0.387 | 5250 | 0.670 | 2406s |
 | gated_linear | 0.0015 | 0.657 | 0.315 | 1.000 | 0.391 | 5250 | 0.657 | 2403s |
+| gated_linear | 0.003 | 0.551 | 0.102 | 1.000 | 0.359 | 6000 | 0.551 | 2404s |
 
 6000 steps each, grad_clip 1.0. ★ = best lr for that arch.
 

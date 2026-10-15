@@ -1,0 +1,148 @@
+{
+  "config": {
+    "arch": "gated_linear",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 2.0,
+    "short_conv": 4,
+    "legacy_gate_init": false,
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 6000,
+      "easy_steps": 1500,
+      "ramp_steps": 3000,
+      "eval_every": 750,
+      "eval_n": 256,
+      "patience": 1000000,
+      "seed": 0,
+      "lr": 0.0015,
+      "run_name": "tune_gated_linear_lr0.0015",
+      "grad_clip": 1.0
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 750,
+        "per_query": 0.022026431718061675,
+        "exact": 0.046875,
+        "balanced": 0.0679,
+        "by_mode": {
+          "assoc_recall": 0.0149,
+          "state_track": 0.1209
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1500,
+        "per_query": 0.07709251101321586,
+        "exact": 0.33984375,
+        "balanced": 0.4851,
+        "by_mode": {
+          "assoc_recall": 0.0142,
+          "state_track": 0.956
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 2250,
+        "per_query": 0.21585903083700442,
+        "exact": 0.375,
+        "balanced": 0.5799,
+        "by_mode": {
+          "assoc_recall": 0.1597,
+          "state_track": 1.0
+        },
+        "difficulty": 0.25
+      },
+      {
+        "step": 3000,
+        "per_query": 0.27312775330396477,
+        "exact": 0.38671875,
+        "balanced": 0.6105,
+        "by_mode": {
+          "assoc_recall": 0.2211,
+          "state_track": 1.0
+        },
+        "difficulty": 0.5
+      },
+      {
+        "step": 3750,
+        "per_query": 0.31057268722466963,
+        "exact": 0.40625,
+        "balanced": 0.6306,
+        "by_mode": {
+          "assoc_recall": 0.2612,
+          "state_track": 1.0
+        },
+        "difficulty": 0.75
+      },
+      {
+        "step": 4500,
+        "per_query": 0.34801762114537443,
+        "exact": 0.4140625,
+        "balanced": 0.6507,
+        "by_mode": {
+          "assoc_recall": 0.3013,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5250,
+        "per_query": 0.3604992657856094,
+        "exact": 0.390625,
+        "balanced": 0.6574,
+        "by_mode": {
+          "assoc_recall": 0.3147,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "tune_gated_linear_lr0.0015.safetensors"
+}

@@ -1,0 +1,18 @@
+
+##### tune started 2026-10-15 04:07:58 UTC argv=--stage tune --only gated_linear --tune-lrs 0.00075,0.0015,0.003 --tune-steps 6000 --repo BanerjeeRohan44/iota-r19 --run-id r19
+
+### STAGE tune  (gated_linear x lr [0.00075, 0.0015, 0.003], 6000 steps each)
+
+
+=== TUNE gated_linear lr=0.00075
+[sweep] model=gated_linear params=2.67M device=cuda max_steps=6000 bs=64 patience=1000000
+[sweep] gated_linear step   750 loss 0.449 bal 0.497 [assoc 0.016 state 0.978] exact 0.348 diff 0.00 * (52s)
+[sweep] gated_linear step  1500 loss 0.074 bal 0.524 [assoc 0.047 state 1.000] exact 0.359 diff 0.00 * (104s)
+[sweep] gated_linear step  2250 loss 0.483 bal 0.596 [assoc 0.191 state 1.000] exact 0.387 diff 0.25 * (209s)
+[sweep] gated_linear step  3000 loss 0.530 bal 0.629 [assoc 0.258 state 1.000] exact 0.398 diff 0.50 * (433s)
+[sweep] gated_linear step  3750 loss 0.599 bal 0.651 [assoc 0.302 state 1.000] exact 0.387 diff 0.75 * (787s)
+[sweep] gated_linear step  4500 loss 0.588 bal 0.656 [assoc 0.312 state 1.000] exact 0.379 diff 1.00 * (1278s)
+[sweep] gated_linear step  5250 loss 0.647 bal 0.670 [assoc 0.340 state 1.000] exact 0.387 diff 1.00 * (1841s)
+[sweep] gated_linear step  6000 loss 0.720 bal 0.670 [assoc 0.339 state 1.000] exact 0.398 diff 1.00  (2405s)
+[sweep] gated_linear BEST plateau_acc = 0.6699 -> experiments/results/tune_gated_linear_lr0.00075
+[tune] gated_linear lr=0.00075: best balanced 0.6699 (assoc 0.3399, state 1.0) in 2406s

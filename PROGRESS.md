@@ -51,10 +51,9 @@ open.
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
-4. **tuned-lr full protocol r24–r29** (bias 0 at 3e-3, bias 2 at 7.5e-4; seeds 0–2; ~3 h per run: r17's 15k steps
-   took 2 h 41 min plus ~6 min of evals), prepared. Only 4 h of quota are left before the reset, so r25 (bias 2,
-   seed 0) runs alone first (`BATCH = "tuned_s0_b2"`): it is the run that decides the main question, since bias 0's
-   seed-0 reference at lr 1.5e-3 already exists (r09, 0.86). Then `tuned_s0_b0` (r24) → `tuned_s1` → `tuned_s2`.
+4. **tuned-lr full protocol** (~3 h per run). r25 (bias 2 at 7.5e-4, seed 0) done 2026-10-15: 0.93 at 32 facts,
+   the best seed-0 GLA (see entry). Proposed order: the same-lr column at 7.5e-4 (bias 0 on seeds 0–2, new; bias 2
+   on seeds 1–2, r27/r29), then bias 0 at 3e-3 (r24/r26/r28), then a full-protocol lr check for the headline figure.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -63,6 +62,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r25 | 2026-10-15 | `3fc1484` | tuned_s0_b2 ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 0: GLA 0.98 / 0.93 / 0.71 / 0.45 at 16 / 32 / 64 / 128 facts; r08 (lr 1.5e-3) 0.36 / 0.14 / 0.08 / 0.05; beats r09, r04 GLA and r04 transformer at every load; layer-0 retention −94, so the pass-8 prediction failed | "longer initial memory hurts" fails at a lower lr on seed 0; need bias 0 at 7.5e-4 and seeds 1–2; the headline figure's crossover is lr-sensitive |
 | r24–r29 | — | `configs/tuned/` | prepared | full 15k protocol, each init at its best probe lr: bias 0 at 3e-3 (r24/r26/r28), bias 2 at 7.5e-4 (r25/r27/r29), seeds 0/1/2 | notebook `PLAN="exp"`, cell 9d, `BATCH` `tuned_s0` → `tuned_s1` → `tuned_s2` |
 | r18–r19 | 2026-10-15 | `3f12ce3` | lr probe (6k steps, compressed schedule, seed 0) | bias 0: 0.29 / 0.32 / 0.42 at lr 7.5e-4 / 1.5e-3 / 3e-3; bias 2: 0.34 / 0.31 / 0.10 | at low/moderate lr the inits tie in this short schedule; bias 2 stalls at high lr; the init effect is partly an lr interaction |
 | r16–r17 | 2026-10-15 | `0df1f56` | layer_s1 ✅ (+ pass 8, 9, 10) | seed 1 @32: all 0.5 0.75, low-first 0.66, high-first 0.30 (below all 0.88, 0.52) | seeds disagree on the upper layers; a slow layer-0 start costs 0.34 / 0.45; layer-0 retention predicts recall (ρ = −0.92, 13 runs) |
@@ -92,6 +92,58 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-15 — r25 (bias 2 at lr 7.5e-4, seed 0): at half the learning rate the long-memory init gives the best GLA
+we have trained.** Full 15k protocol, identical to r08 except `train.lr` 1.5e-3 → 7.5e-4. Sanity gate passes; control
+1.00 up to 4096 tokens (0.96 at 8192). Per-query recall (pass 1, seed 0, same prompts for every run):
+
+| facts | **r25** bias 2, lr 7.5e-4 | r08 bias 2, lr 1.5e-3 | r09 bias 0, lr 1.5e-3 | r04 legacy, lr 1.5e-3 | r04 transformer |
+|---:|---:|---:|---:|---:|---:|
+| 16 | **0.984** | 0.360 | 0.963 | 0.964 | 0.945 |
+| 32 | **0.929** | 0.143 | 0.858 | 0.882 | 0.842 |
+| 64 | **0.708** | 0.079 | 0.512 | 0.489 | 0.620 |
+| 128 | **0.448** | 0.049 | 0.222 | 0.222 | 0.347 |
+
+Held-out recall during training (1.5k / 3k / 4.5k / 6k / 9k / 12k / 15k steps):
+r25 0.13 / 0.33 / 0.39 / 0.73 / 0.83 / 0.88 / 0.89; r09 0.02 / 0.21 / 0.42 / 0.59 / 0.72 / 0.79 / 0.81;
+r08 0.07 / 0.12 / 0.13 / 0.14 / 0.19 / 0.18 (plateau stop at 12k); r04 0.03 / 0.15 / 0.20 / 0.38 / 0.68 / 0.81 / 0.84.
+Steps to 0.5: r25 5,500, r09 5,000, r04 7,000. r25's best checkpoint is at 14.5k of 15k, so it was still improving.
+
+- **Halving the lr turns bias 2's worst result into the best seed-0 GLA.** 0.14 → 0.93 at 32 facts. It is ahead of
+  bias 0 and of the legacy init at every load from 16 facts up, and about double them at 128 facts. Pre-registered
+  reading: bias 2 is 0.07 *ahead* of bias 0's best result so far on this seed (r09). r24 (bias 0 at 3e-3) is still
+  needed for bias 0's best, and this is one seed.
+- **Bias 2 starts faster.** At 1.5k steps every bias-2 run leads (r08 / r11 / r13 0.07 / 0.07 / 0.06, r25 0.13)
+  against bias 0 and legacy (0.01–0.03). At lr 1.5e-3 that head start then stalls on 2 of 3 seeds; at 7.5e-4 it keeps
+  going.
+- **The pre-registered pass 8 prediction failed.** Layer-0 retention is −94 (bias-0 runs: −141 to −182), yet recall
+  is 0.93. Every earlier run with retention ≥ −107 recalled ≤ 0.66. The retention–recall link (ρ = −0.92 over 13
+  runs; −0.86 with r25) was partly an init-and-lr confound. Recall does not need layer 0 to forget as hard as the
+  bias-0 runs do. r25's layer 0 forgets less but selectively (γ fact value 0.64, distractor 0.49, query 0.43), and its
+  bias stayed at 1.83: the input-dependent part of the gate (‖W‖ 1.23) did the work.
+- **Layer 0 is still necessary, and its timing still matters.** keep-L0 drops recall to 0.013 at 32 facts. Pass 10
+  at 32 facts, layer 0: shuffle −0.44, geomean −0.23, arith −0.34, the same pattern as the legacy and bias-0 runs.
+  Layer 1 sits at γ = 1.000 (a long-memory layer, as in r08). Layer 4 drops distractors (γ 0.82) and keeps fact
+  values (0.97).
+
+What this changes:
+1. **The paper's claim.** "Longer initial memory hurts recall learning" does not hold at lr 7.5e-4 on seed 0. The
+   reading the data now supports: longer initial memory makes training lr-sensitive. It stalls at lr 1.5e-3 on 2 of 3
+   seeds and gave the best GLA at 7.5e-4. The title question ("when does longer initial memory hurt?") gets a
+   concrete answer: at too high a learning rate. That needs seeds 1 and 2.
+2. **The same-lr comparison is missing.** We have no bias-0 run at 7.5e-4. Without it we cannot tell "bias 2 needs a
+   lower lr" from "lr 1.5e-3 was too high for every GLA, and bias 2 is just the more sensitive init". If bias 0 also
+   reaches ~0.93 at 7.5e-4, the init matters only through lr robustness. If it stays lower, longer initial memory
+   *helps* at the right lr.
+3. **The headline figure is lr-sensitive.** Every GLA in the three-seed figure (r04–r06) trained at lr 1.5e-3. On
+   seed 0, r25 beats r04's transformer at every load, including 128 facts (0.448 vs 0.347), where the headline says
+   dense > GLA on all seeds. This is not like-for-like: a different gate init, one seed, and the transformer's lr was
+   also chosen from the short probe only. But the crossover claim cannot stand as stated without a full-protocol lr
+   check for both architectures.
+
+**Proposed next (not yet prepared):** first, the same-lr column at 7.5e-4: bias 0 at 7.5e-4 on seeds 0–2 (new) and
+bias 2 at 7.5e-4 on seeds 1–2 (r27, r29, configured). Then bias 0 at 3e-3 (r24, r26, r28, configured). Then the
+headline lr check (legacy GLA and transformer at 7.5e-4).
 
 **2026-10-15 — Prepared: tuned-lr full protocol (r24–r29; appendix A.2).** The test the lr probe called for. The full
 15k protocol, unchanged except that each init trains at its best probe lr: bias 0 (γ₀ 0.5) at 3e-3 and bias 2

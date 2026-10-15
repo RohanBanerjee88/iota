@@ -1,0 +1,62 @@
+
+##### train started 2026-10-14 22:10:59 UTC argv=--stage train --repo BanerjeeRohan44/iota-r17 --run-id r17
+
+### STAGE train  (gated_linear)
+
+[gated_linear] no local checkpoint -> trying the Hub
+
+========================================================================
+=== TRAIN gated_linear -> gated_linear_sweep
+========================================================================
+[sweep] model=gated_linear params=2.67M device=cuda max_steps=15000 bs=64 patience=8
+[sweep] gated_linear step   500 loss 1.537 bal 0.007 [assoc 0.008 state 0.006] exact 0.002 diff 0.00 * (35s)
+[sweep] gated_linear step  1000 loss 1.325 bal 0.067 [assoc 0.008 state 0.126] exact 0.044 diff 0.00 * (70s)
+[sweep] gated_linear step  1500 loss 1.395 bal 0.511 [assoc 0.029 state 0.994] exact 0.334 diff 0.25 * (140s)
+[sweep] gated_linear step  2000 loss 1.423 bal 0.538 [assoc 0.076 state 1.000] exact 0.350 diff 0.50 * (286s)
+[sweep] gated_linear step  2500 loss 1.213 bal 0.565 [assoc 0.131 state 1.000] exact 0.358 diff 0.75 * (517s)
+[sweep] gated_linear step  3000 loss 1.300 bal 0.573 [assoc 0.147 state 1.000] exact 0.364 diff 1.00 * (838s)
+[sweep] gated_linear step  3500 loss 1.164 bal 0.584 [assoc 0.168 state 1.000] exact 0.366 diff 1.00 * (1205s)
+[sweep] gated_linear step  4000 loss 1.248 bal 0.589 [assoc 0.178 state 1.000] exact 0.370 diff 1.00 * (1572s)
+[sweep] gated_linear step  4500 loss 1.064 bal 0.594 [assoc 0.187 state 1.000] exact 0.362 diff 1.00 * (1940s)
+[sweep] gated_linear step  5000 loss 1.055 bal 0.595 [assoc 0.190 state 1.000] exact 0.366 diff 1.00 * (2307s)
+[sweep] gated_linear step  5500 loss 1.121 bal 0.594 [assoc 0.189 state 1.000] exact 0.366 diff 1.00  (2674s)
+[sweep] gated_linear step  6000 loss 1.023 bal 0.601 [assoc 0.201 state 1.000] exact 0.370 diff 1.00 * (3040s)
+[sweep] gated_linear step  6500 loss 1.139 bal 0.606 [assoc 0.212 state 1.000] exact 0.368 diff 1.00 * (3407s)
+[sweep] gated_linear step  7000 loss 1.012 bal 0.603 [assoc 0.206 state 1.000] exact 0.374 diff 1.00  (3776s)
+[sweep] gated_linear step  7500 loss 1.054 bal 0.610 [assoc 0.220 state 1.000] exact 0.374 diff 1.00 * (4144s)
+[sweep] gated_linear step  8000 loss 0.933 bal 0.616 [assoc 0.231 state 1.000] exact 0.382 diff 1.00 * (4511s)
+[sweep] gated_linear step  8500 loss 0.858 bal 0.618 [assoc 0.236 state 1.000] exact 0.374 diff 1.00 * (4879s)
+[sweep] gated_linear step  9000 loss 0.892 bal 0.624 [assoc 0.248 state 1.000] exact 0.392 diff 1.00 * (5248s)
+[sweep] gated_linear step  9500 loss 0.859 bal 0.623 [assoc 0.246 state 1.000] exact 0.382 diff 1.00  (5614s)
+[sweep] gated_linear step 10000 loss 0.853 bal 0.628 [assoc 0.256 state 1.000] exact 0.384 diff 1.00 * (5981s)
+[sweep] gated_linear step 10500 loss 0.831 bal 0.621 [assoc 0.242 state 1.000] exact 0.380 diff 1.00  (6348s)
+[sweep] gated_linear step 11000 loss 0.752 bal 0.628 [assoc 0.256 state 1.000] exact 0.378 diff 1.00  (6715s)
+[sweep] gated_linear step 11500 loss 0.883 bal 0.627 [assoc 0.254 state 1.000] exact 0.374 diff 1.00  (7083s)
+[sweep] gated_linear step 12000 loss 0.755 bal 0.628 [assoc 0.255 state 1.000] exact 0.380 diff 1.00  (7451s)
+[sweep] gated_linear step 12500 loss 0.859 bal 0.631 [assoc 0.261 state 1.000] exact 0.374 diff 1.00 * (7818s)
+[sweep] gated_linear step 13000 loss 0.846 bal 0.644 [assoc 0.287 state 1.000] exact 0.386 diff 1.00 * (8184s)
+[sweep] gated_linear step 13500 loss 0.643 bal 0.655 [assoc 0.310 state 1.000] exact 0.394 diff 1.00 * (8553s)
+[sweep] gated_linear step 14000 loss 0.714 bal 0.661 [assoc 0.322 state 1.000] exact 0.400 diff 1.00 * (8920s)
+[sweep] gated_linear step 14500 loss 0.721 bal 0.662 [assoc 0.324 state 1.000] exact 0.394 diff 1.00 * (9287s)
+[sweep] gated_linear step 15000 loss 0.807 bal 0.665 [assoc 0.329 state 1.000] exact 0.398 diff 1.00 * (9654s)
+[sweep] gated_linear BEST plateau_acc = 0.6646 -> experiments/results/gated_linear_sweep
+=== gated_linear done, best balanced acc = 0.6646
+Processing Files (0 / 0)      : |          |  0.00B /  0.00B            
+New Data Upload               : |          |  0.00B /  0.00B            [A
+
+  ..._linear_sweep.safetensors:  98%|█████████▊| 10.6MB / 10.8MB            [A[A
+
+  ..._linear_sweep.safetensors:  98%|█████████▊| 10.6MB / 10.8MB            [A[AProcessing Files (0 / 1)      :  98%|█████████▊| 10.6MB / 10.8MB,   ???B/s  
+New Data Upload               :  98%|█████████▊| 10.5MB / 10.7MB,   ???B/s  [A
+
+  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB, 1.11MB/s  
+New Data Upload               : 100%|██████████| 10.7MB / 10.7MB, 1.10MB/s  [A
+
+  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[A
+
+  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            [A[AProcessing Files (1 / 1)      : 100%|██████████| 10.8MB / 10.8MB,  554kB/s  
+New Data Upload               : 100%|██████████| 10.7MB / 10.7MB,  551kB/s  
+  ..._linear_sweep.safetensors: 100%|██████████| 10.8MB / 10.8MB            
+  [hf] pushed gated_linear_sweep.safetensors
+  [hf] pushed gated_linear_sweep.json
+  [hf] pushed gated_linear_sweep_history.json

@@ -50,7 +50,7 @@ open.
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
-3. lr probe r18/r19 (~6.5 h)
+3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
 4. 30k-step pair r20/r21 (~10.5 h)
 
 Then a second model scale.
@@ -59,6 +59,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r18–r19 | 2026-10-15 | `3f12ce3` | lr probe (6k steps, compressed schedule, seed 0) | bias 0: 0.29 / 0.32 / 0.42 at lr 7.5e-4 / 1.5e-3 / 3e-3; bias 2: 0.34 / 0.31 / 0.10 | at low/moderate lr the inits tie in this short schedule; bias 2 stalls at high lr; the init effect is partly an lr interaction |
 | r16–r17 | 2026-10-15 | `0df1f56` | layer_s1 ✅ (+ pass 8, 9, 10) | seed 1 @32: all 0.5 0.75, low-first 0.66, high-first 0.30 (below all 0.88, 0.52) | seeds disagree on the upper layers; a slow layer-0 start costs 0.34 / 0.45; layer-0 retention predicts recall (ρ = −0.92, 13 runs) |
 | r14–r15 | 2026-10-14 | `04ff3c6` | layer_s0 ✅ (+ pass 8, 9, 10) | seed 0 @32 facts: uniform bias 0 0.86, low-first 0.44, high-first 0.52, uniform bias 2 0.14; both mixed inits land in between | not a first-layer-only effect; costs roughly add; run seed 1 |
 | pass 10 | 2026-10-13 | `1adea93` | gate replay on r04–r13 | replay exact everywhere; GLA layer 0 with its forgetting total held fixed but its timing removed: −0.15 to −0.61 at 32 facts (shuffle) in all 6 bias-0/legacy runs; hybrid L1 needs the amount, not the timing | timing of layer-0 forgetting is used; earlier hybrid-L1 'selectivity' claim corrected |
@@ -86,6 +87,40 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-15 — LR probe (r18 bias 0, r19 bias 2; appendix A.2): the init effect depends on the learning rate.**
+Protocol (`--stage tune`): 6,000 steps, cosine over 6k, easy 1,500 / ramp 3,000, held-out n = 256, seed 0, same for
+both inits. Held-out multi-query recall (assoc) at the end. The control is 1.00 in every run.
+
+| lr | bias 0 (γ₀ 0.5) | bias 2 (γ₀ 0.88) |
+|---:|---:|---:|
+| 7.5e-4 | 0.29 | **0.34** |
+| 1.5e-3 (main protocol's lr) | 0.32 | 0.31 |
+| 3e-3 | **0.42** | 0.10 |
+
+- **In this short schedule the two inits tie at low and moderate lr.** The curves overlap step for step; at 1.5e-3:
+  bias 0 0.15 / 0.21 / 0.29 vs bias 2 0.16 / 0.22 / 0.30 at 2.25k / 3k / 4.5k steps. Only at 3e-3 do they split:
+  bias 0 learns best there, while bias 2 stalls at 0.05–0.10 from 2.25k steps on.
+- **The stall looks like the full-run failures.** r08 sat at 0.14–0.19 and r13 at 0.10–0.18 (lr 1.5e-3, 15k cosine);
+  r19 at 3e-3 sits at 0.10. All three stall in the same narrow band.
+- **Why the main protocol differs:** at the same peak lr (1.5e-3) the full runs spend the hard phase at a much higher
+  effective lr. The cosine runs over 15k and full difficulty arrives at 3k steps, when the lr is still ≈ 0.9 × peak.
+  In the probe, full difficulty arrives at 4.5k steps, when the lr is already ≈ 0.15 × peak. In the full runs bias 2
+  had already fallen behind by 3k steps on two of three seeds (r08 0.12 vs r09 0.21; r13 0.10 vs r12 0.26).
+- **Revised working hypothesis.** Starting with longer memory (γ₀ 0.88) narrows the range of learning rates that
+  train recall. It matches γ₀ 0.5 when the effective lr during the hard phase is low, and stalls when it is high, where
+  γ₀ 0.5 does best. The main protocol (lr 1.5e-3, tuned under the legacy init) sits where bias 2 stalls on 2 of 3
+  seeds. This is the "optimization sensitivity" reading the external review flagged, and it has to be in the paper.
+- **The fairly tuned comparison still favours bias 0, but by much less.** With each init at its best probe lr (bias 0
+  at 3e-3: 0.42; bias 2 at 7.5e-4: 0.34), bias 0 leads by 0.08 at 6k steps. The main protocol showed 0.56.
+- **Caveats:** one seed; a short, compressed schedule; n = 256; recall still rising at 6k steps. A tie at 6k says
+  nothing yet about 15k.
+
+**Decision:** the decisive next test is the full 15k protocol with each init at its own best probe lr: bias 0 at 3e-3,
+bias 2 at 7.5e-4, on paired seeds. If bias 2 then gets close to bias 0, the paper's claim becomes "longer initial
+memory narrows the trainable lr window", not "longer initial memory hurts". That test should come before the 30k
+runs (r20/r21): those keep lr 1.5e-3, the regime where bias 2 already stalls, so they would mostly re-measure the
+stall.
 
 **2026-10-15 — Per-layer init, seed 1 (r16, r17): the seeds disagree; layer-0 forgetting predicts recall.**
 

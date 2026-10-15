@@ -1,0 +1,37 @@
+model,n_bindings,condition,layer,clamp,gamma_clamped,per_query,delta,delta_ci_low,delta_ci_high,n,seed
+gated_linear_sweep,8,none,,none,,0.9958,0.0,0.0,0.0,500,0
+gated_linear_sweep,8,keep_all,all,keep,0.998 0.998 0.998 0.998,0.0198,-0.976,-0.9805,-0.971,500,0
+gated_linear_sweep,8,keep_L0,L0,keep,0.998 0.998 0.998 0.998,0.0185,-0.9773,-0.9815,-0.9722,500,0
+gated_linear_sweep,8,mean_L0,L0,mean,0.195 0.858 0.393 0.495,0.8203,-0.1755,-0.1865,-0.1643,500,0
+gated_linear_sweep,8,keep_L1,L1,keep,0.998 0.998 0.998 0.998,0.995,-0.0008,-0.0018,0.0003,500,0
+gated_linear_sweep,8,mean_L1,L1,mean,1.000 1.000 1.000 1.000,0.9958,0.0,0.0,0.0,500,0
+gated_linear_sweep,8,keep_L2,L2,keep,0.998 0.998 0.998 0.998,0.9952,-0.0005,-0.0018,0.0007,500,0
+gated_linear_sweep,8,mean_L2,L2,mean,0.997 0.998 0.973 0.999,0.9958,0.0,-0.0008,0.0008,500,0
+gated_linear_sweep,8,keep_L3,L3,keep,0.998 0.998 0.998 0.998,0.9952,-0.0005,-0.0018,0.0008,500,0
+gated_linear_sweep,8,mean_L3,L3,mean,0.999 0.995 0.989 0.933,0.9958,0.0,-0.0007,0.0007,500,0
+gated_linear_sweep,8,keep_L4,L4,keep,0.998 0.998 0.998 0.998,0.994,-0.0018,-0.0032,-0.0005,500,0
+gated_linear_sweep,8,mean_L4,L4,mean,0.780 0.737 0.721 0.754,0.9928,-0.003,-0.0052,-0.001,500,0
+gated_linear_sweep,32,none,,none,,0.9289,0.0,0.0,0.0,500,0
+gated_linear_sweep,32,keep_all,all,keep,0.998 0.998 0.998 0.998,0.0125,-0.9164,-0.9227,-0.9101,500,0
+gated_linear_sweep,32,keep_L0,L0,keep,0.998 0.998 0.998 0.998,0.013,-0.9159,-0.9224,-0.9095,500,0
+gated_linear_sweep,32,mean_L0,L0,mean,0.269 0.734 0.406 0.486,0.5903,-0.3386,-0.3495,-0.3278,500,0
+gated_linear_sweep,32,keep_L1,L1,keep,0.998 0.998 0.998 0.998,0.9097,-0.0191,-0.0236,-0.0142,500,0
+gated_linear_sweep,32,mean_L1,L1,mean,1.000 1.000 1.000 1.000,0.929,0.0001,0.0,0.0004,500,0
+gated_linear_sweep,32,keep_L2,L2,keep,0.998 0.998 0.998 0.998,0.9267,-0.0021,-0.0044,-0.0001,500,0
+gated_linear_sweep,32,mean_L2,L2,mean,0.995 0.997 0.957 0.999,0.929,0.0001,-0.0014,0.0016,500,0
+gated_linear_sweep,32,keep_L3,L3,keep,0.998 0.998 0.998 0.998,0.9286,-0.0002,-0.0015,0.0009,500,0
+gated_linear_sweep,32,mean_L3,L3,mean,0.999 0.992 0.986 0.951,0.9295,0.0006,-0.0008,0.002,500,0
+gated_linear_sweep,32,keep_L4,L4,keep,0.998 0.998 0.998 0.998,0.9204,-0.0085,-0.0118,-0.0055,500,0
+gated_linear_sweep,32,mean_L4,L4,mean,0.927 0.904 0.899 0.916,0.9143,-0.0146,-0.0185,-0.0105,500,0
+gated_linear_sweep,64,none,,none,,0.7155,0.0,0.0,0.0,500,0
+gated_linear_sweep,64,keep_all,all,keep,0.998 0.998 0.998 0.998,0.0116,-0.7039,-0.7134,-0.6946,500,0
+gated_linear_sweep,64,keep_L0,L0,keep,0.998 0.998 0.998 0.998,0.013,-0.7025,-0.7122,-0.6931,500,0
+gated_linear_sweep,64,mean_L0,L0,mean,0.325 0.628 0.418 0.476,0.3829,-0.3326,-0.3446,-0.3204,500,0
+gated_linear_sweep,64,keep_L1,L1,keep,0.998 0.998 0.998 0.998,0.6286,-0.0869,-0.0956,-0.0784,500,0
+gated_linear_sweep,64,mean_L1,L1,mean,1.000 1.000 1.000 1.000,0.7157,0.0002,-0.0002,0.0008,500,0
+gated_linear_sweep,64,keep_L2,L2,keep,0.998 0.998 0.998 0.998,0.7173,0.0018,-0.0024,0.006,500,0
+gated_linear_sweep,64,mean_L2,L2,mean,0.994 0.997 0.942 0.999,0.7154,-0.0001,-0.003,0.003,500,0
+gated_linear_sweep,64,keep_L3,L3,keep,0.998 0.998 0.998 0.998,0.7139,-0.0016,-0.0037,0.0005,500,0
+gated_linear_sweep,64,mean_L3,L3,mean,0.999 0.990 0.986 0.947,0.7156,0.0001,-0.0014,0.0018,500,0
+gated_linear_sweep,64,keep_L4,L4,keep,0.998 0.998 0.998 0.998,0.7175,0.002,-0.0046,0.0087,500,0
+gated_linear_sweep,64,mean_L4,L4,mean,0.964 0.926 0.925 0.944,0.7054,-0.0101,-0.0157,-0.0045,500,0

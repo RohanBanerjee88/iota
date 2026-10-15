@@ -297,6 +297,25 @@ def test_seed_replicate_folders_are_gla_only_and_differ_only_in_seed(monkeypatch
     assert ra._archs() == ra.ARCH_ORDER
 
 
+def test_tuned_lr_configs_change_only_the_lr(monkeypatch):
+    # r24-r29 (appendix A.2): the full 15k protocol with each init at its best lr from the 6k probe
+    # (r18: bias 0 -> 3e-3; r19: bias 2 -> 7.5e-4); otherwise the seed replicates of r09/r08.
+    import yaml
+    import scripts.run_all as ra
+
+    src = {"bias0": ("configs/zerow0", 0.003), "bias2": ("configs/bias2", 0.00075)}
+    for b, (base_dir, lr) in src.items():
+        base = yaml.safe_load(open(f"{base_dir}/sweep_gated_linear.yaml"))
+        for seed in (0, 1, 2):
+            d = f"configs/tuned/{b}_s{seed}"
+            assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
+            cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))
+            assert cfg["train"] == dict(base["train"], seed=seed, lr=lr)
+            assert ra._fingerprint(cfg) == ra._fingerprint(base)
+            monkeypatch.setenv("IOTA_CONFIG_DIR", d)
+            assert ra._archs() == ["gated_linear"]
+
+
 def test_per_layer_bias_configs_build_the_intended_gates():
     # r14-r17 (appendix A.3): bias 0 in the first layer and 2 above, or the reverse;
     # r20/r21 (A.2): r09/r08 with a 30k budget and early stopping off.

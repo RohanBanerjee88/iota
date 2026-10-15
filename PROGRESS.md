@@ -51,7 +51,9 @@ open.
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
-4. 30k-step pair r20/r21 (~10.5 h)
+4. **tuned-lr full protocol r24–r29** (bias 0 at 3e-3, bias 2 at 7.5e-4; seeds 0–2; ~5.5 h per seed pair), prepared:
+   run next, `BATCH = "tuned_s0"` → `tuned_s1` → `tuned_s2`
+5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
 
@@ -59,6 +61,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r24–r29 | — | `configs/tuned/` | prepared | full 15k protocol, each init at its best probe lr: bias 0 at 3e-3 (r24/r26/r28), bias 2 at 7.5e-4 (r25/r27/r29), seeds 0/1/2 | notebook `PLAN="exp"`, cell 9d, `BATCH` `tuned_s0` → `tuned_s1` → `tuned_s2` |
 | r18–r19 | 2026-10-15 | `3f12ce3` | lr probe (6k steps, compressed schedule, seed 0) | bias 0: 0.29 / 0.32 / 0.42 at lr 7.5e-4 / 1.5e-3 / 3e-3; bias 2: 0.34 / 0.31 / 0.10 | at low/moderate lr the inits tie in this short schedule; bias 2 stalls at high lr; the init effect is partly an lr interaction |
 | r16–r17 | 2026-10-15 | `0df1f56` | layer_s1 ✅ (+ pass 8, 9, 10) | seed 1 @32: all 0.5 0.75, low-first 0.66, high-first 0.30 (below all 0.88, 0.52) | seeds disagree on the upper layers; a slow layer-0 start costs 0.34 / 0.45; layer-0 retention predicts recall (ρ = −0.92, 13 runs) |
 | r14–r15 | 2026-10-14 | `04ff3c6` | layer_s0 ✅ (+ pass 8, 9, 10) | seed 0 @32 facts: uniform bias 0 0.86, low-first 0.44, high-first 0.52, uniform bias 2 0.14; both mixed inits land in between | not a first-layer-only effect; costs roughly add; run seed 1 |
@@ -87,6 +90,31 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-15 — Prepared: tuned-lr full protocol (r24–r29; appendix A.2).** The test the lr probe called for. The full
+15k protocol, unchanged except that each init trains at its best probe lr: bias 0 (γ₀ 0.5) at 3e-3 and bias 2
+(γ₀ 0.88) at 7.5e-4. Zero gate weight, GLA only, seeds 0 / 1 / 2. Configs are in `configs/tuned/{bias0,bias2}_s{0,1,2}/`;
+each differs from the matching lr-1.5e-3 run (r09–r13) only in `train.lr` (test
+`test_tuned_lr_configs_change_only_the_lr`). Notebook cell 9d, one seed pair per session: `tuned_s0` = r24 (bias 0) +
+r25 (bias 2), then `tuned_s1` = r26 + r27, then `tuned_s2` = r28 + r29. Each run gets passes 1, 3, 8, 9 and 10.
+
+Readings, fixed before the runs. The measure is per-query recall at 32 facts (pass 1). On each seed, compare bias 2
+at 7.5e-4 with bias 0's better result on that seed (lr 1.5e-3 from r09 / r10 / r12, or 3e-3 from the new run):
+- **"narrows the lr window":** bias 2 comes within 0.10 of bias 0 on every seed run. The paper's claim then becomes
+  optimization sensitivity, not a capability cost.
+- **"longer memory hurts" survives fair tuning:** bias 2 is ≥ 0.25 below bias 0 on at least 2 of 3 seeds.
+- **Otherwise it is in between,** and we report the gap with each init tuned.
+- **Pass 8 prediction:** the layer-0 retention vs recall link (ρ = −0.92) should hold here too. A bias-2 run that
+  recalls ≥ 0.75 should show layer-0 retention in the bias-0 range (≤ −141), reached through the input-dependent part
+  of the gate, since the biases have stayed near their init in every run so far.
+- **Side question:** is 3e-3 also better than 1.5e-3 for bias 0 at 15k? If bias 0 itself stalls at 3e-3, the high-lr
+  failure is not specific to longer memory, and the "window" reading has to say so.
+
+Caveats: the best probe lrs sit at the edges of the grid (3e-3 is its top, 7.5e-4 its bottom), so neither is a
+tuned optimum. Early stopping stays at patience 8 to keep the protocol identical; a slower learner could be stopped
+while still rising. The saved full histories make that visible.
+
+The 30k runs (r20/r21) and per-layer seed 2 (r22/r23) stay prepared but wait behind this.
 
 **2026-10-15 — LR probe (r18 bias 0, r19 bias 2; appendix A.2): the init effect depends on the learning rate.**
 Protocol (`--stage tune`): 6,000 steps, cosine over 6k, easy 1,500 / ramp 3,000, held-out n = 256, seed 0, same for

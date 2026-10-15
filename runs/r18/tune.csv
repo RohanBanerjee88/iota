@@ -1,3 +1,4 @@
 arch,lr,grad_clip,steps,best_step,best_balanced,assoc,state,exact,final_balanced,seconds
 gated_linear,0.00075,1.0,6000,6000,0.6448,0.2895,1.0,0.3828,0.6448,2398
 gated_linear,0.0015,1.0,6000,6000,0.6605,0.321,1.0,0.4141,0.6605,2395
+gated_linear,0.003,1.0,6000,6000,0.7097,0.4194,1.0,0.4258,0.7097,2401

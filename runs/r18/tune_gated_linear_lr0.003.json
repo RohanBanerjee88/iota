@@ -1,0 +1,159 @@
+{
+  "config": {
+    "arch": "gated_linear",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 0.0,
+    "short_conv": 4,
+    "legacy_gate_init": false,
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 6000,
+      "easy_steps": 1500,
+      "ramp_steps": 3000,
+      "eval_every": 750,
+      "eval_n": 256,
+      "patience": 1000000,
+      "seed": 0,
+      "lr": 0.003,
+      "run_name": "tune_gated_linear_lr0.003",
+      "grad_clip": 1.0
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 750,
+        "per_query": 0.010279001468428781,
+        "exact": 0.0078125,
+        "balanced": 0.0157,
+        "by_mode": {
+          "assoc_recall": 0.0094,
+          "state_track": 0.022
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1500,
+        "per_query": 0.07195301027900147,
+        "exact": 0.30078125,
+        "balanced": 0.4313,
+        "by_mode": {
+          "assoc_recall": 0.0165,
+          "state_track": 0.8462
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 2250,
+        "per_query": 0.1945668135095448,
+        "exact": 0.37109375,
+        "balanced": 0.5685,
+        "by_mode": {
+          "assoc_recall": 0.1369,
+          "state_track": 1.0
+        },
+        "difficulty": 0.25
+      },
+      {
+        "step": 3000,
+        "per_query": 0.3186490455212922,
+        "exact": 0.40234375,
+        "balanced": 0.6349,
+        "by_mode": {
+          "assoc_recall": 0.2699,
+          "state_track": 1.0
+        },
+        "difficulty": 0.5
+      },
+      {
+        "step": 3750,
+        "per_query": 0.39060205580029367,
+        "exact": 0.4140625,
+        "balanced": 0.6735,
+        "by_mode": {
+          "assoc_recall": 0.347,
+          "state_track": 1.0
+        },
+        "difficulty": 0.75
+      },
+      {
+        "step": 4500,
+        "per_query": 0.4419970631424376,
+        "exact": 0.42578125,
+        "balanced": 0.701,
+        "by_mode": {
+          "assoc_recall": 0.402,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5250,
+        "per_query": 0.4544787077826725,
+        "exact": 0.41015625,
+        "balanced": 0.7077,
+        "by_mode": {
+          "assoc_recall": 0.4154,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 6000,
+        "per_query": 0.4581497797356828,
+        "exact": 0.42578125,
+        "balanced": 0.7097,
+        "by_mode": {
+          "assoc_recall": 0.4194,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "tune_gated_linear_lr0.003.safetensors"
+}

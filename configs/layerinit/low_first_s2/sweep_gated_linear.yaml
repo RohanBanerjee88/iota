@@ -1,0 +1,54 @@
+# r22: PER-LAYER GATE INIT (low-first), GLA only, seed 2. Paper appendix A.3.
+# Zero gate weight; gate bias per block = [0.0, 2.0, 2.0, 2.0, 2.0] (bias 0 -> gamma0 0.5, bias 2 -> 0.88).
+# Uniform baselines on the same seed: bias 0 everywhere and bias 2 everywhere = r12 / r13.
+# Reading: low-first works and high-first fails -> the first layer needs to start forgetting;
+# both fail -> layers must coordinate; both work -> the first layer alone does not explain it.
+arch: gated_linear
+d_model: 256
+n_layers: 5
+n_heads: 4
+d_ff: 512
+dropout: 0.0
+chunk_size: 64
+decay_bias_init: [0.0, 2.0, 2.0, 2.0, 2.0]
+short_conv: 4
+legacy_gate_init: false
+curriculum:
+- mode: assoc_recall
+  n_bindings:
+    min: 2
+    max: 64
+  seq_len:
+    min: 64
+    max: 640
+  n_queries:
+    min: 1
+    max: 16
+  distractor_density: 0.1
+  query_pos: uniform
+  weight: 0.67
+- mode: state_track
+  n_bindings:
+    min: 2
+    max: 16
+  seq_len:
+    min: 64
+    max: 640
+  distractor_density: 0.1
+  ops_kinds:
+  - set
+  weight: 0.33
+train:
+  batch_size: 64
+  warmup: 200
+  weight_decay: 0.01
+  max_steps: 15000
+  easy_steps: 1000
+  ramp_steps: 2000
+  eval_every: 500
+  eval_n: 500
+  patience: 8
+  seed: 2
+  lr: 0.0015
+  run_name: gated_linear_sweep
+  grad_clip: 1.0

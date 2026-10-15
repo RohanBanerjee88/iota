@@ -311,7 +311,7 @@ def test_per_layer_bias_configs_build_the_intended_gates():
     base = yaml.safe_load(open("configs/zerow0/sweep_gated_linear.yaml"))
     want = {"low_first": [0.0, 2.0, 2.0, 2.0, 2.0], "high_first": [2.0, 0.0, 0.0, 0.0, 0.0]}
     for cond, biases in want.items():
-        for seed in (0, 1):
+        for seed in (0, 1, 2):
             d = f"configs/layerinit/{cond}_s{seed}"
             assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
             cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))

@@ -49,7 +49,7 @@ open.
 
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
-2. per-layer init: seed 0 (r14, r15) done 2026-10-14, no single-layer explanation (see entry); seed 1 (r16, r17) next (~5.5 h)
+2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. lr probe r18/r19 (~6.5 h)
 4. 30k-step pair r20/r21 (~10.5 h)
 
@@ -59,9 +59,10 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r16–r17 | 2026-10-15 | `0df1f56` | layer_s1 ✅ (+ pass 8, 9, 10) | seed 1 @32: all 0.5 0.75, low-first 0.66, high-first 0.30 (below all 0.88, 0.52) | seeds disagree on the upper layers; a slow layer-0 start costs 0.34 / 0.45; layer-0 retention predicts recall (ρ = −0.92, 13 runs) |
 | r14–r15 | 2026-10-14 | `04ff3c6` | layer_s0 ✅ (+ pass 8, 9, 10) | seed 0 @32 facts: uniform bias 0 0.86, low-first 0.44, high-first 0.52, uniform bias 2 0.14; both mixed inits land in between | not a first-layer-only effect; costs roughly add; run seed 1 |
 | pass 10 | 2026-10-13 | `1adea93` | gate replay on r04–r13 | replay exact everywhere; GLA layer 0 with its forgetting total held fixed but its timing removed: −0.15 to −0.61 at 32 facts (shuffle) in all 6 bias-0/legacy runs; hybrid L1 needs the amount, not the timing | timing of layer-0 forgetting is used; earlier hybrid-L1 'selectivity' claim corrected |
-| r14–r21 | — | `configs/layerinit/`, `configs/long/` | prepared | r14–r17 per-layer init (bias 0 first + 2 above / reverse, seeds 0–1); r18/r19 lr probe (bias 0 / 2); r20/r21 30k steps (bias 0 / 2) | notebook `PLAN="exp"`, cell 9d |
+| r18–r23 | — | `configs/layerinit/`, `configs/long/` | prepared | r18/r19 lr probe (bias 0 / 2); r20/r21 30k steps (bias 0 / 2); r22/r23 per-layer init seed 2 | notebook `PLAN="exp"`, cell 9d |
 | r12–r13 | 2026-10-11 | `ccb5ac0` | seeds batch 2 ✅ (+ pass 8, 9) | seed 2: GLA bias 0 0.88 @32 vs bias 2 0.15; 3-seed means 0.83 vs 0.27; layer-0 retention separates the inits (bias 0 −145 to −182, bias 2 −52 to −82) | init study complete; write-up |
 | r10–r11 | 2026-10-10 | `9150b4e` | seeds batch 1 ✅ (+ pass 8, 9; r09 audit) | seed 1: GLA bias 0 0.75 @32 vs bias 2 0.52 (seed 0: 0.86 vs 0.14); both still improving at the 15k cap; keep-L0 → chance in both | direction holds, size is seed-dependent; run seed 2 |
 | r09 | 2026-10-08 | `3e2b254` | A ✅ (+ pass 4) | gate bias 0, zero weight: GLA 0.86 @32 / 0.51 @64 / 0.22 @128 (≈ r04 0.88 / 0.49 / 0.22); hybrid 1.00; control 1.00 | starting bias decides; random weight incidental; r04–r06 init = clean bias-0 init |
@@ -85,6 +86,50 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-15 — Per-layer init, seed 1 (r16, r17): the seeds disagree; layer-0 forgetting predicts recall.**
+
+| facts | seed 0: all 0.5 / low-first / high-first / all 0.88 | seed 1: all 0.5 / low-first / high-first / all 0.88 |
+|---:|---|---|
+| 8 | 0.991 / 0.872 / 0.924 / 0.531 | 0.971 / 0.955 / 0.772 / 0.905 |
+| 16 | 0.963 / 0.739 / 0.807 / 0.360 | 0.912 / 0.871 / 0.610 / 0.765 |
+| 32 | 0.858 / 0.442 / 0.522 / 0.143 | 0.752 / **0.662** / **0.298** / 0.515 |
+| 64 | 0.512 / 0.219 / 0.192 / 0.079 | 0.419 / 0.311 / 0.096 / 0.096 |
+
+(low-first = bias [0,2,2,2,2], high-first = [2,0,0,0,0]; seed 0 runs r09 / r14 / r15 / r08, seed 1 runs
+r10 / r16 / r17 / r11.)
+
+- **Seed 1 matches the pre-registered "first-layer" pattern. Seed 0 did not.** On seed 1, low-first comes close to
+  uniform bias 0 (0.66 vs 0.75), and high-first fails, landing below even uniform bias 2 (0.30 vs 0.52). On seed 0
+  both were intermediate, with high-first slightly ahead.
+- **Costs at 32 facts.** A slow start for layer 0 costs 0.34 (s0) and 0.45 (s1): large on both seeds. A slow start for
+  the upper layers costs 0.42 (s0) and only 0.09 (s1): seed-dependent.
+- **The seed-0 "the costs add up" observation does not replicate.** On seed 1 the parts sum to 0.54 against a uniform
+  cost of 0.24. Withdrawn.
+- **Training:** r16 first reaches 0.5 at 11k steps (0.64 at the cap). r17 never does (0.33 at the cap). Both have
+  status `max_steps`.
+- **Mechanism.** r16 learns a layer 0 that resets on fact values and holds through filler (γ 0.12 vs 0.43,
+  retention −107), like r10's layer 0, with upper layers at γ ≈ 1. Its recall rests on layer 0's timing (shuffle
+  −0.45, geomean −0.36). r17's layer 0 stays slow (retention −76, bias +1.7). It spreads its forgetting across layers
+  1–3 and depends on all of them a little (keep-L1/L2/L3: −0.07 / −0.11 / −0.17).
+- **Correction.** The 2026-10-11 claim that "failed runs keep filler longer than facts in layer 0" does not
+  discriminate. r10 (0.75) and r16 (0.66) have the same direction (fact γ < filler γ). Across runs the value–filler gap
+  correlates only moderately with recall (Spearman −0.61).
+- **New regularity: how much layer 0 forgets predicts recall.** Across the 13 trained GLA runs (r04–r06, r08–r17;
+  r07 excluded because it never learned to forget), Spearman ρ = −0.92 between layer-0 retention and recall at 32
+  facts. Every run with retention ≤ −141 recalls ≥ 0.75; every run with retention ≥ −107 recalls ≤ 0.66. In order of
+  retention: r12 −182 / 0.88, r06 −166 / 0.97, r09 −155 / 0.86, r10 −145 / 0.75, r05 −142 / 0.94, r04 −141 / 0.88 |
+  r16 −107 / 0.66, r15 −87 / 0.52, r11 −82 / 0.52, r14 −79 / 0.44, r17 −76 / 0.30, r08 −71 / 0.14, r13 −52 / 0.15.
+  This is correlational (both quantities follow the init), but it fits the clamp and replay interventions.
+
+**Decision:** the per-layer result is seed-dependent. What holds on both seeds:
+1. Starting layer 0 slow costs a lot (0.34–0.45 at 32 facts).
+2. Starting the upper layers slow costs 0.09–0.42.
+3. Every trained GLA model needs layer 0 to forget, and when.
+4. The amount of layer-0 forgetting a run learns tracks its recall across all 13 runs.
+
+A third seed (r22/r23, configs ready) would settle the ordering. The fairness checks (lr probe, long budget) answer the
+bigger reviewer question, so run them first.
 
 **2026-10-14 — Per-layer init, seed 0 (r14, r15; appendix A.3): no single-layer explanation.**
 GLA only, zero gate weight, seed 0, same everything as r09/r08 except the per-block starting bias.

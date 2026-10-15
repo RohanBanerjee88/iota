@@ -16,3 +16,17 @@
 [sweep] gated_linear step  6000 loss 1.079 bal 0.645 [assoc 0.290 state 1.000] exact 0.383 diff 1.00 * (2396s)
 [sweep] gated_linear BEST plateau_acc = 0.6448 -> experiments/results/tune_gated_linear_lr0.00075
 [tune] gated_linear lr=0.00075: best balanced 0.6448 (assoc 0.2895, state 1.0) in 2398s
+  [sync] published 4 files -> https://github.com/RohanBanerjee88/iota/tree/kaggle-results/runs/r18
+
+=== TUNE gated_linear lr=0.0015
+[sweep] model=gated_linear params=2.67M device=cuda max_steps=6000 bs=64 patience=1000000
+[sweep] gated_linear step   750 loss 1.440 bal 0.029 [assoc 0.014 state 0.044] exact 0.016 diff 0.00 * (52s)
+[sweep] gated_linear step  1500 loss 0.463 bal 0.449 [assoc 0.018 state 0.879] exact 0.312 diff 0.00 * (103s)
+[sweep] gated_linear step  2250 loss 0.670 bal 0.577 [assoc 0.154 state 1.000] exact 0.375 diff 0.25 * (209s)
+[sweep] gated_linear step  3000 loss 0.681 bal 0.605 [assoc 0.210 state 1.000] exact 0.379 diff 0.50 * (431s)
+[sweep] gated_linear step  3750 loss 0.762 bal 0.620 [assoc 0.241 state 1.000] exact 0.391 diff 0.75 * (783s)
+[sweep] gated_linear step  4500 loss 0.826 bal 0.646 [assoc 0.293 state 1.000] exact 0.402 diff 1.00 * (1272s)
+[sweep] gated_linear step  5250 loss 0.855 bal 0.653 [assoc 0.306 state 1.000] exact 0.414 diff 1.00 * (1833s)
+[sweep] gated_linear step  6000 loss 0.982 bal 0.661 [assoc 0.321 state 1.000] exact 0.414 diff 1.00 * (2395s)
+[sweep] gated_linear BEST plateau_acc = 0.6605 -> experiments/results/tune_gated_linear_lr0.0015
+[tune] gated_linear lr=0.0015: best balanced 0.6605 (assoc 0.321, state 1.0) in 2395s

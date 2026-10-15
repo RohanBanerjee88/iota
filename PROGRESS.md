@@ -51,8 +51,10 @@ open.
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
-4. **tuned-lr full protocol r24–r29** (bias 0 at 3e-3, bias 2 at 7.5e-4; seeds 0–2; ~5.5 h per seed pair), prepared:
-   run next, `BATCH = "tuned_s0"` → `tuned_s1` → `tuned_s2`
+4. **tuned-lr full protocol r24–r29** (bias 0 at 3e-3, bias 2 at 7.5e-4; seeds 0–2; ~3 h per run: r17's 15k steps
+   took 2 h 41 min plus ~6 min of evals), prepared. Only 4 h of quota are left before the reset, so r25 (bias 2,
+   seed 0) runs alone first (`BATCH = "tuned_s0_b2"`): it is the run that decides the main question, since bias 0's
+   seed-0 reference at lr 1.5e-3 already exists (r09, 0.86). Then `tuned_s0_b0` (r24) → `tuned_s1` → `tuned_s2`.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.

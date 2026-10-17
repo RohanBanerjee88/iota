@@ -52,8 +52,9 @@ open.
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
 4. **tuned-lr full protocol** (~3 h per run). r25 (bias 2 at 7.5e-4, seed 0) done 2026-10-15: 0.93 at 32 facts,
-   the best seed-0 GLA (see entry). Proposed order: the same-lr column at 7.5e-4 (bias 0 on seeds 0–2, new; bias 2
-   on seeds 1–2, r27/r29), then bias 0 at 3e-3 (r24/r26/r28), then a full-protocol lr check for the headline figure.
+   the best seed-0 GLA (see entry). Next, the same-lr column at 7.5e-4 (prepared 2026-10-17): `BATCH = "lowlr_1"`
+   (r30, r31, r27), then `lowlr_2` (r32, r29, r24); then bias 0 at 3e-3 on seeds 1–2 (r26/r28); then a
+   full-protocol lr check for the headline figure.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -62,6 +63,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r30–r32 | — | `configs/lowlr/` | prepared | same-lr control: bias 0 at lr 7.5e-4, seeds 0/1/2 (partners r25, r27, r29) | notebook `PLAN="exp"`, cell 9d, `BATCH` `lowlr_1` (r30, r31, r27) → `lowlr_2` (r32, r29, r24) |
 | r25 | 2026-10-15 | `3fc1484` | tuned_s0_b2 ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 0: GLA 0.98 / 0.93 / 0.71 / 0.45 at 16 / 32 / 64 / 128 facts; r08 (lr 1.5e-3) 0.36 / 0.14 / 0.08 / 0.05; beats r09, r04 GLA and r04 transformer at every load; layer-0 retention −94, so the pass-8 prediction failed | "longer initial memory hurts" fails at a lower lr on seed 0; need bias 0 at 7.5e-4 and seeds 1–2; the headline figure's crossover is lr-sensitive |
 | r24–r29 | — | `configs/tuned/` | prepared | full 15k protocol, each init at its best probe lr: bias 0 at 3e-3 (r24/r26/r28), bias 2 at 7.5e-4 (r25/r27/r29), seeds 0/1/2 | notebook `PLAN="exp"`, cell 9d, `BATCH` `tuned_s0` → `tuned_s1` → `tuned_s2` |
 | r18–r19 | 2026-10-15 | `3f12ce3` | lr probe (6k steps, compressed schedule, seed 0) | bias 0: 0.29 / 0.32 / 0.42 at lr 7.5e-4 / 1.5e-3 / 3e-3; bias 2: 0.34 / 0.31 / 0.10 | at low/moderate lr the inits tie in this short schedule; bias 2 stalls at high lr; the init effect is partly an lr interaction |
@@ -92,6 +94,24 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-17 — Prepared: same-lr control at 7.5e-4 (r30–r32), with r27 / r29 / r24 queued (appendix A.2).** r25 left
+one question open: is lr 7.5e-4 better for bias 0 too? r30 / r31 / r32 are bias 0 (zero weight) at lr 7.5e-4 on seeds
+0 / 1 / 2. Each is identical to r09 / r10 / r12 except `train.lr` (configs in `configs/lowlr/bias0_s{0,1,2}/`; covered
+by `test_tuned_lr_configs_change_only_the_lr`). Their partners are the bias-2 runs at 7.5e-4: r25 (done), r27, r29.
+Notebook cell 9d runs about 9 h per session:
+- `lowlr_1` = r30, r31, r27: completes seed 0's pair and runs seed 1's.
+- `lowlr_2` = r32, r29, r24: seed 2's pair, plus bias 0 at 3e-3 on seed 0.
+
+Readings, fixed before the runs. The measure is per-query recall at 32 facts (pass 1), at lr 7.5e-4, per seed:
+- **"At the right lr the init does not matter":** bias 0 and bias 2 are within 0.05 of each other on every seed. The
+  init effect at 1.5e-3 is then purely lr robustness.
+- **"Longer initial memory helps at the right lr":** bias 2 is ahead by more than 0.05 on all 3 seeds.
+- **"Short memory is still better":** bias 0 is ahead by more than 0.05 on all 3 seeds.
+- **Otherwise mixed:** report the paired differences.
+- **r25 replicates if** bias 2 at 7.5e-4 reaches ≥ 0.80 on seeds 1 and 2 (at 1.5e-3: 0.52 and 0.15).
+- **Lower lr helps bias 0 too if** r30 / r31 / r32 beat r09 / r10 / r12 (0.86 / 0.75 / 0.88) on at least 2 of 3 seeds.
+  If they do, lr 1.5e-3 was too high for every GLA, and the headline figure's lr check becomes urgent.
 
 **2026-10-15 — r25 (bias 2 at lr 7.5e-4, seed 0): at half the learning rate the long-memory init gives the best GLA
 we have trained.** Full 15k protocol, identical to r08 except `train.lr` 1.5e-3 → 7.5e-4. Sanity gate passes; control

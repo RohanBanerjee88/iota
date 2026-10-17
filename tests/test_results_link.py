@@ -303,11 +303,13 @@ def test_tuned_lr_configs_change_only_the_lr(monkeypatch):
     import yaml
     import scripts.run_all as ra
 
-    src = {"bias0": ("configs/zerow0", 0.003), "bias2": ("configs/bias2", 0.00075)}
+    # r30-r32: the same-lr control, bias 0 at bias 2's lr (7.5e-4).
+    src = {"tuned/bias0": ("configs/zerow0", 0.003), "tuned/bias2": ("configs/bias2", 0.00075),
+           "lowlr/bias0": ("configs/zerow0", 0.00075)}
     for b, (base_dir, lr) in src.items():
         base = yaml.safe_load(open(f"{base_dir}/sweep_gated_linear.yaml"))
         for seed in (0, 1, 2):
-            d = f"configs/tuned/{b}_s{seed}"
+            d = f"configs/{b}_s{seed}"
             assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
             cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))
             assert cfg["train"] == dict(base["train"], seed=seed, lr=lr)

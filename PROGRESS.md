@@ -63,6 +63,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r30–r31 | 2026-10-18 | `1e87232` | lowlr_1 (2 of 3) ✅ (+ pass 8, 9, 10) | bias 0 at lr 7.5e-4: seed 0 0.88 @32 (r09 at 1.5e-3: 0.86; r25 bias 2 at 7.5e-4: 0.93); seed 1 0.73 @32 (r10 0.75) and 0.14 @64 (r10 0.42) | bias 0 is lr-robust at 32 facts, bias 2 is not; same-lr seed 0: bias 2 ahead by 0.05 / 0.09 / 0.11 at 32 / 64 / 128 facts; wait for r27 |
 | r30–r32 | — | `configs/lowlr/` | prepared | same-lr control: bias 0 at lr 7.5e-4, seeds 0/1/2 (partners r25, r27, r29) | notebook `PLAN="exp"`, cell 9d, `BATCH` `lowlr_1` (r30, r31, r27) → `lowlr_2` (r32, r29, r24) |
 | r25 | 2026-10-15 | `3fc1484` | tuned_s0_b2 ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 0: GLA 0.98 / 0.93 / 0.71 / 0.45 at 16 / 32 / 64 / 128 facts; r08 (lr 1.5e-3) 0.36 / 0.14 / 0.08 / 0.05; beats r09, r04 GLA and r04 transformer at every load; layer-0 retention −94, so the pass-8 prediction failed | "longer initial memory hurts" fails at a lower lr on seed 0; need bias 0 at 7.5e-4 and seeds 1–2; the headline figure's crossover is lr-sensitive |
 | r24–r29 | — | `configs/tuned/` | prepared | full 15k protocol, each init at its best probe lr: bias 0 at 3e-3 (r24/r26/r28), bias 2 at 7.5e-4 (r25/r27/r29), seeds 0/1/2 | notebook `PLAN="exp"`, cell 9d, `BATCH` `tuned_s0` → `tuned_s1` → `tuned_s2` |
@@ -94,6 +95,40 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-18 — r30, r31 (bias 0 at lr 7.5e-4, seeds 0 and 1): bias 0 barely cares about the lr; bias 2 does.**
+Sanity gate passes for both; control 1.00. Per-query recall (pass 1; same prompts across runs on a seed; 95% CIs are
+about ±0.005 at 32 facts):
+
+| facts | seed 0: bias 0 @1.5e-3 (r09) | **bias 0 @7.5e-4 (r30)** | bias 2 @7.5e-4 (r25) | bias 2 @1.5e-3 (r08) | seed 1: bias 0 @1.5e-3 (r10) | **bias 0 @7.5e-4 (r31)** | bias 2 @1.5e-3 (r11) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 16 | 0.963 | **0.968** | 0.984 | 0.360 | 0.912 | **0.911** | 0.765 |
+| 32 | 0.858 | **0.879** | 0.929 | 0.143 | 0.752 | **0.727** | 0.515 |
+| 64 | 0.512 | **0.617** | 0.708 | 0.079 | 0.419 | **0.141** | 0.096 |
+| 128 | 0.222 | **0.339** | 0.448 | 0.049 | 0.184 | **0.062** | 0.050 |
+
+Held-out recall during training (1.5k / 3k / 4.5k / 6k / 9k / 12k / 15k): r30 0.06 / 0.26 / 0.33 / 0.59 / 0.78 / 0.84 /
+0.86 (r09 0.02 / 0.21 / 0.42 / 0.59 / 0.72 / 0.79 / 0.81); r31 0.03 / 0.15 / 0.23 / 0.30 / 0.48 / 0.67 / 0.70 (r10 0.01 /
+0.02 / 0.26 / 0.39 / 0.47 / 0.67 / 0.73). Both were still improving at 15k (best checkpoint 14.5k and 15k).
+
+- **Halving the lr barely moves bias 0 at 32 facts:** +0.02 on seed 0 and −0.03 on seed 1. Over the same change,
+  bias 2 went from 0.14 to 0.93 (seed 0). The lr sensitivity belongs to the long-memory init.
+- **At higher loads the lr matters for bias 0 too, in opposite directions by seed:** on seed 0, +0.10 / +0.12 at
+  64 / 128 facts; on seed 1, −0.28 / −0.12. r31 falls off a cliff between 32 facts (0.73) and 64 facts (0.14).
+- **Same lr, seed 0 (r25 vs r30): bias 2 leads at every load.** The gap is +0.016 / +0.050 / +0.092 / +0.110 at
+  16 / 32 / 64 / 128 facts. At 32 facts the gap sits exactly on the pre-registered 0.05 line (difference CI ≈ ±0.006),
+  so that seed reads as a tie or a narrow bias-2 lead. The higher loads are clear. Seed 1 needs r27.
+- **Pre-registered check so far, "lower lr helps bias 0 too" (2 of 3 seeds at 32 facts):** seed 0 yes, seed 1 no;
+  seed 2 (r32) decides.
+- **The two inits build different solutions.** At 7.5e-4 bias 0 forgets in layers 0–2 (retention at 32 facts
+  −133 / −68 / −92 on r30). Pinning layer 1 to "keep" costs 0.48 at 32 facts (r31: 0.30). Bias 2 (r25) forgets only
+  in layer 0, holds layer 1 at γ = 1.000, and pinning layer 1 costs 0.02. Layer 0 is necessary in both
+  (keep-L0 → chance). Timing still matters in both, less for bias 0 (shuffle at 32 facts: r30 −0.16, r31 −0.21,
+  r25 −0.44).
+
+Reading so far: bias 0 is robust to the lr over 7.5e-4–1.5e-3 at 32 facts; bias 2 works only at the lower lr, and
+there it matches or beats bias 0 on seed 0. That fits "longer initial memory narrows the trainable lr window" and is
+not yet evidence that it hurts. Whether bias 2 is *better* at the right lr rests on seeds 1 and 2 (r27, r29).
 
 **2026-10-17 — Prepared: same-lr control at 7.5e-4 (r30–r32), with r27 / r29 / r24 queued (appendix A.2).** r25 left
 one question open: is lr 7.5e-4 better for bias 0 too? r30 / r31 / r32 are bias 0 (zero weight) at lr 7.5e-4 on seeds

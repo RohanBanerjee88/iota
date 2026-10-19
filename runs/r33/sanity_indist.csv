@@ -1,0 +1,2 @@
+model,assoc_pq,assoc_exact,state_pq,state_exact,n
+gated_linear,0.1952,0.034,0.998,0.998,500

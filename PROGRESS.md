@@ -59,9 +59,9 @@ on every seed, and lowering the lr made bias 0 fail one seed (r32). See the 2026
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
 4. **tuned-lr full protocol** (~3 h per run). r25 (bias 2 at 7.5e-4, seed 0) done 2026-10-15: 0.93 at 32 facts,
    the best seed-0 GLA (see entry). Same-lr column at 7.5e-4 done 2026-10-19 (r30, r31, r27, r32, r29), plus r24.
-   The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Proposed
-   next (not prepared): seeds 3–4 at lr 7.5e-4 for both inits, where the paired gaps are small. r26/r28 and the
-   headline lr check are lower priority now.
+   The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Next:
+   seeds 3–4 at lr 7.5e-4 for both inits (r33–r36, prepared 2026-10-19), `BATCH = "lowlr_s3"` then `lowlr_s4`. Then,
+   with quota, seeds 3–4 at 1.5e-3 for stall rates. r26/r28 and the headline lr check are lower priority.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -70,6 +70,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r33–r36 | — | `configs/tuned/bias2_s{3,4}`, `configs/lowlr/bias0_s{3,4}` | prepared | lr 7.5e-4, seeds 3 / 4: r33 / r35 bias 2, r34 / r36 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `lowlr_s3` → `lowlr_s4` |
 | r32, r29, r24 | 2026-10-19 | `36f3d6f` | lowlr_2 ✅ (+ pass 8, 9, 10) | seed 2 at lr 7.5e-4: bias 0 0.22 @32 (stall, plateau stop 13.5k; r12 at 1.5e-3: 0.88), bias 2 0.38 (r13 at 1.5e-3: 0.15); r24 bias 0 at 3e-3 seed 0: 0.91 @32 | the init effect flips sign with the lr on all 3 seeds; neither init is reliable at 7.5e-4; r25 did not replicate; stalled runs have an untimed layer 0 |
 | r27 | 2026-10-18 | `1e87232` | lowlr_1 (3 of 3) ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 1: 0.77 @32 (r31 bias 0 same lr 0.73; r11 at 1.5e-3 0.52); 0.15 @64 (both inits collapse at 64 on this seed and lr); one forgetting layer, timing-critical (shuffle L0 −0.72) | same-lr gap +0.05 / +0.05 (seeds 0 / 1): the init gap closes at 7.5e-4; replication threshold 0.80 narrowly missed; run lowlr_2 |
 | r30–r31 | 2026-10-18 | `1e87232` | lowlr_1 (2 of 3) ✅ (+ pass 8, 9, 10) | bias 0 at lr 7.5e-4: seed 0 0.88 @32 (r09 at 1.5e-3: 0.86; r25 bias 2 at 7.5e-4: 0.93); seed 1 0.73 @32 (r10 0.75) and 0.14 @64 (r10 0.42) | bias 0 is lr-robust at 32 facts, bias 2 is not; same-lr seed 0: bias 2 ahead by 0.05 / 0.09 / 0.11 at 32 / 64 / 128 facts; wait for r27 |
@@ -104,6 +105,23 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-19 — Prepared: seeds 3 and 4 at lr 7.5e-4 (r33–r36; appendix A.2).** These add seeds to the cell where the
+same-lr gaps are small. Configs:
+- bias 2: `configs/tuned/bias2_s{3,4}/` (r33, r35)
+- bias 0: `configs/lowlr/bias0_s{3,4}/` (r34, r36)
+
+Each is identical to that cell's seeds 0–2 except `train.seed` (test `test_tuned_lr_configs_change_only_the_lr`).
+Notebook cell 9d, one seed pair per session (~5.7 h each): `lowlr_s3` = r33 + r34, then `lowlr_s4` = r35 + r36.
+
+Readings, fixed before the runs. The measure is per-query recall at 32 facts (pass 1); a "stall" is recall < 0.40.
+- **The sign flip holds** if bias 2 − bias 0 > 0 on both new seeds. Then bias 2 is ahead on 5 of 5 seeds at 7.5e-4,
+  against 0 of 3 at 1.5e-3.
+- **The flip does not hold** if either seed has bias 0 ahead by more than 0.05. The claim then weakens to "the gap
+  closes at 7.5e-4".
+- **Otherwise it is a tie on that seed,** and we report the paired gaps.
+- **Stall counts** at 7.5e-4 are 1 of 3 for each init so far (r32, r29). Report them out of 5. No threshold is set:
+  5 seeds still cannot separate stall rates of that size.
 
 **2026-10-19 — r32, r29 (seed 2 at lr 7.5e-4) and r24 (bias 0 at lr 3e-3, seed 0): the init effect flips sign with
 the lr, and neither init is reliable at the lower lr.** Sanity gate passes for all three; control 1.00. Per-query

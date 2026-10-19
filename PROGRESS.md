@@ -47,14 +47,21 @@ of 3 seeds, with seed 1 in between. The gate-init study is complete for this sca
 Working title: "When does longer initial memory hurt recall learning?". The explanation of the init effect is still
 open.
 
+**Update (2026-10-19): the init effect depends on the lr, with 3 seeds at two lrs (r08–r13, r25, r27, r29–r32).** At
+lr 1.5e-3 bias 0 beats bias 2 on all 3 seeds, by 0.24–0.72 at 32 facts. At lr 7.5e-4 bias 2 is ahead on all 3 seeds,
+by 0.05–0.16. Failures at either lr are stalls: held-out recall sits at 0.1–0.25 for thousands of steps. The only
+settings with good recall on all 3 seeds are bias 0 and the legacy init at 1.5e-3. Bias 2 has no tested lr that works
+on every seed, and lowering the lr made bias 0 fail one seed (r32). See the 2026-10-19 entry.
+
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
 3. ~~lr probe r18/r19~~ done 2026-10-15: the init effect depends on the learning rate (see entry)
 4. **tuned-lr full protocol** (~3 h per run). r25 (bias 2 at 7.5e-4, seed 0) done 2026-10-15: 0.93 at 32 facts,
-   the best seed-0 GLA (see entry). Same-lr column at 7.5e-4: `lowlr_1` (r30, r31, r27) done 2026-10-18; at the same
-   lr the inits tie or bias 2 leads slightly (+0.05 / +0.05 at 32 facts). Next `BATCH = "lowlr_2"` (r32, r29, r24);
-   then bias 0 at 3e-3 on seeds 1–2 (r26/r28); then a full-protocol lr check for the headline figure.
+   the best seed-0 GLA (see entry). Same-lr column at 7.5e-4 done 2026-10-19 (r30, r31, r27, r32, r29), plus r24.
+   The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Proposed
+   next (not prepared): seeds 3–4 at lr 7.5e-4 for both inits, where the paired gaps are small. r26/r28 and the
+   headline lr check are lower priority now.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -63,6 +70,7 @@ Then a second model scale.
 
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
+| r32, r29, r24 | 2026-10-19 | `36f3d6f` | lowlr_2 ✅ (+ pass 8, 9, 10) | seed 2 at lr 7.5e-4: bias 0 0.22 @32 (stall, plateau stop 13.5k; r12 at 1.5e-3: 0.88), bias 2 0.38 (r13 at 1.5e-3: 0.15); r24 bias 0 at 3e-3 seed 0: 0.91 @32 | the init effect flips sign with the lr on all 3 seeds; neither init is reliable at 7.5e-4; r25 did not replicate; stalled runs have an untimed layer 0 |
 | r27 | 2026-10-18 | `1e87232` | lowlr_1 (3 of 3) ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 1: 0.77 @32 (r31 bias 0 same lr 0.73; r11 at 1.5e-3 0.52); 0.15 @64 (both inits collapse at 64 on this seed and lr); one forgetting layer, timing-critical (shuffle L0 −0.72) | same-lr gap +0.05 / +0.05 (seeds 0 / 1): the init gap closes at 7.5e-4; replication threshold 0.80 narrowly missed; run lowlr_2 |
 | r30–r31 | 2026-10-18 | `1e87232` | lowlr_1 (2 of 3) ✅ (+ pass 8, 9, 10) | bias 0 at lr 7.5e-4: seed 0 0.88 @32 (r09 at 1.5e-3: 0.86; r25 bias 2 at 7.5e-4: 0.93); seed 1 0.73 @32 (r10 0.75) and 0.14 @64 (r10 0.42) | bias 0 is lr-robust at 32 facts, bias 2 is not; same-lr seed 0: bias 2 ahead by 0.05 / 0.09 / 0.11 at 32 / 64 / 128 facts; wait for r27 |
 | r30–r32 | — | `configs/lowlr/` | prepared | same-lr control: bias 0 at lr 7.5e-4, seeds 0/1/2 (partners r25, r27, r29) | notebook `PLAN="exp"`, cell 9d, `BATCH` `lowlr_1` (r30, r31, r27) → `lowlr_2` (r32, r29, r24) |
@@ -96,6 +104,69 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-19 — r32, r29 (seed 2 at lr 7.5e-4) and r24 (bias 0 at lr 3e-3, seed 0): the init effect flips sign with
+the lr, and neither init is reliable at the lower lr.** Sanity gate passes for all three; control 1.00. Per-query
+recall at 32 facts (pass 1), GLA with a zero gate weight:
+
+| init, lr | seed 0 | seed 1 | seed 2 | mean |
+|---|---:|---:|---:|---:|
+| bias 0, 3e-3 | 0.914 (r24) | — | — | — |
+| bias 0, 1.5e-3 | 0.858 (r09) | 0.752 (r10) | 0.883 (r12) | 0.831 |
+| bias 0, 7.5e-4 | 0.879 (r30) | 0.727 (r31) | **0.216 (r32)** | 0.607 |
+| bias 2, 1.5e-3 | 0.143 (r08) | 0.515 (r11) | 0.149 (r13) | 0.269 |
+| bias 2, 7.5e-4 | 0.929 (r25) | 0.773 (r27) | **0.380 (r29)** | 0.694 |
+| *legacy init, 1.5e-3* | *0.882 (r04)* | *0.935 (r05)* | *0.971 (r06)* | *0.929* |
+
+Paired gap at 32 facts (bias 2 minus bias 0, same seed and lr):
+
+| lr | seed 0 | seed 1 | seed 2 |
+|---|---:|---:|---:|
+| 1.5e-3 | −0.715 | −0.237 | −0.734 |
+| 7.5e-4 | +0.050 | +0.046 | +0.164 |
+
+Curves (held-out recall at 1.5k / 3k / 4.5k / 6k / 9k / 12k / 13.5k / 15k):
+- r32 0.04 / 0.14 / 0.18 / 0.23 / 0.25 / 0.25 / 0.25. A plateau stop at 13.5k; the best checkpoint was at 9.5k, and
+  it had been flat since.
+- r29 0.14 / 0.16 / 0.26 / 0.27 / 0.30 / 0.37 / 0.40 / 0.41. Slow, still rising at 15k.
+- r24 0.02 / 0.14 / 0.22 / 0.35 / 0.75 / 0.86 / 0.89 / 0.89. Slow to start, then the best bias-0 run on seed 0
+  (0.914 at 32 facts; 0.597 / 0.306 at 64 / 128).
+
+- **The sign of the init effect flips with the lr, on every seed.** At 1.5e-3 bias 0 is ahead on all 3 seeds
+  (0.24–0.73). At 7.5e-4 bias 2 is ahead on all 3 (0.05–0.16). All six paired comparisons agree on direction.
+- **Neither init is reliable at 7.5e-4.** Seed 2 stalls for both. r32 (bias 0) sits at 0.25 from 9k steps on; on
+  this seed bias 0 at 1.5e-3 reached 0.88. So the lower lr is not a safe default even for bias 0.
+- **Failures are stalls, and init and lr shift how often they happen.** Held-out recall plateaus at about 0.1–0.25
+  (r08, r13, r32; r19 in the probe; r27 for 3k–6k before it escaped), or rises very slowly (r29, r11). Stalled runs at
+  32 facts: bias 2 at 1.5e-3, 2 of 3 (plus r11 at 0.52); bias 0 at 1.5e-3, 0 of 3; bias 0 at 7.5e-4, 1 of 3; bias 2
+  at 7.5e-4, 1 of 3 partial (0.38). Bias 2 has no tested lr that is good on every seed. Bias 0 has one (1.5e-3), and
+  r24 shows it also trains well at 3e-3 on seed 0, so bias 0 has the wider usable lr range.
+- **A stalled model has not learned *when* to forget in layer 0.** In r32, layer 0's gate is the same for fact
+  values and distractors (γ 0.385 vs 0.387). Replacing it with its own mean costs 0.000, and shuffling its timing
+  costs 0.001 at 32 facts. The stalled bias-2 runs look the same (r08 / r13 shuffle −0.02 / −0.07; r29 −0.07). In
+  every run with recall ≥ 0.44, shuffling costs at least 0.14 (r24 −0.69). Part of that gap is mechanical, because a
+  model near chance has little to lose. But r32 keeps 0.22 recall and loses nothing.
+- **Pre-registered readings:**
+  - 2026-10-15 (bias 2 at 7.5e-4 vs bias 0's best on the seed): +0.015 / +0.021 / −0.503. Not "narrows" (seed 2 is
+    0.50 below) and not "hurts" (only 1 of 3 seeds) → **in between**.
+  - 2026-10-17 (same lr): +0.050 / +0.046 / +0.164. Not within 0.05 on every seed, and not above 0.05 on all three
+    → **mixed**, with bias 2 ahead on all three.
+  - r25 replicates (≥ 0.80 on seeds 1 and 2): **no** (0.77, 0.38).
+  - Lower lr helps bias 0 (2 of 3 seeds): **no** (+0.02 / −0.03 / −0.67).
+- **Correction to the 2026-10-15 r25 entry.** The headline figure is less lr-sensitive than that entry said. r25's
+  lead over the legacy GLA did not replicate (bias 2 at 7.5e-4 on seeds 1 / 2: 0.77 / 0.38; legacy at 1.5e-3:
+  0.94 / 0.97). The legacy init at 1.5e-3 is the most reliable setting we have, so the headline lr check drops in
+  priority.
+
+What the paper can now say, at this scale and with 3 seeds: the initial gate bias and the lr interact. Longer initial
+memory (γ₀ 0.88) loses badly at the protocol lr and edges ahead at half of it. The mechanism behind the losses is a
+stall before layer 0 learns timed forgetting; which runs stall depends on init, lr and seed. "Longer initial memory
+hurts" holds only at the protocol lr. Three seeds are enough for the sign flip (6 of 6 pairs agree), but not to
+estimate stall rates.
+
+**Proposed next (not yet prepared):** seeds 3 and 4 at lr 7.5e-4 for both inits (4 runs, ~11.5 h). That is where the
+paired gaps are small (+0.05 / +0.05 / +0.16), so it is the part of the sign flip most in need of seeds. Then, if
+quota allows, seeds 3–4 at 1.5e-3 for stall rates. r26/r28 (bias 0 at 3e-3) and the headline lr check move down.
 
 **2026-10-18 — r27 (bias 2 at lr 7.5e-4, seed 1): at the same lr the inits tie on seed 1 too, bias 2 slightly
 ahead.** Sanity gate passes; control 1.00. Per-query recall (pass 1, seed 1, same prompts; CIs about ±0.007 at 32

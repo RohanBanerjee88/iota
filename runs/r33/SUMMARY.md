@@ -1,6 +1,6 @@
 # iota run `r33`
 
-- **updated:** 2026-10-19 20:12 UTC (last stage: `sanity`)
+- **updated:** 2026-10-19 20:14 UTC (last stage: `eval 1,3`)
 - **code:** `09602bd` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -24,7 +24,17 @@ n=500 per mode. Both per-query columns must be well above chance (~0.01) before 
 
 ## 2. Pass 1 — capacity (the headline)
 
-_`pass1_capacity.csv` not synced yet._
+Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, paired prompts.
+
+| n_bindings | true tokens | gated_linear |
+|---:|---:|---|
+| 2 | 256 | 0.814 [0.80–0.83] (0.63) |
+| 4 | 256 | 0.673 [0.66–0.69] (0.16) |
+| 8 | 256 | 0.512 [0.50–0.52] (0.00) |
+| 16 | 256 | 0.369 [0.36–0.38] (0.00) |
+| 32 | 289 | 0.174 [0.17–0.18] (0.00) |
+| 64 | 386 | 0.052 [0.05–0.05] (0.00) |
+| 128 | 773 | 0.025 [0.02–0.03] (0.00) |
 
 ## 3. Pass 2 — length generalisation
 
@@ -32,7 +42,17 @@ _`pass2_length.csv` not synced yet._
 
 ## 4. Pass 3 — state_track control
 
-_`pass3_control.csv` not synced yet._
+Per-query accuracy [95% CI], exact-all-queries in parentheses. n=1000 per cell, paired prompts.
+
+| seq_len | true tokens | gated_linear |
+|---:|---:|---|
+| 128 | 136 | 1.000 [1.00–1.00] (1.00) |
+| 256 | 264 | 1.000 [1.00–1.00] (1.00) |
+| 512 | 520 | 1.000 [1.00–1.00] (1.00) |
+| 1024 | 1032 | 1.000 [1.00–1.00] (1.00) |
+| 2048 | 2056 | 1.000 [1.00–1.00] (1.00) |
+| 4096 | 4104 | 0.999 [1.00–1.00] (1.00) |
+| 8192 | 8200 | 1.000 [1.00–1.00] (1.00) |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

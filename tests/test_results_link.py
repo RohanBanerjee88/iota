@@ -278,14 +278,14 @@ def test_zerow0_configs_differ_from_r04_only_in_the_gate_weight():
 
 
 def test_seed_replicate_folders_are_gla_only_and_differ_only_in_seed(monkeypatch):
-    # r10-r13: GLA-only seed replicates of r09 (bias 0) and r08 (bias 2), seeds 1 and 2.
+    # r10-r13: GLA-only seed replicates of r09 (bias 0) and r08 (bias 2), seeds 1 and 2; r37-r40: seeds 3 and 4.
     import yaml
     import scripts.run_all as ra
 
     src = {"bias0": "configs/zerow0", "bias2": "configs/bias2"}
     for b in ("bias0", "bias2"):
         base = yaml.safe_load(open(f"{src[b]}/sweep_gated_linear.yaml"))
-        for seed in (1, 2):
+        for seed in (1, 2, 3, 4):
             d = f"configs/seeds/{b}_s{seed}"
             assert sorted(os.listdir(d)) == ["sweep_gated_linear.yaml"]
             cfg = yaml.safe_load(open(f"{d}/sweep_gated_linear.yaml"))

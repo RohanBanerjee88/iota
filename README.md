@@ -4,7 +4,7 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
-| [r36](runs/r36/SUMMARY.md) | 2026-10-20 21:54 UTC | sanity | Tesla T4 | `4d49fdb` |
+| [r36](runs/r36/SUMMARY.md) | 2026-10-20 21:57 UTC | eval 1,3 | Tesla T4 | `4d49fdb` |
 | [r35](runs/r35/SUMMARY.md) | 2026-10-20 19:12 UTC | eval 8,9,10 | Tesla T4 | `4d49fdb` |
 | [r09](runs/r09/SUMMARY.md) | 2026-10-20 16:24 UTC | eval 4 | Tesla T4 | `4d49fdb` |
 | [r34](runs/r34/SUMMARY.md) | 2026-10-19 23:12 UTC | eval 8,9,10 | Tesla T4 | `09602bd` |

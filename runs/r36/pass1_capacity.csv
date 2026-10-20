@@ -1,0 +1,8 @@
+model,mode,pass,seq_len_nominal,seq_len_true_tokens,n_bindings,n_queries,distractor_density,accuracy_exact,accuracy_per_query,ci_low,ci_high,ci_low_pq,ci_high_pq,n,seed
+gated_linear_sweep,assoc_recall,1,256,256.1,2,2,0.0,0.998,0.999,0.9927,0.9995,0.9975,1.0,1000,0
+gated_linear_sweep,assoc_recall,1,256,256.1,4,4,0.0,0.991,0.9978,0.983,0.9953,0.9962,0.999,1000,0
+gated_linear_sweep,assoc_recall,1,256,256.4,8,8,0.0,0.937,0.9914,0.9202,0.9505,0.9891,0.9935,1000,0
+gated_linear_sweep,assoc_recall,1,256,256.5,16,16,0.0,0.683,0.9739,0.6535,0.7111,0.9711,0.9765,1000,0
+gated_linear_sweep,assoc_recall,1,256,289.2,32,16,0.0,0.24,0.9137,0.2146,0.2674,0.9096,0.918,1000,0
+gated_linear_sweep,assoc_recall,1,256,386.5,64,16,0.0,0.0,0.6416,0.0,0.0038,0.6341,0.6491,1000,0
+gated_linear_sweep,assoc_recall,1,256,772.7,128,16,0.0,0.0,0.3583,0.0,0.0038,0.3507,0.3653,1000,0

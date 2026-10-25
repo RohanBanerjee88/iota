@@ -2,3 +2,4 @@
 2026-10-25 19:46 UTC  stage=train  code=45e8d0d  files=3
 2026-10-25 19:46 UTC  stage=sanity  code=45e8d0d  files=5
 2026-10-25 19:48 UTC  stage=eval 1,3  code=45e8d0d  files=8
+2026-10-25 19:51 UTC  stage=eval 8,9,10  code=45e8d0d  files=12

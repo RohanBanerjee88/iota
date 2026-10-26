@@ -80,8 +80,9 @@ See the 2026-10-26 entry.
    The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Seeds 3–4 at
    lr 7.5e-4 (r33–r36) done 2026-10-20: no consistent sign at 7.5e-4, and bias 0 leads on the mean. Seeds 3–4 at the
    standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
-   r40), which completes the pre-registered 5 seeds. Then decide between writing up the robust findings and a
-   larger, cheaper seed sweep (see the 2026-10-26 entry).
+   r40), which completes the pre-registered 5 seeds. Then the seed sweep `sw1` (built 2026-10-26): 20 more seeds per
+   init at lr 1.5e-3, stopped at 6k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`; seeds 5–12, then
+   13–18, then 19–24).
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -92,6 +93,7 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, 6k steps, two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-12` → `13-18` → `19-24` |
 | r39, r40 | — | `configs/seeds/bias{2,0}_s4` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
 | r35, r36 | 2026-10-20 | `4d49fdb` | lowlr_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 7.5e-4: bias 2 0.55 @32 (plateau 3k–6k, then a slow rise), bias 0 0.91 | 5-seed same-lr gap −0.17 on the mean; bias 2 learns (≥ 0.70) 2/8, bias 0 7/8 over both lrs; run seeds 3–4 at 1.5e-3 |
 | r32, r29, r24 | 2026-10-19 | `36f3d6f` | lowlr_2 ✅ (+ pass 8, 9, 10) | seed 2 at lr 7.5e-4: bias 0 0.22 @32 (stall, plateau stop 13.5k; r12 at 1.5e-3: 0.88), bias 2 0.38 (r13 at 1.5e-3: 0.15); r24 bias 0 at 3e-3 seed 0: 0.91 @32 | the init effect flips sign with the lr on all 3 seeds; neither init is reliable at 7.5e-4; r25 did not replicate; stalled runs have an untimed layer 0 |
@@ -128,6 +130,40 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-26 — Built: the seed sweep (option b) and its pre-registered analysis.** It answers the question 9 pairs
+could not: does the gate init change the chance of learning recall? New pieces:
+- **`train.stop_at`** ends a run early without changing its schedule. The lr cosine, curriculum ramp and eval points
+  still follow `max_steps`, so a job stopped at 6k is exactly the first 6k steps of the full run (tested: a stopped
+  run's evals equal the full run's).
+- **`scripts/seed_sweep.py`** runs the jobs.
+  - One coordinator launches workers, each with its own results folder, `CUDA_VISIBLE_DEVICES` and CPU-thread share.
+    It is the only process that publishes, once after each job, so pushes cannot race.
+  - Output goes to `runs/<sweep-id>/` on kaggle-results: per job `<job>_history.json`, `<job>_meta.json` and
+    `logs/<job>.log`, plus `SUMMARY.md` and `sweep.csv`, rebuilt from every job there, earlier sessions included.
+  - Re-running skips published jobs; `--budget-h` stops starting jobs that would not finish. Weights are not kept.
+  - Missing GPUs are refused loudly rather than silently falling back to CPU.
+  - Tests in `tests/test_seed_sweep.py`: two CPU workers at once, publishing to a local bare repo, then a resume
+    that skips both jobs.
+- **Notebook cell 9e** with `PLAN = "sweep"`; it needs the GPU T4 x2 accelerator.
+
+**Validating the 6k proxy.** Held-out recall ≥ 0.30 at 6k steps against recall ≥ 0.70 at 32 facts after 15k agrees
+in 21 of 22 full GLA runs. The miss is r27 (0.18 at 6k, 0.77 final, a late escape), and r31 sits on the line (0.301).
+At 0.25 it is 20/22 and at 0.35 19/22. So the sweep measures "on track by 6k steps", slightly stricter than
+"learned by 15k".
+
+**Pre-registered design and analysis (fixed before any sweep job runs):**
+- Sweep `sw1`: bias 0 (`configs/zerow0`) and bias 2 (`configs/bias2`), zero gate weight, lr 1.5e-3, stopped at 6k,
+  seeds 5–24 (20 per init). Seeds 0–4 come from the full runs at the same protocol: r09/r08, r10/r11, r12/r13,
+  r38/r37 and r40/r39, using their held-out recall at step 6000. That makes n = 25 per init. All 40 sweep jobs are
+  run; interim summaries do not stop it.
+- **Primary:** the share of runs on track (held-out recall ≥ 0.30 at 6k), bias 0 vs bias 2, compared with a
+  two-sided Fisher exact test. p < 0.05 means the init changes the chance of learning recall at this lr. Otherwise
+  report "no detectable effect at n = 25" with both shares. With 25 per init, a difference of about 0.4 (for example
+  0.75 vs 0.35) is detectable with roughly 80% power, so a null result does not rule out a moderate effect.
+- **Secondary (early start):** held-out recall at 1.5k steps. Prediction: every bias-2 run ≥ 0.06 and every bias-0
+  run ≤ 0.06 (so far 9/9 and 10/10). Report both counts.
+- Current shares on track at 6k, standard lr, seeds 0–3: bias 0 3/4 (r38 is the miss), bias 2 1/4 (r37 is the hit).
 
 **2026-10-26 — Seed 3 at the standard lr (r37 bias 2, r38 bias 0): the result reverses; the init effect on final
 recall is not established.** Sanity gate passes for both. Per-query recall (pass 1, seed 3, lr 1.5e-3):

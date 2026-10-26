@@ -126,6 +126,10 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     ramp_steps = 30 if smoke else int(tcfg.get("ramp_steps", max(1, max_steps // 2)))
     grad_clip = float(tcfg.get("grad_clip", 1.0))
     run_name = tcfg.get("run_name", f"{cfg['arch']}_sweep")
+    # stop_at ends the run early WITHOUT changing its schedule: the lr cosine, the
+    # curriculum ramp and the eval points still follow max_steps, so a run stopped at
+    # N is the first N steps of the full run (used by scripts/seed_sweep.py).
+    stop_at = min(max_steps, int(tcfg.get("stop_at", max_steps)))
 
     # Fixed held-out eval set at FULL difficulty (disjoint stream), built once. It is
     # the SAME for every seed, so replicate runs are scored on an identical yardstick.
@@ -143,8 +147,8 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
 
     history = {"eval_acc": []}
     best_acc, best_step, bad, cursor, t0 = -1.0, None, 0, 0, time.time()
-    status = "max_steps"
-    for step in range(max_steps):
+    status = "max_steps" if stop_at == max_steps else "stopped"
+    for step in range(stop_at):
         model.train()
         lr = _lr_at(step, base_lr, warmup, max_steps)
         for g in opt.param_groups:
@@ -163,7 +167,7 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
         torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         opt.step()
 
-        if (step + 1) % eval_every == 0 or step == max_steps - 1:
+        if (step + 1) % eval_every == 0 or step == max_steps - 1 or step == stop_at - 1:
             scores = teacher_forced_scores(model, eval_examples, tok.pad_id, device)
             # plateau signal = per-QUERY accuracy (graded); exact-all-queries is too
             # stringent for multi-query and would mask real learning progress.

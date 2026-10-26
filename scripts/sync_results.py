@@ -541,8 +541,12 @@ def _prepare_checkout(url: str, branch: str, tmp: str, secret: Optional[str]) ->
 
 def sync(results_dir: str, run_id: str, stage: str = "manual", repo: str = DEFAULT_REPO,
          branch: str = DEFAULT_BRANCH, token: Optional[str] = None,
-         remote_url: Optional[str] = None, retries: int = 4) -> bool:
-    """Commit this run's artifacts to `branch`. Returns True on success, never raises."""
+         remote_url: Optional[str] = None, retries: int = 4, summary_fn=None) -> bool:
+    """Commit this run's artifacts to `branch`. Returns True on success, never raises.
+
+    `summary_fn(run_dir, run_id) -> str` replaces build_summary for SUMMARY.md (the seed sweep's
+    own digest); it runs on the merged run directory, so it sees earlier sessions' files too."""
+    summary_fn = summary_fn or build_summary
     token = token or os.environ.get("GH_TOKEN")
     if not remote_url and not token:
         print("  [sync] no GH_TOKEN -> results NOT published to GitHub", flush=True)
@@ -563,7 +567,7 @@ def sync(results_dir: str, run_id: str, stage: str = "manual", repo: str = DEFAU
                 fh.write(f"{env['updated']}  stage={stage}  code={code['commit']}  "
                          f"files={len(copied)}\n")
             with open(os.path.join(run_dir, "SUMMARY.md"), "w") as fh:
-                fh.write(build_summary(run_dir, run_id))
+                fh.write(summary_fn(run_dir, run_id))
             _write_index(tmp)
             _git(["add", "-A"], cwd=tmp)
             _git(["-c", "user.name=iota-kaggle", "-c", "user.email=iota-kaggle@users.noreply.github.com",

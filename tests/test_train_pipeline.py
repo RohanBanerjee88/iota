@@ -84,3 +84,10 @@ def test_sweep_writes_the_complete_history(tmp_path, monkeypatch):
     assert [e["step"] for e in h["eval_acc"]] == [20, 40, 60]
     assert h["status"] == "max_steps" and h["last_step"] == 60
     assert h["best_step"] in (20, 40, 60)
+
+    # stop_at (the seed sweep) keeps the schedule: a run stopped at 40 is the full run's first 40 steps.
+    cfg["train"] = dict(cfg["train"], run_name="tiny_stopped", stop_at=40)
+    tr.train_sweep(cfg, smoke=True)
+    s = json.load(open(tmp_path / "tiny_stopped_history.json"))
+    assert s["status"] == "stopped" and s["last_step"] == 40
+    assert s["eval_acc"] == h["eval_acc"][:2]

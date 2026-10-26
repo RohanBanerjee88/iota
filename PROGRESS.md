@@ -60,6 +60,17 @@ and stalled (< 0.40) in 4 of 8. Bias 0 learned in 7 of 8 and stalled in 1 of 8. 
 8 at ≥ 0.06 held-out recall by step 1.5k; bias 0, 9 of 9 at ≤ 0.06). The penalty is largest at the standard lr.
 Seeds 3–4 at 1.5e-3 (r37–r40) are prepared. See the 2026-10-20 entry.
 
+**Update (2026-10-26): seed 3 at the standard lr reverses the original result, and the init effect on final recall
+is not established.** r37 (bias 2, lr 1.5e-3, seed 3) reached 0.955 at 32 facts, the best GLA so far at 32 and 64
+facts. r38 (bias 0, same seed and lr) stalled at 0.225. Over 9 paired seed–lr comparisons the mean gap is −0.20
+(bias 0 ahead; t ≈ −1.2). Learned (≥ 0.70) is 3 of 9 runs for bias 2 against 7 of 9 for bias 0 (Fisher p ≈ 0.15).
+This corrects the 2026-10-08 / 10-11 statements that bias 0 beats bias 2 "on every seed" and that "the gate-init
+study is complete": those rested on seeds 0–2, which happened to favour bias 0. Still robust:
+- every bias-2 run starts faster (9 of 9 at ≥ 0.06 held-out recall by 1.5k steps; bias 0 10 of 10 at ≤ 0.06);
+- outcomes are bimodal (learn or stall) for both inits;
+- layer 0's forgetting is necessary in every trained model.
+See the 2026-10-26 entry.
+
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
@@ -67,9 +78,10 @@ Seeds 3–4 at 1.5e-3 (r37–r40) are prepared. See the 2026-10-20 entry.
 4. **tuned-lr full protocol** (~3 h per run). r25 (bias 2 at 7.5e-4, seed 0) done 2026-10-15: 0.93 at 32 facts,
    the best seed-0 GLA (see entry). Same-lr column at 7.5e-4 done 2026-10-19 (r30, r31, r27, r32, r29), plus r24.
    The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Seeds 3–4 at
-   lr 7.5e-4 (r33–r36) done 2026-10-20: no consistent sign at 7.5e-4, and bias 0 leads on the mean. Next: seeds 3–4 at
-   the standard lr 1.5e-3 (r37–r40, prepared 2026-10-20), `BATCH = "std_s3"` then `std_s4`. r26/r28 and the headline
-   lr check are lower priority.
+   lr 7.5e-4 (r33–r36) done 2026-10-20: no consistent sign at 7.5e-4, and bias 0 leads on the mean. Seeds 3–4 at the
+   standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
+   r40), which completes the pre-registered 5 seeds. Then decide between writing up the robust findings and a
+   larger, cheaper seed sweep (see the 2026-10-26 entry).
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -79,7 +91,8 @@ Then a second model scale.
 | run | date | code | plan | outcome | decision |
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
-| r37–r40 | — | `configs/seeds/bias{2,0}_s{3,4}` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
+| r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| r39, r40 | — | `configs/seeds/bias{2,0}_s4` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
 | r35, r36 | 2026-10-20 | `4d49fdb` | lowlr_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 7.5e-4: bias 2 0.55 @32 (plateau 3k–6k, then a slow rise), bias 0 0.91 | 5-seed same-lr gap −0.17 on the mean; bias 2 learns (≥ 0.70) 2/8, bias 0 7/8 over both lrs; run seeds 3–4 at 1.5e-3 |
 | r32, r29, r24 | 2026-10-19 | `36f3d6f` | lowlr_2 ✅ (+ pass 8, 9, 10) | seed 2 at lr 7.5e-4: bias 0 0.22 @32 (stall, plateau stop 13.5k; r12 at 1.5e-3: 0.88), bias 2 0.38 (r13 at 1.5e-3: 0.15); r24 bias 0 at 3e-3 seed 0: 0.91 @32 | the init effect flips sign with the lr on all 3 seeds; neither init is reliable at 7.5e-4; r25 did not replicate; stalled runs have an untimed layer 0 |
 | r27 | 2026-10-18 | `1e87232` | lowlr_1 (3 of 3) ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 1: 0.77 @32 (r31 bias 0 same lr 0.73; r11 at 1.5e-3 0.52); 0.15 @64 (both inits collapse at 64 on this seed and lr); one forgetting layer, timing-critical (shuffle L0 −0.72) | same-lr gap +0.05 / +0.05 (seeds 0 / 1): the init gap closes at 7.5e-4; replication threshold 0.80 narrowly missed; run lowlr_2 |
@@ -115,6 +128,56 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-26 — Seed 3 at the standard lr (r37 bias 2, r38 bias 0): the result reverses; the init effect on final
+recall is not established.** Sanity gate passes for both. Per-query recall (pass 1, seed 3, lr 1.5e-3):
+
+| facts | r37 bias 2 | r38 bias 0 | (same seed, lr 7.5e-4: r33 bias 2 / r34 bias 0) |
+|---:|---:|---:|---|
+| 8 | 0.996 | 0.704 | 0.51 / 0.99 |
+| 16 | 0.989 | 0.466 | 0.37 / 0.97 |
+| 32 | **0.955** | **0.225** | 0.17 / 0.90 |
+| 64 | **0.802** | 0.108 | 0.05 / 0.59 |
+| 128 | 0.441 | 0.057 | 0.03 / 0.27 |
+
+Held-out recall (1.5k / 3k / 4.5k / 6k / 9k / 12k / 15k): r37 0.08 / 0.25 / 0.36 / 0.59 / 0.82 / 0.90 / 0.93 (best
+checkpoint 15k, still rising); r38 0.01 / 0.01 / 0.01 / 0.02 / 0.16 / 0.25 / 0.27.
+
+- **Pre-registered (2026-10-20) "the standard-lr result holds at 5 seeds": no.** Seed 3 favours bias 2 by 0.73. r37
+  is the best GLA we have trained at 32 and 64 facts (0.955 / 0.802; legacy r04–r06 best 0.971 / 0.754).
+- **Seed 3 is the mirror image of seeds 0 and 2.** On seed 3, bias 2 learns at 1.5e-3 and stalls at 7.5e-4, and bias
+  0 does the opposite. Per cell, out of all seeds: bias 0 learns 3/4 (1.5e-3) and 4/5 (7.5e-4); bias 2 learns 1/4 and
+  2/5. Changing the lr or the init can flip a run from learning to stalling on the same seed.
+- **All 9 paired seed–lr comparisons (bias 2 − bias 0 at 32 facts):**
+  - lr 1.5e-3: −0.72 / −0.24 / −0.73 / **+0.73**
+  - lr 7.5e-4: +0.05 / +0.05 / +0.16 / −0.72 / −0.37
+  - Mean −0.20, sd 0.50 (t ≈ −1.2). Learned (≥ 0.70) 3 of 9 for bias 2 vs 7 of 9 for bias 0 (Fisher p ≈ 0.15).
+    Stalled (< 0.40) 4 of 9 vs 2 of 9.
+  - The direction still favours bias 0, but at this sample size it is not distinguishable from seed noise.
+- **Correction to the "gate-init study complete" claims (2026-10-08 / 10-11, status block).** "Bias 0 beats bias 2 at
+  every load on every seed" held on seeds 0–2 only. The headline appendix claim "longer initial memory hurts recall
+  learning" is **not supported** at this sample size. The private draft's central claim needs revising.
+- **What is robust (all 19 runs):**
+  1. **Bias 2 always starts faster.** At 1.5k steps all 9 bias-2 runs are at ≥ 0.06 held-out recall; all 10 bias-0
+     runs are at ≤ 0.06 (r37 0.08, r38 0.01, as predicted).
+  2. **Outcomes are bimodal for both inits:** learn (≥ 0.70) or stall (≤ 0.38), with few in between (r11 0.52,
+     r35 0.55).
+  3. **The two inits stall differently.** Bias-2 runs reach about 0.1 quickly and plateau there (r08, r13, r33).
+     Stalled bias-0 runs stay near chance for longer before a low plateau (r38 0.01 until 6k, then 0.25; r32 a plateau
+     at 0.25).
+  4. **Layer 0's forgetting is necessary in every trained model** (keep-L0 → chance), and in learned models its
+     timing matters (pass 10).
+- **Side note: r38's control collapses past 2048 tokens** (0.968 at 2048, 0.112 at 4096, 0.023 at 8192). It is the
+  first GLA with a dead control at 4096; it is in-distribution clean (sanity gate passes).
+
+**Decision (proposed):** finish `std_s4` (r39, r40) so the pre-registered 5-seed count is complete; stopping after
+an unfavourable seed would be optional stopping. Then choose:
+- **(a)** Write up what is robust: the faster start, bimodal learn-or-stall outcomes and the layer-0 mechanism, with
+  the init effect on final recall reported as unresolved (direction favours bias 0, p ≈ 0.15).
+- **(b)** Resolve the success rates with many more seeds, made cheap first. Kaggle gives two T4s and the code uses
+  one, so running two seeds at once halves the cost per run. A held-out recall ≥ 0.30 at 6k steps has so far
+  predicted learning in every run but r27, so a truncated run (the same 15k schedule, stopped at 6k) costs ~40% of a
+  full run.
 
 **2026-10-20 — Prepared: seeds 3 and 4 at the standard lr 1.5e-3 (r37–r40; appendix A.2).** These take the
 standard-protocol contrast from 3 to 5 seeds. Configs are in `configs/seeds/bias2_s{3,4}/` (r37, r39) and

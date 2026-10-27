@@ -11,7 +11,8 @@ import sys
 
 import yaml
 
-from scripts.seed_sweep import (REPO_ROOT, collect_rows, fisher_exact, parse_seeds, sweep_summary)
+from scripts.seed_sweep import (REPO_ROOT, collect_rows, fisher_exact, mann_whitney_p, parse_seeds,
+                                sweep_summary)
 
 
 def test_fisher_exact_and_seed_parsing():
@@ -19,6 +20,8 @@ def test_fisher_exact_and_seed_parsing():
     assert abs(fisher_exact(0, 5, 5, 0) - 0.00794) < 1e-4
     assert abs(fisher_exact(2, 2, 2, 2) - 1.0) < 1e-9
     assert parse_seeds("5-7,12,6") == [5, 6, 7, 12]
+    assert mann_whitney_p([0.9, 0.95, 0.99], [0.5, 0.6, 0.62, 0.7]) < 0.1
+    assert mann_whitney_p([0.5, 0.6], [0.5, 0.6]) == 1.0
 
 
 def _write_job(d, cell, seed, assoc_curve, status="stopped", rc=0):
@@ -32,17 +35,17 @@ def _write_job(d, cell, seed, assoc_curve, status="stopped", rc=0):
 
 def test_summary_counts_on_track_jobs_and_writes_csv(tmp_path):
     d = str(tmp_path)
-    _write_job(d, "bias0", 5, [(1500, 0.02), (3000, 0.2), (6000, 0.55)])
-    _write_job(d, "bias0", 6, [(1500, 0.03), (3000, 0.1), (6000, 0.31)])
-    _write_job(d, "bias2", 5, [(1500, 0.08), (3000, 0.11), (6000, 0.12)])
+    _write_job(d, "bias0", 5, [(1500, 0.02), (3000, 0.2), (9000, 0.55)])
+    _write_job(d, "bias0", 6, [(1500, 0.03), (3000, 0.1), (9000, 0.41)])
+    _write_job(d, "bias2", 5, [(1500, 0.08), (3000, 0.11), (9000, 0.39)])
     _write_job(d, "bias2", 6, [(1500, 0.07), (3000, 0.3)], status="running", rc=1)   # crashed -> failed
     rows = {r["job"]: r for r in collect_rows(d)}
-    assert rows["bias0_s05"]["on_track"] == 1 and rows["bias0_s05"]["first_step_ge_thresh"] == 6000
+    assert rows["bias0_s05"]["on_track"] == 1 and rows["bias0_s05"]["first_step_ge_thresh"] == 9000
     assert rows["bias2_s05"]["on_track"] == 0 and rows["bias2_s06"]["status"] == "failed"
     md = sweep_summary(d, "swT")
-    assert "| bias0 | 0.0015 | 0.0 | 2 | 0 | 2/2 |" in md
+    assert "| bias0 | 0.0015 | 0.0 | 2 | 0 | 2/2 |" in md and "| 0.480 |" in md   # median of 0.41, 0.55
     assert "| bias2 | 0.0015 | 2.0 | 1 | 1 | 0/1 |" in md
-    assert "Fisher exact" in md and os.path.exists(os.path.join(d, "sweep.csv"))
+    assert "Fisher exact" in md and "Mann-Whitney" in md and os.path.exists(os.path.join(d, "sweep.csv"))
 
 
 def _tiny_cfg(path, bias):

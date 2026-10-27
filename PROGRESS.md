@@ -66,10 +66,18 @@ facts. r38 (bias 0, same seed and lr) stalled at 0.225. Over 9 paired seed–lr 
 (bias 0 ahead; t ≈ −1.2). Learned (≥ 0.70) is 3 of 9 runs for bias 2 against 7 of 9 for bias 0 (Fisher p ≈ 0.15).
 This corrects the 2026-10-08 / 10-11 statements that bias 0 beats bias 2 "on every seed" and that "the gate-init
 study is complete": those rested on seeds 0–2, which happened to favour bias 0. Still robust:
-- every bias-2 run starts faster (9 of 9 at ≥ 0.06 held-out recall by 1.5k steps; bias 0 10 of 10 at ≤ 0.06);
+- bias-2 runs start faster (corrected 2026-10-27: at 1.5k steps bias 2 beats bias 0 in 109 of 110 run pairs; r13
+  0.057 vs r30 0.065 is the exception, so the "≥ 0.06 / ≤ 0.06" split rested on rounding);
 - outcomes are bimodal (learn or stall) for both inits;
 - layer 0's forgetting is necessary in every trained model.
 See the 2026-10-26 entry.
+
+**Update (2026-10-27): seed 4 at the standard lr (r39, r40) and the sweep changed to 9k steps.** r39 (bias 2) is the
+best GLA we have trained: 0.99 / 0.95 / 0.81 at 32 / 64 / 128 facts. r40 (bias 0) learned slowly to 0.85. Over 10
+paired seed–lr comparisons: mean gap −0.16 (t ≈ −1.1); learned 4/10 (bias 2) vs 8/10 (bias 0), Fisher p ≈ 0.17.
+Exploratory: when bias 2 learns, it reaches higher capacity. Three of its 4 learned runs beat every learned bias-0 run
+at 64 facts. Before any sweep job ran, the sweep moved to a 9k stop with a 0.40 threshold, because the 6k proxy missed
+slow starters such as r40. See the 2026-10-27 entry.
 
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
@@ -80,9 +88,9 @@ See the 2026-10-26 entry.
    The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Seeds 3–4 at
    lr 7.5e-4 (r33–r36) done 2026-10-20: no consistent sign at 7.5e-4, and bias 0 leads on the mean. Seeds 3–4 at the
    standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
-   r40), which completes the pre-registered 5 seeds. Then the seed sweep `sw1` (built 2026-10-26): 20 more seeds per
-   init at lr 1.5e-3, stopped at 6k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`; seeds 5–12, then
-   13–18, then 19–24).
+   r40) done 2026-10-27. Next: the seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
+   lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10, then 11–16,
+   17–22 and 23–24, ~10 h per session of 12 jobs.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -93,8 +101,9 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
-| sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, 6k steps, two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-12` → `13-18` → `19-24` |
-| r39, r40 | — | `configs/seeds/bias{2,0}_s4` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
+| sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, stopped at 9k (amended from 6k), two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-10` → `11-16` → `17-22` → `23-24` |
+| r39, r40 | 2026-10-27 | `c9bfe00` | std_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 1.5e-3: bias 2 0.99 / 0.95 / 0.81 @32 / 64 / 128 (best GLA yet); bias 0 0.85 @32 (slow: 0.27 at 6k) | 10-pair gap −0.16 (t ≈ −1.1), learned 4/10 vs 8/10 (p ≈ 0.17); the sweep moves to a 9k stop (the 6k proxy missed r40) |
+| r39, r40 (prep) | — | `configs/seeds/bias{2,0}_s4` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
 | r35, r36 | 2026-10-20 | `4d49fdb` | lowlr_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 7.5e-4: bias 2 0.55 @32 (plateau 3k–6k, then a slow rise), bias 0 0.91 | 5-seed same-lr gap −0.17 on the mean; bias 2 learns (≥ 0.70) 2/8, bias 0 7/8 over both lrs; run seeds 3–4 at 1.5e-3 |
 | r32, r29, r24 | 2026-10-19 | `36f3d6f` | lowlr_2 ✅ (+ pass 8, 9, 10) | seed 2 at lr 7.5e-4: bias 0 0.22 @32 (stall, plateau stop 13.5k; r12 at 1.5e-3: 0.88), bias 2 0.38 (r13 at 1.5e-3: 0.15); r24 bias 0 at 3e-3 seed 0: 0.91 @32 | the init effect flips sign with the lr on all 3 seeds; neither init is reliable at 7.5e-4; r25 did not replicate; stalled runs have an untimed layer 0 |
 | r27 | 2026-10-18 | `1e87232` | lowlr_1 (3 of 3) ✅ (+ pass 8, 9, 10) | bias 2 at lr 7.5e-4, seed 1: 0.77 @32 (r31 bias 0 same lr 0.73; r11 at 1.5e-3 0.52); 0.15 @64 (both inits collapse at 64 on this seed and lr); one forgetting layer, timing-critical (shuffle L0 −0.72) | same-lr gap +0.05 / +0.05 (seeds 0 / 1): the init gap closes at 7.5e-4; replication threshold 0.80 narrowly missed; run lowlr_2 |
@@ -130,6 +139,56 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-27 — Seed 4 at the standard lr (r39 bias 2, r40 bias 0), and an amendment to the sweep before it runs.**
+Sanity gate passes for both. Per-query recall (pass 1, seed 4, lr 1.5e-3):
+
+| facts | r39 bias 2 | r40 bias 0 |
+|---:|---:|---:|
+| 16 | 0.999 | 0.961 |
+| 32 | **0.993** | 0.849 |
+| 64 | **0.946** | 0.491 |
+| 128 | **0.815** | 0.214 |
+
+Held-out recall (1.5k / 3k / 6k / 9k / 12k / 15k): r39 0.14 / 0.33 / 0.82 / 0.96 / 0.98 / 0.99; r40 0.05 / 0.17 / 0.27 /
+0.58 / 0.77 / 0.80. r40's control drops to 0.63 at 8192 tokens; r39's is 1.00.
+
+- **r39 is the best GLA we have trained, by a wide margin at high load.** At 128 facts it scores 0.815, against a best
+  of 0.46 before (r05, r25). That is above the dense transformer's three-seed mean at 32 facts (0.85 vs 0.99 here).
+- **Pre-registered (2026-10-20), seeds 3–4 at the standard lr:**
+  - "Holds at 5 seeds" (bias 0 ahead by > 0.05 on both new seeds): **no**. Gaps (bias 2 − bias 0) are +0.73 and +0.14.
+  - Reliability at the standard lr, out of 5: learned bias 0 4/5, bias 2 2/5; stalled bias 0 1/5 (r38), bias 2 2/5
+    (r08, r13).
+  - Early start: r39 0.143 and r40 0.051 at 1.5k, as predicted.
+- **All 10 paired seed–lr comparisons (bias 2 − bias 0 at 32 facts):**
+  - lr 1.5e-3: −0.72 / −0.24 / −0.73 / +0.73 / +0.14
+  - lr 7.5e-4: +0.05 / +0.05 / +0.16 / −0.72 / −0.37
+  - Mean −0.16, sd 0.48 (t ≈ −1.1). Learned 4/10 vs 8/10 (Fisher p ≈ 0.17); stalled 4/10 vs 2/10.
+- **Exploratory, not pre-registered: bias 2 has a higher ceiling.** Learned bias-2 runs at 64 / 128 facts: r39 0.95 /
+  0.81, r37 0.80 / 0.44, r25 0.71 / 0.45, r27 0.15 / 0.07. Learned bias-0 runs: 0.14–0.64 / 0.06–0.36 (9 runs); legacy
+  0.49–0.75. Three of the 4 bias-2 learners beat every bias-0 run at 64 facts. If it holds, the picture is "longer
+  initial memory: a faster start, more stalls, and a higher ceiling when it learns". The sweep's secondary test
+  below checks this.
+- **Correction: the early-start split was not exact.** At 1.5k steps the bias-2 values are 0.057–0.143 (10 runs) and
+  the bias-0 values 0.009–0.065 (11 runs). Bias 2 is higher in 109 of 110 run pairs (rank AUC 0.99). The exception is
+  r13 (0.057) vs r30 (0.065). The earlier "every bias-2 run ≥ 0.06, every bias-0 run ≤ 0.06" came from values rounded
+  to two decimals.
+
+**Amendment to the sweep's pre-registration (2026-10-26), made before any sweep job ran.** r40, a full run outside
+the sweep, is the reason. It was at 0.266 at 6k, below the 0.30 line, yet learned (0.85 at 15k): the second slow starter
+the 6k proxy misjudges, after r27. Bias 0 starts slower by design, so a 6k proxy would undercount bias 0's successes.
+Over the 24 full runs, held-out recall ≥ 0.40 at **9k** matches the 15k outcome in 23 of 24, and 10 of 10 at the
+standard lr. The miss is r35, an in-between run (0.40 at 9k, 0.55 at 15k). At the standard lr, failures reach at most
+0.345 at 9k and learners at least 0.47. New design (it replaces the 2026-10-26 one):
+- Jobs stop at **9k** (≈ 100 min each, ≈ 33 GPU-hours for all 40). The seeds and cells are unchanged: bias 0 and
+  bias 2, lr 1.5e-3, seeds 5–24. Seeds 0–4 come from the full runs at step 9000: bias 0 on track 4/5 (r09 0.72,
+  r10 0.47, r12 0.72, r40 0.58; r38 0.16), bias 2 2/5 (r37 0.82, r39 0.96; r08 0.19, r11 0.345, r13 0.11).
+- **Primary:** the share on track (held-out recall ≥ 0.40 at 9k), bias 0 vs bias 2, n = 25 each, two-sided Fisher
+  exact. The decision rule is unchanged.
+- **Secondary 1 (ceiling):** among on-track runs, held-out recall at 9k, bias 2 vs bias 0, two-sided Mann–Whitney.
+  The prediction from the exploratory note is bias 2 higher.
+- **Secondary 2 (early start):** held-out recall at 1.5k, bias 2 vs bias 0, as a rank comparison (Mann–Whitney /
+  AUC). This replaces the fixed 0.06 split. The prediction is bias 2 higher.
 
 **2026-10-26 — Built: the seed sweep (option b) and its pre-registered analysis.** It answers the question 9 pairs
 could not: does the gate init change the chance of learning recall? New pieces:

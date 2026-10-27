@@ -5,8 +5,10 @@ tell their success rates apart (learned 3/9 vs 7/9, Fisher p ~ 0.15). Two saving
 affordable:
 
   * train.stop_at keeps the full schedule (lr cosine, curriculum ramp, eval points all follow max_steps) but
-    stops at --stop-at (default 6000), so a job is exactly the first 6k steps of the full run. Held-out recall
-    >= 0.30 at 6k matched the 15k outcome (>= 0.70 at 32 facts) in 21 of 22 full runs (r27 is the miss).
+    stops at --stop-at (default 9000), so a job is exactly the first 9k steps of the full run. Held-out recall
+    >= 0.40 at 9k matched the 15k outcome (>= 0.70 at 32 facts) in 23 of 24 full runs, 10 of 10 at lr 1.5e-3
+    (r35, an in-between 0.55 run, is the miss). A 6k stop was cheaper but misjudged slow starters (r27, r40),
+    and bias 0 starts slower by design, so it would have undercounted bias 0's successes.
   * Kaggle gives two T4s and one run uses one: --gpus 0,1 runs two jobs at once (--per-gpu 2: four).
 
 One coordinator process launches the workers (each with its own results folder, CUDA_VISIBLE_DEVICES and
@@ -17,7 +19,7 @@ on every publish from ALL jobs there (earlier sessions included). Re-running ski
 session that times out loses only the jobs in progress; --budget-h stops launching jobs that would not finish.
 Weights are not kept (not needed for the success-rate question).
 
-    python -m scripts.seed_sweep --sweep-id sw1 --seeds 5-12 --gpus 0,1 --stop-at 6000 --budget-h 11 \\
+    python -m scripts.seed_sweep --sweep-id sw1 --seeds 5-10 --gpus 0,1 --stop-at 9000 --budget-h 11 \\
         --cells bias0=configs/zerow0/sweep_gated_linear.yaml,bias2=configs/bias2/sweep_gated_linear.yaml
 """
 
@@ -39,11 +41,11 @@ from typing import Dict, List, Optional
 import yaml
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-THRESH = 0.30                     # held-out recall at the stop step that counts as "on track"
+THRESH = 0.40                     # held-out recall at the stop step that counts as "on track"
 DONE = ("stopped", "max_steps", "plateau")
-CHECKPOINTS = (1500, 3000, 4500)  # extra steps reported in the summary (the early-start effect)
+CHECKPOINTS = (1500, 3000, 6000)  # extra steps reported in the summary (the early-start effect)
 FIELDS = ["job", "cell", "seed", "lr", "decay_bias_init", "status", "last_step", "assoc_1500", "assoc_3000",
-          "assoc_4500", "assoc_last", "on_track", "first_step_ge_thresh", "seconds", "gpu"]
+          "assoc_6000", "assoc_last", "on_track", "first_step_ge_thresh", "seconds", "gpu"]
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +95,33 @@ def fisher_exact(a: int, b: int, c: int, d: int) -> float:
     return min(1.0, sum(p(x) for x in range(max(0, k - n2), min(k, n1) + 1) if p(x) <= obs * (1 + 1e-9)))
 
 
+def mann_whitney_p(x: List[float], y: List[float]) -> float:
+    """Two-sided Mann-Whitney U p-value (normal approximation, tie-corrected ranks, continuity correction)."""
+    n1, n2 = len(x), len(y)
+    if n1 == 0 or n2 == 0:
+        return 1.0
+    allv = sorted((v, g) for g, vs in ((0, x), (1, y)) for v in vs)
+    ranks, i = {}, 0
+    vals = [v for v, _ in allv]
+    while i < len(vals):
+        j = i
+        while j + 1 < len(vals) and vals[j + 1] == vals[i]:
+            j += 1
+        ranks[vals[i]] = (i + j) / 2 + 1
+        i = j + 1
+    u = sum(ranks[v] for v in x) - n1 * (n1 + 1) / 2
+    n = n1 + n2
+    ties = {}
+    for v in vals:
+        ties[v] = ties.get(v, 0) + 1
+    var = n1 * n2 / 12 * ((n + 1) - sum(t ** 3 - t for t in ties.values()) / (n * (n - 1)))
+    if var <= 0:
+        return 1.0
+    from math import erf, sqrt
+    z = max(0.0, abs(u - n1 * n2 / 2) - 0.5) / sqrt(var)
+    return min(1.0, 2 * (1 - 0.5 * (1 + erf(z / sqrt(2)))))
+
+
 def _assoc(e: Dict) -> float:
     return float(e.get("by_mode", {}).get("assoc_recall", e.get("per_query", 0.0)))
 
@@ -140,31 +169,37 @@ def sweep_summary(run_dir: str, run_id: str) -> str:
     lines = [f"# iota seed sweep `{run_id}`", "",
              f"- **updated:** {env.get('updated', '?')} (last: `{env.get('stage', '?')}`)",
              f"- **code:** `{env.get('commit', '?')}` on `{env.get('branch', '?')}` · **device:** {env.get('device', '?')}",
-             f"- **on track** = held-out recall (assoc, full difficulty) ≥ {THRESH} at the stop step. It matched the",
-             "  15k outcome in 21 of 22 full runs (PROGRESS.md 2026-10-26). Jobs are the full schedule stopped early.",
+             f"- **on track** = held-out recall (assoc, full difficulty) ≥ {THRESH} at the stop step. At 9k it matched the",
+             "  15k outcome in 23 of 24 full runs (PROGRESS.md 2026-10-27). Jobs are the full schedule stopped early.",
              "", "## Per cell", "",
-             "| cell | lr | gate bias | jobs done | failed | on track | mean @1.5k | mean @3k | mean @last |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "| cell | lr | gate bias | jobs done | failed | on track | mean @1.5k | mean @3k | mean @last | "
+             "median @last, on-track runs |",
+             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     counts = {}
     for c in cells:
         rs = [r for r in rows if r["cell"] == c]
         done = [r for r in rs if r["status"] in DONE]
         on = sum(r["on_track"] for r in done)
         counts[c] = (on, len(done) - on)
+        good = sorted(r["assoc_last"] for r in done if r["on_track"])
+        med = f"{(good[(len(good) - 1) // 2] + good[len(good) // 2]) / 2:.3f}" if good else "–"
         lines.append(f"| {c} | {rs[0]['lr']} | {rs[0]['decay_bias_init']} | {len(done)} | {len(rs) - len(done)} | "
                      f"{on}/{len(done)} | {_mean([r['assoc_1500'] for r in done])} | "
-                     f"{_mean([r['assoc_3000'] for r in done])} | {_mean([r['assoc_last'] for r in done])} |")
+                     f"{_mean([r['assoc_3000'] for r in done])} | {_mean([r['assoc_last'] for r in done])} | {med} |")
     if len(cells) == 2:
         (a, b), (c_, d) = counts[cells[0]], counts[cells[1]]
+        good = [[r["assoc_last"] for r in rows if r["cell"] == c and r["on_track"]] for c in cells]
         lines += ["", f"Fisher exact (two-sided), on track {cells[0]} vs {cells[1]}: "
-                      f"**p = {fisher_exact(a, b, c_, d):.3f}** ({a}/{a + b} vs {c_}/{c_ + d})."]
+                      f"**p = {fisher_exact(a, b, c_, d):.3f}** ({a}/{a + b} vs {c_}/{c_ + d}).",
+                  f"Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: "
+                  f"p = {mann_whitney_p(good[0], good[1]):.3f} (n = {len(good[0])} vs {len(good[1])})."]
     lines += ["", "## Jobs", "",
-              "| job | status | last step | @1.5k | @3k | @4.5k | @last | on track | first step ≥ thresh | minutes | gpu |",
+              "| job | status | last step | @1.5k | @3k | @6k | @last | on track | first step ≥ thresh | minutes | gpu |",
               "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
     for r in sorted(rows, key=lambda r: (r["seed"], r["cell"])):
         mins = f"{r['seconds'] / 60:.0f}" if r["seconds"] != "" else ""
         lines.append(f"| {r['job']} | {r['status']} | {r['last_step']} | {r['assoc_1500']} | {r['assoc_3000']} | "
-                     f"{r['assoc_4500']} | {r['assoc_last']} | {r['on_track']} | {r['first_step_ge_thresh']} | "
+                     f"{r['assoc_6000']} | {r['assoc_last']} | {r['on_track']} | {r['first_step_ge_thresh']} | "
                      f"{mins} | {r['gpu']} |")
     return "\n".join(lines) + "\n"
 
@@ -317,12 +352,12 @@ def main() -> int:
     ap.add_argument("--sweep-id", default="sw1", help="folder under runs/ on the kaggle-results branch")
     ap.add_argument("--cells", default="bias0=configs/zerow0/sweep_gated_linear.yaml,"
                                        "bias2=configs/bias2/sweep_gated_linear.yaml")
-    ap.add_argument("--seeds", default="5-12")
-    ap.add_argument("--stop-at", type=int, default=6000)
+    ap.add_argument("--seeds", default="5-10")
+    ap.add_argument("--stop-at", type=int, default=9000)
     ap.add_argument("--gpus", default="0,1", help="device ids, or 'cpu' (repeat for several CPU workers)")
     ap.add_argument("--per-gpu", type=int, default=1, help="concurrent jobs per device")
     ap.add_argument("--budget-h", type=float, default=0.0, help="don't start a job that would end after this")
-    ap.add_argument("--est-min", type=float, default=75.0, help="job length guess before any job finishes")
+    ap.add_argument("--est-min", type=float, default=110.0, help="job length guess before any job finishes")
     ap.add_argument("--out", default="experiments/sweep")
     ap.add_argument("--poll", type=float, default=15.0)
     ap.add_argument("--smoke", action="store_true", help="tiny jobs (60-step schedule), for tests")

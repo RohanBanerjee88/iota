@@ -1,0 +1,13 @@
+{
+ "job": "bias2_s06",
+ "cell": "bias2",
+ "seed": 6,
+ "gpu": "1",
+ "seconds": 5058,
+ "returncode": 0,
+ "status": "stopped",
+ "stop_at": 9000,
+ "lr": 0.0015,
+ "decay_bias_init": 2.0,
+ "config": "configs/bias2/sweep_gated_linear.yaml"
+}

@@ -4,9 +4,9 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
+| [r09](runs/r09/SUMMARY.md) | 2026-10-27 20:44 UTC | eval 4 | Tesla T4 | `87bccab` |
 | [r40](runs/r40/SUMMARY.md) | 2026-10-26 20:27 UTC | eval 8,9,10 | Tesla T4 | `c9bfe00` |
 | [r39](runs/r39/SUMMARY.md) | 2026-10-26 17:49 UTC | eval 8,9,10 | Tesla T4 | `c9bfe00` |
-| [r09](runs/r09/SUMMARY.md) | 2026-10-26 15:12 UTC | eval 4 | Tesla T4 | `c9bfe00` |
 | [r38](runs/r38/SUMMARY.md) | 2026-10-25 19:51 UTC | eval 8,9,10 | Tesla T4 | `45e8d0d` |
 | [r37](runs/r37/SUMMARY.md) | 2026-10-25 17:12 UTC | eval 8,9,10 | Tesla T4 | `45e8d0d` |
 | [r36](runs/r36/SUMMARY.md) | 2026-10-20 21:59 UTC | eval 8,9,10 | Tesla T4 | `4d49fdb` |

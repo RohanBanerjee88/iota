@@ -154,7 +154,8 @@ Held-out recall (1.5k / 3k / 6k / 9k / 12k / 15k): r39 0.14 / 0.33 / 0.82 / 0.96
 0.58 / 0.77 / 0.80. r40's control drops to 0.63 at 8192 tokens; r39's is 1.00.
 
 - **r39 is the best GLA we have trained, by a wide margin at high load.** At 128 facts it scores 0.815, against a best
-  of 0.46 before (r05, r25). That is above the dense transformer's three-seed mean at 32 facts (0.85 vs 0.99 here).
+  of 0.46 before (r05, r25); the dense transformer's three-seed mean at 128 facts is 0.39. One seed, and the
+  transformer's lr was never re-checked, so this is not a fair cross-architecture claim.
 - **Pre-registered (2026-10-20), seeds 3–4 at the standard lr:**
   - "Holds at 5 seeds" (bias 0 ahead by > 0.05 on both new seeds): **no**. Gaps (bias 2 − bias 0) are +0.73 and +0.14.
   - Reliability at the standard lr, out of 5: learned bias 0 4/5, bias 2 2/5; stalled bias 0 1/5 (r38), bias 2 2/5

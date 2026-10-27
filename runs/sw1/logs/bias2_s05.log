@@ -16,3 +16,5 @@
 [sweep] gated_linear step  7500 loss 0.756 bal 0.690 [assoc 0.385 state 0.994] exact 0.404 diff 1.00 * (3982s)
 [sweep] gated_linear step  8000 loss 0.661 bal 0.706 [assoc 0.412 state 1.000] exact 0.418 diff 1.00 * (4336s)
 [sweep] gated_linear step  8500 loss 0.585 bal 0.737 [assoc 0.473 state 1.000] exact 0.418 diff 1.00 * (4689s)
+[sweep] gated_linear step  9000 loss 0.525 bal 0.761 [assoc 0.521 state 1.000] exact 0.430 diff 1.00 * (5043s)
+[sweep] gated_linear BEST plateau_acc = 0.7606 -> /kaggle/working/iota/experiments/sweep/sw1/work/bias2_s05/bias2_s05

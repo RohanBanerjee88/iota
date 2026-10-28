@@ -1,0 +1,206 @@
+{
+ "run_name": "bias0_s09",
+ "status": "stopped",
+ "best_step": 9000,
+ "last_step": 9000,
+ "eval_acc": [
+  {
+   "step": 500,
+   "per_query": 0.00856225472707813,
+   "exact": 0.006,
+   "balanced": 0.013,
+   "by_mode": {
+    "assoc_recall": 0.008,
+    "state_track": 0.018
+   },
+   "difficulty": 0.0
+  },
+  {
+   "step": 1000,
+   "per_query": 0.011773100249732429,
+   "exact": 0.028,
+   "balanced": 0.0455,
+   "by_mode": {
+    "assoc_recall": 0.0072,
+    "state_track": 0.0838
+   },
+   "difficulty": 0.0
+  },
+  {
+   "step": 1500,
+   "per_query": 0.08633606849803782,
+   "exact": 0.328,
+   "balanced": 0.5002,
+   "by_mode": {
+    "assoc_recall": 0.0303,
+    "state_track": 0.9701
+   },
+   "difficulty": 0.25
+  },
+  {
+   "step": 2000,
+   "per_query": 0.11951480556546558,
+   "exact": 0.346,
+   "balanced": 0.5319,
+   "by_mode": {
+    "assoc_recall": 0.0637,
+    "state_track": 1.0
+   },
+   "difficulty": 0.5
+  },
+  {
+   "step": 2500,
+   "per_query": 0.1377095968605066,
+   "exact": 0.344,
+   "balanced": 0.5415,
+   "by_mode": {
+    "assoc_recall": 0.0831,
+    "state_track": 1.0
+   },
+   "difficulty": 0.75
+  },
+  {
+   "step": 3000,
+   "per_query": 0.15305030324652158,
+   "exact": 0.344,
+   "balanced": 0.5497,
+   "by_mode": {
+    "assoc_recall": 0.0994,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 3500,
+   "per_query": 0.15947199429183018,
+   "exact": 0.346,
+   "balanced": 0.5531,
+   "by_mode": {
+    "assoc_recall": 0.1062,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 4000,
+   "per_query": 0.17623974313235818,
+   "exact": 0.344,
+   "balanced": 0.562,
+   "by_mode": {
+    "assoc_recall": 0.1241,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 4500,
+   "per_query": 0.17088833392793434,
+   "exact": 0.354,
+   "balanced": 0.5592,
+   "by_mode": {
+    "assoc_recall": 0.1184,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 5000,
+   "per_query": 0.17124509454156261,
+   "exact": 0.342,
+   "balanced": 0.5594,
+   "by_mode": {
+    "assoc_recall": 0.1187,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 5500,
+   "per_query": 0.18373171601855154,
+   "exact": 0.35,
+   "balanced": 0.566,
+   "by_mode": {
+    "assoc_recall": 0.132,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 6000,
+   "per_query": 0.21191580449518374,
+   "exact": 0.358,
+   "balanced": 0.581,
+   "by_mode": {
+    "assoc_recall": 0.162,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 6500,
+   "per_query": 0.21833749554049234,
+   "exact": 0.366,
+   "balanced": 0.5844,
+   "by_mode": {
+    "assoc_recall": 0.1688,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 7000,
+   "per_query": 0.22725651088119872,
+   "exact": 0.356,
+   "balanced": 0.5892,
+   "by_mode": {
+    "assoc_recall": 0.1783,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 7500,
+   "per_query": 0.23510524438102035,
+   "exact": 0.366,
+   "balanced": 0.5933,
+   "by_mode": {
+    "assoc_recall": 0.1866,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 8000,
+   "per_query": 0.22904031394934,
+   "exact": 0.352,
+   "balanced": 0.5901,
+   "by_mode": {
+    "assoc_recall": 0.1802,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 8500,
+   "per_query": 0.23011059579022475,
+   "exact": 0.366,
+   "balanced": 0.5907,
+   "by_mode": {
+    "assoc_recall": 0.1813,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  },
+  {
+   "step": 9000,
+   "per_query": 0.2354620049946486,
+   "exact": 0.366,
+   "balanced": 0.5935,
+   "by_mode": {
+    "assoc_recall": 0.187,
+    "state_track": 1.0
+   },
+   "difficulty": 1.0
+  }
+ ]
+}

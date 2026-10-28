@@ -1,0 +1,13 @@
+{
+ "job": "bias0_s09",
+ "cell": "bias0",
+ "seed": 9,
+ "gpu": "0",
+ "seconds": 4982,
+ "returncode": 0,
+ "status": "stopped",
+ "stop_at": 9000,
+ "lr": 0.0015,
+ "decay_bias_init": 0.0,
+ "config": "configs/zerow0/sweep_gated_linear.yaml"
+}

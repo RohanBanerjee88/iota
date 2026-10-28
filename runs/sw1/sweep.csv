@@ -1,5 +1,6 @@
 job,cell,seed,lr,decay_bias_init,status,last_step,assoc_1500,assoc_3000,assoc_6000,assoc_last,on_track,first_step_ge_thresh,seconds,gpu
 bias0_s05,bias0,5,0.0015,0.0,stopped,9000,0.0121,0.3331,0.5804,0.8323,1,4000,4980,0
 bias0_s06,bias0,6,0.0015,0.0,stopped,9000,0.1047,0.2401,0.4439,0.566,1,6000,4968,0
+bias0_s07,bias0,7,0.0015,0.0,stopped,9000,0.0281,0.1813,0.6271,0.835,1,5500,4967,0
 bias2_s05,bias2,5,0.0015,2.0,stopped,9000,0.0698,0.102,0.1779,0.5212,1,8000,5058,1
 bias2_s06,bias2,6,0.0015,2.0,stopped,9000,0.0285,0.1665,0.3308,0.6153,1,7000,5058,1

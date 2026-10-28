@@ -1,0 +1,271 @@
+{
+  "config": {
+    "arch": "gated_linear",
+    "d_model": 256,
+    "n_layers": 5,
+    "n_heads": 4,
+    "d_ff": 512,
+    "dropout": 0.0,
+    "chunk_size": 64,
+    "decay_bias_init": 2.0,
+    "short_conv": 4,
+    "legacy_gate_init": false,
+    "curriculum": [
+      {
+        "mode": "assoc_recall",
+        "n_bindings": {
+          "min": 2,
+          "max": 64
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "n_queries": {
+          "min": 1,
+          "max": 16
+        },
+        "distractor_density": 0.1,
+        "query_pos": "uniform",
+        "weight": 0.67
+      },
+      {
+        "mode": "state_track",
+        "n_bindings": {
+          "min": 2,
+          "max": 16
+        },
+        "seq_len": {
+          "min": 64,
+          "max": 640
+        },
+        "distractor_density": 0.1,
+        "ops_kinds": [
+          "set"
+        ],
+        "weight": 0.33
+      }
+    ],
+    "train": {
+      "batch_size": 64,
+      "warmup": 200,
+      "weight_decay": 0.01,
+      "max_steps": 15000,
+      "easy_steps": 1000,
+      "ramp_steps": 2000,
+      "eval_every": 500,
+      "eval_n": 500,
+      "patience": 8,
+      "seed": 10,
+      "lr": 0.0015,
+      "run_name": "bias2_s10",
+      "grad_clip": 1.0,
+      "stop_at": 9000,
+      "device": "cuda"
+    },
+    "vocab_size": 99
+  },
+  "history": {
+    "eval_acc": [
+      {
+        "step": 500,
+        "per_query": 0.03745986443096682,
+        "exact": 0.128,
+        "balanced": 0.1966,
+        "by_mode": {
+          "assoc_recall": 0.0159,
+          "state_track": 0.3772
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1000,
+        "per_query": 0.08062789867998572,
+        "exact": 0.338,
+        "balanced": 0.5112,
+        "by_mode": {
+          "assoc_recall": 0.0224,
+          "state_track": 1.0
+        },
+        "difficulty": 0.0
+      },
+      {
+        "step": 1500,
+        "per_query": 0.1673207277916518,
+        "exact": 0.354,
+        "balanced": 0.5573,
+        "by_mode": {
+          "assoc_recall": 0.1146,
+          "state_track": 1.0
+        },
+        "difficulty": 0.25
+      },
+      {
+        "step": 2000,
+        "per_query": 0.2161969318587228,
+        "exact": 0.368,
+        "balanced": 0.5805,
+        "by_mode": {
+          "assoc_recall": 0.1669,
+          "state_track": 0.994
+        },
+        "difficulty": 0.5
+      },
+      {
+        "step": 2500,
+        "per_query": 0.2732786300392437,
+        "exact": 0.38,
+        "balanced": 0.6136,
+        "by_mode": {
+          "assoc_recall": 0.2272,
+          "state_track": 1.0
+        },
+        "difficulty": 0.75
+      },
+      {
+        "step": 3000,
+        "per_query": 0.392436674991081,
+        "exact": 0.404,
+        "balanced": 0.677,
+        "by_mode": {
+          "assoc_recall": 0.3539,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 3500,
+        "per_query": 0.48483767392079913,
+        "exact": 0.43,
+        "balanced": 0.7261,
+        "by_mode": {
+          "assoc_recall": 0.4522,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4000,
+        "per_query": 0.601855155190867,
+        "exact": 0.452,
+        "balanced": 0.7883,
+        "by_mode": {
+          "assoc_recall": 0.5766,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 4500,
+        "per_query": 0.6674991080984659,
+        "exact": 0.494,
+        "balanced": 0.8232,
+        "by_mode": {
+          "assoc_recall": 0.6464,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5000,
+        "per_query": 0.7042454513021762,
+        "exact": 0.5,
+        "balanced": 0.8428,
+        "by_mode": {
+          "assoc_recall": 0.6855,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 5500,
+        "per_query": 0.7413485551195148,
+        "exact": 0.526,
+        "balanced": 0.8625,
+        "by_mode": {
+          "assoc_recall": 0.725,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 6000,
+        "per_query": 0.8216196931858722,
+        "exact": 0.584,
+        "balanced": 0.9052,
+        "by_mode": {
+          "assoc_recall": 0.8103,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 6500,
+        "per_query": 0.868712094184802,
+        "exact": 0.648,
+        "balanced": 0.9302,
+        "by_mode": {
+          "assoc_recall": 0.8604,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 7000,
+        "per_query": 0.9043881555476275,
+        "exact": 0.71,
+        "balanced": 0.9492,
+        "by_mode": {
+          "assoc_recall": 0.8983,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 7500,
+        "per_query": 0.9229397074562968,
+        "exact": 0.76,
+        "balanced": 0.959,
+        "by_mode": {
+          "assoc_recall": 0.9181,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 8000,
+        "per_query": 0.9375668926150553,
+        "exact": 0.762,
+        "balanced": 0.9668,
+        "by_mode": {
+          "assoc_recall": 0.9336,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 8500,
+        "per_query": 0.949696753478416,
+        "exact": 0.812,
+        "balanced": 0.9733,
+        "by_mode": {
+          "assoc_recall": 0.9465,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      },
+      {
+        "step": 9000,
+        "per_query": 0.9593292900463789,
+        "exact": 0.846,
+        "balanced": 0.9784,
+        "by_mode": {
+          "assoc_recall": 0.9568,
+          "state_track": 1.0
+        },
+        "difficulty": 1.0
+      }
+    ]
+  },
+  "weights": "bias2_s10.safetensors"
+}

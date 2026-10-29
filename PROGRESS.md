@@ -88,9 +88,10 @@ slow starters such as r40. See the 2026-10-27 entry.
    The init effect flips sign between the two lrs, and r25 did not replicate (see the 2026-10-19 entry). Seeds 3–4 at
    lr 7.5e-4 (r33–r36) done 2026-10-20: no consistent sign at 7.5e-4, and bias 0 leads on the mean. Seeds 3–4 at the
    standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
-   r40) done 2026-10-27. Next: the seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
-   lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10, then 11–16,
-   17–22 and 23–24, ~10 h per session of 12 jobs.
+   r40) done 2026-10-27. The seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
+   lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10 done
+   2026-10-28 (~84 min per job, 8.4 h for 12). Next `SWEEP_SEEDS = "11-16"` (`BUDGET_H = 9`), then 17–22 and
+   23–24.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -101,6 +102,7 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| sw1 (seeds 5–10) | 2026-10-28 | `87bccab` | sweep session 1 ✅ (12 jobs, 2 at once, 8.4 h) | on track at 9k: bias 0 5/6, bias 2 4/6; seeds 0–10 pooled 9/11 vs 6/11 (interim, not the test) | continue: seeds 11–16 |
 | sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, stopped at 9k (amended from 6k), two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-10` → `11-16` → `17-22` → `23-24` |
 | r39, r40 | 2026-10-27 | `c9bfe00` | std_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 1.5e-3: bias 2 0.99 / 0.95 / 0.81 @32 / 64 / 128 (best GLA yet); bias 0 0.85 @32 (slow: 0.27 at 6k) | 10-pair gap −0.16 (t ≈ −1.1), learned 4/10 vs 8/10 (p ≈ 0.17); the sweep moves to a 9k stop (the 6k proxy missed r40) |
 | r39, r40 (prep) | — | `configs/seeds/bias{2,0}_s4` | prepared | standard lr 1.5e-3, seeds 3 / 4: r37 / r39 bias 2, r38 / r40 bias 0 | notebook `PLAN="exp"`, cell 9d, `BATCH` `std_s3` → `std_s4` |
@@ -139,6 +141,37 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-10-28 — Seed sweep `sw1`, session 1 (seeds 5–10): interim only, no decision.** 12 jobs, two at once on the
+two T4s, ~84 min each, 8.4 h in all; none failed. The pre-registered test is at n = 25 per init (seeds 0–24); these
+are interim numbers and do not change the plan. Held-out recall (assoc) per job, at 1.5k / 3k / 6k / 9k steps:
+
+| seed | bias 0 | bias 2 |
+|---:|---|---|
+| 5 | 0.01 / 0.33 / 0.58 / **0.83** | 0.07 / 0.10 / 0.18 / **0.52** |
+| 6 | 0.10 / 0.24 / 0.44 / **0.57** | 0.03 / 0.17 / 0.33 / **0.62** |
+| 7 | 0.03 / 0.18 / 0.63 / **0.84** | 0.07 / 0.12 / 0.19 / **0.53** |
+| 8 | 0.10 / 0.31 / 0.71 / **0.87** | 0.03 / 0.10 / 0.12 / 0.13 (stall) |
+| 9 | 0.03 / 0.10 / 0.16 / 0.19 (stall) | 0.08 / 0.11 / 0.18 / 0.22 (stall) |
+| 10 | 0.03 / 0.16 / 0.44 / **0.71** | 0.11 / 0.35 / 0.81 / **0.96** |
+
+- **On track (≥ 0.40 at 9k), this session:** bias 0 5/6, bias 2 4/6. Pooled with seeds 0–4 from the full runs:
+  9/11 vs 6/11 (Fisher p = 0.36). 14 seeds per init remain.
+- **Bias 2's typical path is a long plateau, then a late escape.** Seeds 5, 6 and 7 sat at 0.10–0.19 until 6k and
+  crossed 0.40 at 7k–8k. Seeds 8 and 9 had not escaped by 9k, and seed 10 never plateaued. The first step at ≥ 0.40
+  (seeds 0–10, standard lr): bias 0 4.0k–7.5k (9 runs; 2 never by 9k), bias 2 3.5k–8k (6 runs; 5 never). Not a
+  pre-registered measure; worth reporting as time-to-escape.
+- **Secondary 1 (ceiling), interim:** among on-track runs, held-out recall at 9k is the same for both (medians 0.72
+  and 0.72; Mann–Whitney p = 0.86). At 9k, though, the late-escaping bias-2 runs have only just crossed the line, so
+  this mixes speed with ceiling. The full runs' higher bias-2 ceiling at 64 facts (2026-10-27) is not tested by a 9k
+  stop.
+- **Secondary 2 (early start), interim: weaker than the full runs suggested.** In the sweep, two bias-0 runs started
+  fast (seeds 6 and 8: 0.10 at 1.5k) and two bias-2 runs slowly (seeds 6 and 8: 0.03). The sweep-only rank AUC is 0.61.
+  Pooled over seeds 0–10 at the standard lr it is 0.79 (Mann–Whitney p = 0.03; the full runs alone gave 0.99). The
+  direction holds, but "every bias-2 run starts faster" does not.
+- **Design note:** in session 1 every bias-0 job ran on GPU 0 and every bias-2 job on GPU 1. Both are identical T4s,
+  so no systematic effect is expected. From session 2 the cell order flips on odd seeds, so the cells alternate
+  between GPUs.
 
 **2026-10-27 — Seed 4 at the standard lr (r39 bias 2, r40 bias 0), and an amendment to the sweep before it runs.**
 Sanity gate passes for both. Per-query recall (pass 1, seed 4, lr 1.5e-3):

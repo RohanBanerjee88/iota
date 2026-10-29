@@ -276,7 +276,10 @@ def coordinate(args) -> int:
 
     done = published_jobs(args.sweep_id, remote, token) if publish else set()
     done |= {r["job"] for r in collect_rows(pub) if r["status"] in DONE}
-    queue = [(c, s) for s in seeds for c in cells if job_name(c, s) not in done]   # cells interleaved per seed
+    # Cells interleaved per seed, their order flipped on odd seeds so no cell is tied to one GPU
+    # (seeds 5-10 of sw1 ran every bias-0 job on GPU 0 and every bias-2 job on GPU 1).
+    names = list(cells)
+    queue = [(c, s) for s in seeds for c in (names if s % 2 == 0 else names[::-1]) if job_name(c, s) not in done]
     slots = _slots(args.gpus, args.per_gpu)
     threads = max(1, (os.cpu_count() or 2) // len(slots))
     print(f"[sweep] {args.sweep_id}: {len(queue)} jobs to run ({len(done)} already done), "

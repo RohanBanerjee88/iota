@@ -90,8 +90,8 @@ slow starters such as r40. See the 2026-10-27 entry.
    standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
    r40) done 2026-10-27. The seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
    lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10 done
-   2026-10-28 (~84 min per job, 8.4 h for 12). Next `SWEEP_SEEDS = "11-16"` (`BUDGET_H = 9`), then 17–22 and
-   23–24.
+   2026-10-28 (~84 min per job, 8.4 h for 12). Seeds 11–24 still to run (28 jobs, ~20 h), repacked 2026-11-11 into two
+   sessions: `SWEEP_SEEDS = "11-17"` then `"18-24"`, `BUDGET_H = 10.5` (7 rounds of 2 jobs, ~9.8 h each).
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.

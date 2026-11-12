@@ -1,6 +1,6 @@
 # iota seed sweep `sw1`
 
-- **updated:** 2026-11-12 08:14 UTC (last: `sweep bias2_s18 stopped`)
+- **updated:** 2026-11-12 09:37 UTC (last: `sweep bias2_s19 stopped`)
 - **code:** `ccef679` on `claude/wonderful-ritchie-hbm5zn` · **device:** Tesla T4
 - **on track** = held-out recall (assoc, full difficulty) ≥ 0.4 at the stop step. At 9k it matched the
   15k outcome in 23 of 24 full runs (PROGRESS.md 2026-10-27). Jobs are the full schedule stopped early.
@@ -10,9 +10,9 @@
 | cell | lr | gate bias | jobs done | failed | on track | mean @1.5k | mean @3k | mean @last | median @last, on-track runs |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | bias0 | 0.0015 | 0.0 | 13 | 0 | 10/13 | 0.060 | 0.243 | 0.660 | 0.834 |
-| bias2 | 0.0015 | 2.0 | 14 | 0 | 12/14 | 0.099 | 0.219 | 0.671 | 0.803 |
+| bias2 | 0.0015 | 2.0 | 15 | 0 | 12/15 | 0.095 | 0.211 | 0.642 | 0.803 |
 
-Fisher exact (two-sided), on track bias0 vs bias2: **p = 0.648** (10/13 vs 12/14).
+Fisher exact (two-sided), on track bias0 vs bias2: **p = 1.000** (10/13 vs 12/15).
 Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: p = 0.869 (n = 10 vs 12).
 
 ## Jobs
@@ -46,3 +46,4 @@ Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: 
 | bias2_s17 | stopped | 9000 | 0.2193 | 0.4059 | 0.772 | 0.9253 | 1 | 3000 | 84 | 0 |
 | bias0_s18 | stopped | 9000 | 0.0212 | 0.3763 | 0.7451 | 0.901 | 1 | 3500 | 84 | 0 |
 | bias2_s18 | stopped | 9000 | 0.0725 | 0.1525 | 0.5615 | 0.791 | 1 | 5000 | 86 | 1 |
+| bias2_s19 | stopped | 9000 | 0.0376 | 0.1058 | 0.1741 | 0.2352 | 0 |  | 85 | 0 |

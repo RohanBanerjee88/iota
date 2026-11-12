@@ -1,0 +1,6 @@
+[sweep] model=gated_linear params=2.67M device=cuda max_steps=15000 bs=64 patience=8
+[sweep] gated_linear step   500 loss 1.520 bal 0.013 [assoc 0.013 state 0.012] exact 0.004 diff 0.00 * (33s)
+[sweep] gated_linear step  1000 loss 1.532 bal 0.011 [assoc 0.010 state 0.012] exact 0.006 diff 0.00  (66s)
+[sweep] gated_linear step  1500 loss 1.951 bal 0.011 [assoc 0.010 state 0.012] exact 0.004 diff 0.25  (133s)
+[sweep] gated_linear step  2000 loss 1.983 bal 0.015 [assoc 0.013 state 0.018] exact 0.006 diff 0.50 * (274s)
+[sweep] gated_linear step  2500 loss 2.062 bal 0.011 [assoc 0.011 state 0.012] exact 0.004 diff 0.75  (496s)

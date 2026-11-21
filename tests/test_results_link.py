@@ -319,6 +319,26 @@ def test_tuned_lr_configs_change_only_the_lr(monkeypatch):
             assert ra._archs() == ["gated_linear"]
 
 
+def test_nudged_config_moves_only_the_gate_bias_by_a_thousandth():
+    # rep1 (PROGRESS 2026-11-21): does a negligible gate change re-roll whether a run learns?
+    import yaml
+    import scripts.run_all as ra
+    from iota.data.tokenizer import get_tokenizer
+    from iota.models import build_model
+    from iota.models.gated_linear import GatedLinearAttention
+
+    base = yaml.safe_load(open("configs/zerow0/sweep_gated_linear.yaml"))
+    cfg = yaml.safe_load(open("configs/nudge/bias0/sweep_gated_linear.yaml"))
+    assert sorted(os.listdir("configs/nudge/bias0")) == ["sweep_gated_linear.yaml"]
+    assert cfg["train"] == base["train"]
+    fb, fc = ra._fingerprint(base), ra._fingerprint(cfg)
+    assert {k for k in set(fb) | set(fc) if fb.get(k) != fc.get(k)} == {"decay_bias_init"}
+    assert cfg["decay_bias_init"] == 0.001
+    gates = [m.g_proj for m in build_model(dict(cfg, vocab_size=get_tokenizer().vocab_size)).modules()
+             if isinstance(m, GatedLinearAttention)]
+    assert all(abs(float(g.bias[0].detach()) - 0.001) < 1e-9 and torch.all(g.weight == 0) for g in gates)
+
+
 def test_per_layer_bias_configs_build_the_intended_gates():
     # r14-r17 (appendix A.3): bias 0 in the first layer and 2 above, or the reverse;
     # r20/r21 (A.2): r09/r08 with a 30k budget and early stopping off.

@@ -360,7 +360,8 @@ def main() -> int:
     ap.add_argument("--gpus", default="0,1", help="device ids, or 'cpu' (repeat for several CPU workers)")
     ap.add_argument("--per-gpu", type=int, default=1, help="concurrent jobs per device")
     ap.add_argument("--budget-h", type=float, default=0.0, help="don't start a job that would end after this")
-    ap.add_argument("--est-min", type=float, default=110.0, help="job length guess before any job finishes")
+    ap.add_argument("--est-min", type=float, default=90.0,
+                    help="job length guess before any job finishes (9k-step jobs took ~85 min on a T4)")
     ap.add_argument("--out", default="experiments/sweep")
     ap.add_argument("--poll", type=float, default=15.0)
     ap.add_argument("--smoke", action="store_true", help="tiny jobs (60-step schedule), for tests")

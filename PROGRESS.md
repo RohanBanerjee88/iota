@@ -98,8 +98,9 @@ vs 0/3) was a ~1-in-60 draw. See the 2026-11-21 entry for the plan that follows.
    r40) done 2026-10-27. The seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
    lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10 done
    2026-10-28; seeds 11–24 done 2026-11-12 (39 of 40 jobs; `bias0_s17` was not started, cut by the session budget).
-   Result 2026-11-21: no detectable init effect (see entry). Next: the "what is the stall" plan in the 2026-11-21
-   entry.
+   Result 2026-11-21: no detectable init effect (see entry). Next: Session A (prepared 2026-11-21): pass 11 on
+   every saved checkpoint, then the reproducibility sweep `rep1` and the missing `bias0_s17` (notebook
+   `PLAN = "sessA"`, cells 9b and 9e).
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -110,6 +111,7 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| Session A | — | `iota/retrieval.py`, `configs/nudge/bias0/` | prepared | pass 11 (which facts are retrievable) on 29 runs / ~41 checkpoints; `rep1` = bias 0 rerun exactly and nudged by 0.001 on seeds 5, 8, 9, 12; sw1 `bias0_s17` | notebook `PLAN="sessA"` (cells 9b, 9e), ~9 h |
 | sw1 (seeds 11–24) | 2026-11-12 | `ccef679` | sweep sessions 2–3 ✅ (27 jobs; `bias0_s17` not started) | seeds 0–24 pooled: on track 17/24 (bias 0) vs 18/25 (bias 2), p = 1.0; early head start for bias 2 at 1.5k only | the init question is answered (no detectable effect); turn to what the stall is |
 | sw1 (seeds 5–10) | 2026-10-28 | `87bccab` | sweep session 1 ✅ (12 jobs, 2 at once, 8.4 h) | on track at 9k: bias 0 5/6, bias 2 4/6; seeds 0–10 pooled 9/11 vs 6/11 (interim, not the test) | continue: seeds 11–16 |
 | sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, stopped at 9k (amended from 6k), two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-10` → `11-16` → `17-22` → `23-24` |
@@ -150,6 +152,38 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-11-21 — Prepared: Session A (pass 11, and the lottery's reproducibility).** Steps 1 and 2 of the plan below.
+
+*Pass 11, "which facts can a model retrieve?"* (`iota/retrieval.py`; `--passes 11`; a SUMMARY section 4i). It uses
+pass 1's prompt layout. Each query is binned by how many facts were written after the queried one, by key, by value
+and by its rank among the queries. Cells: 8 / 32 / 64 / 128 facts at the 256-token floor, plus 8 facts at 640 tokens,
+which adds filler only and stays inside the training lengths. 500 prompts per cell, on all 29 runs with a saved
+checkpoint (r04–r17, r24, r25, r27, r29–r40): about 41 models, dense and hybrid included. Notebook cell 9b,
+~1.5 h. Tests are in `tests/test_retrieval.py`.
+
+*Reproducibility sweep `rep1`*: bias 0 at lr 1.5e-3, stopped at 9k, on two seeds that learned in sw1 (5: 0.83,
+8: 0.87) and two that stalled (9: 0.19, 12: 0.18), each run twice:
+- `bias0`: an exact rerun (same config and seed);
+- `nudge`: the gate bias moved from 0 to 0.001 (`configs/nudge/bias0/`; γ₀ 0.5 → 0.50025; test
+  `test_nudged_config_moves_only_the_gate_bias_by_a_thousandth`).
+
+That is 8 jobs (~5.7 h). The same cell adds sw1's missing `bias0_s17` (~1.4 h). Notebook `PLAN = "sessA"` runs cell
+9b, then 9e.
+
+Readings, fixed before the runs:
+- **Exact reruns.** "Bitwise reproducible" if every held-out eval matches sw1 to 4 decimals. "Outcome reproducible"
+  if the on-track status (≥ 0.40 at 9k) matches on all 4 seeds. Any flip means identical settings can land on either
+  side of the lottery.
+- **Nudged runs.** If the outcome is re-drawn independently at sw1's rates (71% on track), the expected number of
+  flips among the 4 seeds is 2 × 0.29 + 2 × 0.71 = 2.0. If a 0.001 change cannot move the outcome, it is 0. Read
+  ≥ 2 flips as "a negligible change re-rolls the outcome", 0 as "robust at this size of change", and 1 as
+  inconclusive. Also report when the nudged and original curves first differ by > 0.02 held-out recall.
+- **Pass 11, prediction for stalled models** (recall at 32 facts < 0.40: r07, r08, r13, r17, r29, r32, r33, r38):
+  a recency buffer. At 32 facts, recall on the last 4 facts ≥ 0.6 and on facts ≥ 16 back ≤ 0.1. If stalled models
+  instead recall a fixed set of keys at any position, per-key recall is bimodal (many keys ≥ 0.8 and ≤ 0.2).
+- **Pass 11, prediction for learned models:** a flatter profile (≥ 16 back within 0.2 of the last 4). Whether the
+  640-token cell lowers recall (token distance) or not (fact count) is reported without a prediction.
 
 **2026-11-21 — Seed sweep `sw1` complete (39 of 40 jobs): the pre-registered test finds no init effect.** Seeds 11–24
 ran 2026-11-11/12 in two sessions (~85 min per job, two at once; cells alternated between GPUs). `bias0_s17` never

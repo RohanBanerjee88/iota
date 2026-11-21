@@ -421,6 +421,38 @@ def _replay_section(run_dir: str) -> List[str]:
     return lines
 
 
+def _retrieval_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass11_retrieval.csv"))
+    if not rows:
+        return []
+    lines = ["## 4i. Which facts are retrievable (Pass 11)", "",
+             "Per-query recall by how many facts were written AFTER the queried one (0 = the last SET line), "
+             "k = recall × facts (the number of facts the model behaves as if it can retrieve), and the share of "
+             "queried keys (with ≥ 20 queries) recalled ≥ 80% / ≤ 20% of the time. A recency buffer shows as "
+             "high recall in the last-4 column only; a fixed set of retrievable keys as many keys at both extremes.", ""]
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        mine = [r for r in rows if _arch_of(r["model"]) == m]
+        lines += [f"**{m}**", "", "| facts | tokens | recall | k | last 4 facts | 4–15 after | ≥ 16 after | "
+                  "keys ≥ 0.8 | keys ≤ 0.2 |", "|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+        for nb, sl in sorted({(int(r["n_bindings"]), int(r["seq_len"])) for r in mine}):
+            cell = [r for r in mine if int(r["n_bindings"]) == nb and int(r["seq_len"]) == sl]
+
+            def rec(dim, lo, hi=None):
+                sel = [r for r in cell if r["dim"] == dim and int(r["bin"]) >= lo and (hi is None or int(r["bin"]) < hi)]
+                t = sum(int(r["total"]) for r in sel)
+                return sum(int(r["hits"]) for r in sel) / t if t else None
+            pq = rec("facts_after", 0)
+            keys = [int(r["hits"]) / int(r["total"]) for r in cell if r["dim"] == "key" and int(r["total"]) >= 20]
+            hi_k = f"{sum(k >= 0.8 for k in keys) / len(keys):.2f}" if keys else "–"
+            lo_k = f"{sum(k <= 0.2 for k in keys) / len(keys):.2f}" if keys else "–"
+            f = lambda v: "–" if v is None else f"{v:.3f}"
+            lines.append(f"| {nb} | {_fmt(cell[0]['true_len_mean'], 0)} | {f(pq)} | {pq * nb:.1f} | "
+                         f"{f(rec('facts_after', 0, 4))} | {f(rec('facts_after', 4, 16))} | "
+                         f"{f(rec('facts_after', 16))} | {hi_k} | {lo_k} |")
+        lines.append("")
+    return lines
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -497,6 +529,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _gates_section(run_dir)
         + _clamp_section(run_dir)
         + _replay_section(run_dir)
+        + _retrieval_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

@@ -79,6 +79,13 @@ Exploratory: when bias 2 learns, it reaches higher capacity. Three of its 4 lear
 at 64 facts. Before any sweep job ran, the sweep moved to a 9k stop with a 0.40 threshold, because the 6k proxy missed
 slow starters such as r40. See the 2026-10-27 entry.
 
+**Update (2026-11-21): the pre-registered sweep answers the init question — no detectable effect.** At lr 1.5e-3, over
+seeds 0–24, 17/24 bias-0 runs and 18/25 bias-2 runs are on track at 9k (71% vs 72%; Fisher p = 1.0; difference
++0.01, approx. 95% CI −0.24 to +0.26). The only init effect that survives is an early head start for bias 2 (1.5k
+steps: AUC 0.77, p = 0.001), gone by 3k (AUC 0.52). About 29% of runs fail whatever the init, and on the same seed the
+two inits fail **independently** (2 seeds where both fail; 2.0 expected by chance). The original "bias 2 fails" (3/3
+vs 0/3) was a ~1-in-60 draw. See the 2026-11-21 entry for the plan that follows.
+
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
@@ -90,8 +97,9 @@ slow starters such as r40. See the 2026-10-27 entry.
    standard lr (r37–r40): seed 3 done 2026-10-26, reversed (bias 2 0.96, bias 0 0.23). Next `BATCH = "std_s4"` (r39,
    r40) done 2026-10-27. The seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
    lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10 done
-   2026-10-28 (~84 min per job, 8.4 h for 12). Seeds 11–24 still to run (28 jobs, ~20 h), repacked 2026-11-11 into two
-   sessions: `SWEEP_SEEDS = "11-17"` then `"18-24"`, `BUDGET_H = 10.5` (7 rounds of 2 jobs, ~9.8 h each).
+   2026-10-28; seeds 11–24 done 2026-11-12 (39 of 40 jobs; `bias0_s17` was not started, cut by the session budget).
+   Result 2026-11-21: no detectable init effect (see entry). Next: the "what is the stall" plan in the 2026-11-21
+   entry.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -102,6 +110,7 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| sw1 (seeds 11–24) | 2026-11-12 | `ccef679` | sweep sessions 2–3 ✅ (27 jobs; `bias0_s17` not started) | seeds 0–24 pooled: on track 17/24 (bias 0) vs 18/25 (bias 2), p = 1.0; early head start for bias 2 at 1.5k only | the init question is answered (no detectable effect); turn to what the stall is |
 | sw1 (seeds 5–10) | 2026-10-28 | `87bccab` | sweep session 1 ✅ (12 jobs, 2 at once, 8.4 h) | on track at 9k: bias 0 5/6, bias 2 4/6; seeds 0–10 pooled 9/11 vs 6/11 (interim, not the test) | continue: seeds 11–16 |
 | sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, stopped at 9k (amended from 6k), two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-10` → `11-16` → `17-22` → `23-24` |
 | r39, r40 | 2026-10-27 | `c9bfe00` | std_s4 ✅ (+ pass 8, 9, 10) | seed 4, lr 1.5e-3: bias 2 0.99 / 0.95 / 0.81 @32 / 64 / 128 (best GLA yet); bias 0 0.85 @32 (slow: 0.27 at 6k) | 10-pair gap −0.16 (t ≈ −1.1), learned 4/10 vs 8/10 (p ≈ 0.17); the sweep moves to a 9k stop (the 6k proxy missed r40) |
@@ -141,6 +150,53 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-11-21 — Seed sweep `sw1` complete (39 of 40 jobs): the pre-registered test finds no init effect.** Seeds 11–24
+ran 2026-11-11/12 in two sessions (~85 min per job, two at once; cells alternated between GPUs). `bias0_s17` never
+started: the 10.5 h budget stopped it, and seed 17 was not in the last session's range. All 39 jobs reached 9k.
+
+Pre-registered analysis (2026-10-26, amended 2026-10-27), lr 1.5e-3, zero gate weight, seeds 0–24 (0–4 from the full
+runs at step 9000, 5–24 from the sweep):
+- **Primary, on track (held-out recall ≥ 0.40 at 9k):** bias 0 **17/24 (71%)**, bias 2 **18/25 (72%)**. Fisher exact
+  p = 1.0; difference +0.01, approx. 95% CI −0.24 to +0.26. By the pre-registered rule: **no detectable effect at
+  n ≈ 25**. Differences larger than about 25 points either way are unlikely.
+- **Secondary 1, ceiling:** among on-track runs, held-out recall at 9k has median 0.72 (bias 0, n = 17) vs 0.79
+  (bias 2, n = 18); Mann–Whitney p = 0.73. No difference. A 9k stop cannot test the full runs' 64-fact ceiling.
+- **Secondary 2, early start:** at 1.5k steps bias 2 is ahead (median 0.075 vs 0.031; AUC 0.77; Mann–Whitney
+  p = 0.001), as predicted. It is gone by 3k (AUC 0.52, p = 0.82) and by 6k (AUC 0.52).
+- **Time to escape** (first eval ≥ 0.40, on-track runs): median 5.0k (bias 0) vs 5.5k (bias 2). Same.
+
+Beyond the pre-registration:
+- **Outcomes are bimodal.** No run in the 49 lands between 0.34 and 0.47 at 9k: 12 sit at 0.11–0.34, and 37 at
+  0.47–0.96.
+- **On the same seed the two inits fail independently.** Of 24 seed pairs, 12 had both on track, 2 had both fail,
+  5 had only bias 0 on track and 5 had only bias 2. With failure rates of ~29%, independence predicts 2.0 seeds where
+  both fail. A seed fixes the training stream and every non-gate weight. Changing only the gate bias leaves
+  "does this run learn?" as unpredictable as a new seed. So the outcome is not about hard data or a bad
+  weight draw; it looks like sensitivity to small perturbations.
+- **The original three-seed result was a rare draw.** With equal on-track rates of ~0.71, a 3/3 vs 0/3 split (either
+  way) has probability ≈ 0.017. Seeds 0–2 produced exactly that.
+- **No GPU effect** (sessions 2–3 alternated the cells between GPUs).
+
+**What this means for the paper.** The init contrast was a null all along. The phenomenon is the lottery itself:
+about 29% of runs stall at this protocol, whatever the init, and a tiny change (the gate bias) re-rolls the outcome
+on the same seed. The capacity pattern (2026-11-11, chat): each trained model retrieves a roughly fixed number of facts
+k, with recall ≈ k/N, and k falls into regimes (stalled ≈ 4–8; learned ≈ 25–45; best runs 56–104). That suggests what
+to study next.
+
+**Plan (proposed 2026-11-21, not yet built):**
+1. **Pass 11, "which facts can a model retrieve?"** Evaluation only, on the ~37 saved full-run checkpoints. Split recall
+   by the fact's position (how many facts were written after it), by key identity and by token distance. Does a stalled
+   model keep the last ~5 facts (a recency buffer), or a fixed subset of keys? Is the learned regime's k ≈ 30
+   recency or interference?
+2. **Reproducibility of the lottery.** Rerun a few sweep jobs exactly (same config and seed), twice each. Does the
+   same run learn again? If identical reruns flip, the outcome is set by floating-point nondeterminism, and per-seed
+   comparisons (ours, and many in the literature) carry no information beyond the rate. Plus the missing `bias0_s17`.
+3. **Watching an escape.** Re-run 2–3 late-escaping seeds and save a checkpoint at every eval. Run the capacity (k),
+   pass 11 and gate passes on each, to see whether k jumps 5 → 30 abruptly and what changes in layer 0 just before.
+   The sweep worker would evaluate checkpoints itself and publish only CSVs, so no weights are needed.
+4. **Causal transplants** (after 1–3): swap layer 0 or the upper layers between a stalled and a learned model, then
+   continue training, to locate the bottleneck.
 
 **2026-10-28 — Seed sweep `sw1`, session 1 (seeds 5–10): interim only, no decision.** 12 jobs, two at once on the
 two T4s, ~84 min each, 8.4 h in all; none failed. The pre-registered test is at n = 25 per init (seeds 0–24); these

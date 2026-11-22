@@ -1,6 +1,6 @@
 # iota run `r09`
 
-- **updated:** 2026-11-22 23:19 UTC (last stage: `eval 4`)
+- **updated:** 2026-11-22 23:23 UTC (last stage: `eval 11`)
 - **code:** `3249da9` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
@@ -158,6 +158,40 @@ One layer's recorded gates over the context span are replayed unchanged, shuffle
 | 32 | L0 | 1.000 | 1.000 (+0.000 [0.00, 0.00]) | 1.000 (1.00–1.00) (-0.000 [-0.00, -0.00]) | 1.000 (+0.000 [0.00, 0.00]) | 1.000 (+0.000 [0.00, 0.00]) |
 | 32 | L1 | 1.000 | 1.000 (+0.000 [0.00, 0.00]) | 0.893 (0.89–0.90) (-0.107 [-0.11, -0.10]) | 0.999 (-0.001 [-0.00, -0.00]) | 0.873 (-0.127 [-0.13, -0.12]) |
 | 32 | L3 | 1.000 | 1.000 (+0.000 [0.00, 0.00]) | 1.000 (1.00–1.00) (+0.000 [0.00, 0.00]) | 1.000 (+0.000 [0.00, 0.00]) | 1.000 (+0.000 [0.00, 0.00]) |
+
+## 4i. Which facts are retrievable (Pass 11)
+
+Per-query recall by how many facts were written AFTER the queried one (0 = the last SET line), k = recall × facts (the number of facts the model behaves as if it can retrieve), and the share of queried keys (with ≥ 20 queries) recalled ≥ 80% / ≤ 20% of the time. A recency buffer shows as high recall in the last-4 column only; a fixed set of retrievable keys as many keys at both extremes.
+
+**transformer**
+
+| facts | tokens | recall | k | last 4 facts | 4–15 after | ≥ 16 after | keys ≥ 0.8 | keys ≤ 0.2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 256 | 0.978 | 7.8 | 0.980 | 0.975 | – | 1.00 | 0.00 |
+| 8 | 640 | 0.978 | 7.8 | 0.974 | 0.981 | – | 1.00 | 0.00 |
+| 32 | 289 | 0.844 | 27.0 | 0.842 | 0.845 | 0.843 | 0.78 | 0.00 |
+| 64 | 386 | 0.616 | 39.4 | 0.421 | 0.636 | 0.626 | 0.00 | 0.00 |
+| 128 | 773 | 0.348 | 44.6 | 0.230 | 0.358 | 0.351 | 0.00 | 0.20 |
+
+**gated_linear**
+
+| facts | tokens | recall | k | last 4 facts | 4–15 after | ≥ 16 after | keys ≥ 0.8 | keys ≤ 0.2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 256 | 0.990 | 7.9 | 0.993 | 0.988 | – | 1.00 | 0.00 |
+| 8 | 640 | 0.990 | 7.9 | 0.990 | 0.989 | – | 1.00 | 0.00 |
+| 32 | 289 | 0.854 | 27.3 | 0.858 | 0.861 | 0.849 | 0.79 | 0.00 |
+| 64 | 386 | 0.513 | 32.8 | 0.304 | 0.520 | 0.528 | 0.02 | 0.02 |
+| 128 | 773 | 0.218 | 27.9 | 0.117 | 0.225 | 0.221 | 0.00 | 0.56 |
+
+**hybrid**
+
+| facts | tokens | recall | k | last 4 facts | 4–15 after | ≥ 16 after | keys ≥ 0.8 | keys ≤ 0.2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 256 | 1.000 | 8.0 | 1.000 | 1.000 | – | 1.00 | 0.00 |
+| 8 | 640 | 1.000 | 8.0 | 1.000 | 1.000 | – | 1.00 | 0.00 |
+| 32 | 289 | 1.000 | 32.0 | 1.000 | 1.000 | 1.000 | 1.00 | 0.00 |
+| 64 | 386 | 0.985 | 63.0 | 0.795 | 0.997 | 0.998 | 1.00 | 0.00 |
+| 128 | 773 | 0.981 | 125.6 | 0.817 | 0.992 | 0.985 | 1.00 | 0.00 |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

@@ -4,12 +4,12 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
+| [r09](runs/r09/SUMMARY.md) | 2026-11-22 23:23 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r08](runs/r08/SUMMARY.md) | 2026-11-22 23:22 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r07](runs/r07/SUMMARY.md) | 2026-11-22 23:22 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r06](runs/r06/SUMMARY.md) | 2026-11-22 23:21 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r05](runs/r05/SUMMARY.md) | 2026-11-22 23:20 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r04](runs/r04/SUMMARY.md) | 2026-11-22 23:20 UTC | eval 11 | Tesla T4 | `3249da9` |
-| [r09](runs/r09/SUMMARY.md) | 2026-11-22 23:19 UTC | eval 4 | Tesla T4 | `3249da9` |
 | [sw1](runs/sw1/SUMMARY.md) | 2026-11-12 16:52 UTC | sweep bias2_s24 stopped | Tesla T4 | `ccef679` |
 | [r40](runs/r40/SUMMARY.md) | 2026-10-26 20:27 UTC | eval 8,9,10 | Tesla T4 | `c9bfe00` |
 | [r39](runs/r39/SUMMARY.md) | 2026-10-26 17:49 UTC | eval 8,9,10 | Tesla T4 | `c9bfe00` |

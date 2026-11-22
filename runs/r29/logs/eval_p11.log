@@ -1,0 +1,17 @@
+
+##### eval_p11 started 2026-11-22 23:27:23 UTC argv=--stage eval --passes 11 --n 500 --repo BanerjeeRohan44/iota-r29 --run-id r29
+
+### STAGE eval  (passes [11], device=cuda)
+
+  [hf] pulled gated_linear_sweep.safetensors
+  [hf] pulled gated_linear_sweep.json
+  loaded gated_linear_sweep (trained 15000 steps)
+
+--- pass 11 -> experiments/results/pass11_retrieval.csv
+  pass11 gated_linear_sweep nb=8   len=256.3  recall=0.830 k=  6.6 last4=0.833 older=0.827
+  pass11 gated_linear_sweep nb=8   len=640.4  recall=0.834 k=  6.7 last4=0.836 older=0.832
+  pass11 gated_linear_sweep nb=32  len=289.1  recall=0.376 k= 12.0 last4=0.391 older=0.374
+  pass11 gated_linear_sweep nb=64  len=386.5  recall=0.157 k= 10.0 last4=0.080 older=0.162
+  pass11 gated_linear_sweep nb=128 len=772.6  recall=0.066 k=  8.4 last4=0.047 older=0.066
+wrote experiments/results/pass11_retrieval.csv (1429 rows)
+  [hf] pushed pass11_retrieval.csv

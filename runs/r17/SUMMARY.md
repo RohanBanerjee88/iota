@@ -1,7 +1,7 @@
 # iota run `r17`
 
-- **updated:** 2026-10-15 00:57 UTC (last stage: `eval 8,9,10`)
-- **code:** `0df1f56` on `claude/wonderful-ritchie-hbm5zn`
+- **updated:** 2026-11-22 23:26 UTC (last stage: `eval 11`)
+- **code:** `3249da9` on `claude/wonderful-ritchie-hbm5zn`
 - **device:** Tesla T4 · torch 2.10.0+cu128 · Kaggle Batch
 
 ## 1. Training (best checkpoint, full-difficulty held-out set)
@@ -110,6 +110,20 @@ One layer's recorded gates over the context span are replayed unchanged, shuffle
 | 32 | L2 | 0.301 | 0.301 (+0.000 [0.00, 0.00]) | 0.282 (0.28–0.28) (-0.019 [-0.02, -0.01]) | 0.293 (-0.009 [-0.01, -0.00]) | 0.284 (-0.017 [-0.02, -0.01]) |
 | 32 | L3 | 0.301 | 0.301 (+0.000 [0.00, 0.00]) | 0.263 (0.26–0.27) (-0.039 [-0.04, -0.03]) | 0.274 (-0.028 [-0.03, -0.02]) | 0.262 (-0.039 [-0.05, -0.03]) |
 | 32 | L4 | 0.301 | 0.301 (+0.000 [0.00, 0.00]) | 0.294 (0.29–0.29) (-0.007 [-0.01, -0.00]) | 0.296 (-0.005 [-0.01, -0.00]) | 0.296 (-0.005 [-0.01, 0.00]) |
+
+## 4i. Which facts are retrievable (Pass 11)
+
+Per-query recall by how many facts were written AFTER the queried one (0 = the last SET line), k = recall × facts (the number of facts the model behaves as if it can retrieve), and the share of queried keys (with ≥ 20 queries) recalled ≥ 80% / ≤ 20% of the time. A recency buffer shows as high recall in the last-4 column only; a fixed set of retrievable keys as many keys at both extremes.
+
+**gated_linear**
+
+| facts | tokens | recall | k | last 4 facts | 4–15 after | ≥ 16 after | keys ≥ 0.8 | keys ≤ 0.2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 256 | 0.785 | 6.3 | 0.789 | 0.780 | – | 0.45 | 0.00 |
+| 8 | 640 | 0.774 | 6.2 | 0.776 | 0.771 | – | 0.45 | 0.00 |
+| 32 | 289 | 0.295 | 9.4 | 0.283 | 0.292 | 0.299 | 0.01 | 0.49 |
+| 64 | 386 | 0.108 | 6.9 | 0.060 | 0.086 | 0.118 | 0.00 | 0.88 |
+| 128 | 773 | 0.066 | 8.4 | 0.056 | 0.058 | 0.067 | 0.00 | 0.98 |
 
 ## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)
 

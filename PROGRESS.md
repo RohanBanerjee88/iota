@@ -86,6 +86,15 @@ steps: AUC 0.77, p = 0.001), gone by 3k (AUC 0.52). About 29% of runs fail whate
 two inits fail **independently** (2 seeds where both fail; 2.0 expected by chance). The original "bias 2 fails" (3/3
 vs 0/3) was a ~1-in-60 draw. See the 2026-11-21 entry for the plan that follows.
 
+**Update (2026-11-23): training is deterministic but chaotic, and recall is limited by how well a model encodes the
+key.** Exact reruns reproduce every eval to 4 decimals, even on the other GPU. Moving the gate bias of a run from 0 to
+0.001 flipped the outcome on all 4 seeds tried: two learners stalled, two stallers learned. The curves split by step
+1.5k–2k. With `bias0_s17` (on track) the sweep's primary is exactly 18/25 vs 18/25. Pass 11 rejected the
+recency-buffer idea: recall does not depend on a fact's position or on filler distance. It depends on the key's
+digits. Models behave as if they identify a key only by part of it. In-between models match the zero-parameter
+prediction for "digit count + last digit" (r35: 0.89 / 0.41 / 0.87, 0.54 overall, against a predicted
+1.00 / 0.41 / 0.79, 0.54), and stalled models look closer to "digit count only". See the 2026-11-23 entry.
+
 **Next:** the discriminating experiments (step 0 done, see the 2026-10-13 entry):
 1. ~~pass 10 gate-replay controls on r04–r13~~ done 2026-10-13: the *timing* of layer-0 forgetting matters (see entry)
 2. per-layer init: seeds 0–1 done (r14–r17); seed-dependent (see 2026-10-15 entry); seed 2 (r22, r23) prepared
@@ -98,9 +107,9 @@ vs 0/3) was a ~1-in-60 draw. See the 2026-11-21 entry for the plan that follows.
    r40) done 2026-10-27. The seed sweep `sw1` (built 2026-10-26, amended 2026-10-27): 20 more seeds per init at
    lr 1.5e-3, stopped at 9k steps, two jobs at once (notebook cell 9e, `PLAN = "sweep"`). Seeds 5–10 done
    2026-10-28; seeds 11–24 done 2026-11-12 (39 of 40 jobs; `bias0_s17` was not started, cut by the session budget).
-   Result 2026-11-21: no detectable init effect (see entry). Next: Session A (prepared 2026-11-21): pass 11 on
-   every saved checkpoint, then the reproducibility sweep `rep1` and the missing `bias0_s17` (notebook
-   `PLAN = "sessA"`, cells 9b and 9e).
+   Result 2026-11-21: no detectable init effect (see entry). Session A done 2026-11-23 (pass 11, `rep1`,
+   `bias0_s17`): deterministic-but-chaotic training, and a key-encoding account of recall (see entry). Next: Session
+   B, proposed in that entry.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -111,7 +120,8 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
-| Session A | — | `iota/retrieval.py`, `configs/nudge/bias0/` | prepared | pass 11 (which facts are retrievable) on 29 runs / ~41 checkpoints; `rep1` = bias 0 rerun exactly and nudged by 0.001 on seeds 5, 8, 9, 12; sw1 `bias0_s17` | notebook `PLAN="sessA"` (cells 9b, 9e), ~9 h |
+| Session A | 2026-11-23 | `3249da9` | pass 11 on 29 runs ✅; rep1 (8 jobs) ✅; sw1 `bias0_s17` ✅ | exact reruns bitwise identical; a 0.001 gate-bias nudge flips the outcome on 4/4 seeds; final sweep 18/25 vs 18/25; recall is flat in position and distance but depends on the key's digits (in-between models ≈ "digit count + last digit" code) | Session B: whose value a wrong answer gives, and watching the key code form |
+| Session A (prep) | — | `iota/retrieval.py`, `configs/nudge/bias0/` | prepared | pass 11 (which facts are retrievable) on 29 runs / ~41 checkpoints; `rep1` = bias 0 rerun exactly and nudged by 0.001 on seeds 5, 8, 9, 12; sw1 `bias0_s17` | notebook `PLAN="sessA"` (cells 9b, 9e), ~9 h |
 | sw1 (seeds 11–24) | 2026-11-12 | `ccef679` | sweep sessions 2–3 ✅ (27 jobs; `bias0_s17` not started) | seeds 0–24 pooled: on track 17/24 (bias 0) vs 18/25 (bias 2), p = 1.0; early head start for bias 2 at 1.5k only | the init question is answered (no detectable effect); turn to what the stall is |
 | sw1 (seeds 5–10) | 2026-10-28 | `87bccab` | sweep session 1 ✅ (12 jobs, 2 at once, 8.4 h) | on track at 9k: bias 0 5/6, bias 2 4/6; seeds 0–10 pooled 9/11 vs 6/11 (interim, not the test) | continue: seeds 11–16 |
 | sw1 | — | `scripts/seed_sweep.py` | prepared | seed sweep: bias 0 / bias 2 at lr 1.5e-3, seeds 5–24, stopped at 9k (amended from 6k), two jobs at once | notebook `PLAN="sweep"`, cell 9e, `SWEEP_SEEDS` `5-10` → `11-16` → `17-22` → `23-24` |
@@ -152,6 +162,77 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-11-23 — Session A results: deterministic chaos, and recall limited by key encoding.** All three parts
+published: pass 11 on 29 runs (41 models), `rep1` (8 jobs), and sw1's `bias0_s17`.
+
+*Reproducibility (`rep1`; bias 0, lr 1.5e-3, 9k steps). Held-out recall at 1.5k / 3k / 6k / 9k:*
+
+| seed | sw1 original | exact rerun | gate bias 0 → 0.001 |
+|---:|---|---|---|
+| 5 | 0.01 / 0.33 / 0.58 / **0.83** | identical (all 18 evals) | 0.01 / 0.02 / 0.03 / **0.04** (stall) |
+| 8 | 0.10 / 0.31 / 0.71 / **0.87** | identical | 0.03 / 0.11 / 0.17 / **0.19** (stall) |
+| 9 | 0.03 / 0.10 / 0.16 / **0.19** (stall) | identical | 0.08 / 0.22 / 0.75 / **0.91** |
+| 12 | 0.01 / 0.02 / 0.14 / **0.18** (stall) | identical | 0.03 / 0.24 / 0.58 / **0.86** |
+
+- **Exact reruns are bitwise reproducible.** All 18 evals match to 4 decimals, including two reruns on the other
+  GPU. The lottery is not GPU nondeterminism.
+- **Pre-registered nudge reading: "a negligible change re-rolls the outcome" (4 flips of 4; ≥ 2 required).** Moving
+  one bias of 2.67M parameters by 0.001 turned both learners into stalls and both stalls into learners. The curves
+  first differ by > 0.02 at 1.5k–2k steps, at the end of the easy phase. Under independent re-draws at 71/29 all four
+  flipping has probability ≈ 0.04, which hints at more than chance, but four seeds cannot tell.
+- **`bias0_s17`** is on track (0.55 at 9k). Final primary: **18/25 vs 18/25** (Fisher p = 1.0).
+
+*Pass 11 (`pass11_retrieval.csv` in each run folder).*
+- **The pre-registered recency prediction failed.** No model, stalled or learned, recalls recent facts better at
+  32 facts. r08 recalls 0.18 / 0.15 / 0.14 / 0.14 for the last fact / last 4 / 4–15 back / ≥ 16 back, and every
+  stalled model is flat like this. Adding filler (8 facts at 256 vs 640 tokens) changes nothing in any model
+  (e.g. r38 0.71 / 0.70). The limit is neither a buffer of recent facts nor decay with distance.
+- **The pre-registered "learned models are flat" prediction held**, for all architectures, at 8 and 32 facts.
+- **Recall depends on the key's digits.** By key length (1-digit 0–9 / 2-digit 10–99 / 3-digit 100–127) at 32 facts:
+
+  | group | 1-digit | 2-digit | 3-digit | overall |
+  |---|---:|---:|---:|---:|
+  | stalled r08 / r13 / r33 / r32 | 0.42 / 0.32 / 0.37 / 0.44 | 0.09 / 0.14 / 0.17 / 0.15 | 0.21 / 0.13 / 0.13 / 0.36 | 0.14–0.22 |
+  | in-between r11 / r35 | 0.86 / 0.89 | 0.40 / 0.41 | 0.72 / 0.87 | 0.50 / 0.54 |
+  | learned r09 / r37 / r39 | 0.83 / 0.96 / 0.98 | 0.86 / 0.96 / 0.99 | 0.85 / 0.97 / 0.99 | 0.85–0.99 |
+
+- **A zero-parameter collision model fits this.** Suppose a model identifies each key only by a code, and a query
+  succeeds when no other fact in the prompt shares the queried key's code. The expected recall at 32 facts follows
+  from the key distribution alone:
+  - code = **digit count + last digit**: 1.00 / 0.41 / 0.79, 0.54 overall. That matches the in-between models: r35
+    0.89 / 0.41 / 0.87, 0.54; r11 0.86 / 0.40 / 0.72, 0.50.
+  - code = **digit count only**: 0.38 / 0.04 / 0.14, 0.09. That has the shape of the stalled models (r08
+    0.42 / 0.09 / 0.21, 0.14).
+  - the **full key** (no collisions) corresponds to the learned models.
+
+  Within a digit-length group, per-key recall is near binomial in the stalled models (overdispersion ≈ 1 among
+  2-digit keys), so no special keys beyond the code. A code with C classes also explains the k/N law: recall falls
+  like ~1/N once collisions dominate.
+- **Working hypothesis (new).** A GLA learns recall in stages of key resolution: digit count, then the last digit,
+  then the full key. A stall is a model stuck at a coarse key code, and which stage a run reaches by the end of the
+  easy phase is chaotic. It fits the earlier findings:
+  - layer 0 must forget at the right times: it would compose the key from its digit tokens, resetting at each
+    definition;
+  - the easy phase uses 2 facts, where a coarse code almost never collides, so nothing pushes a run to resolve the
+    full key until the load ramps up.
+- r07 (bias 6, saturated) is different: its per-key recall is homogeneous (overdispersion 0.91) at 0.36. That is a
+  separate failure, consistent with a layer 0 that cannot reset.
+- **Side observation (all architectures):** above 32 facts the ~8 most recently written facts are recalled
+  0.07–0.13 worse than older ones. At 64 facts (inside the training lengths) it is GLA 0.43 vs 0.51 (r04), dense
+  0.52 vs 0.63, hybrid 0.87 vs 1.00 (r05). Since dense models show it too, it is a property of the task layout
+  (the last facts sit next to the query block), not of linear attention. Unexplained for now.
+
+**Session B (proposed, not built):**
+1. **Pass 12, whose value does a wrong answer give?** Evaluation only. At each error, is the predicted value another
+   fact's value, and does that fact's key share the queried key's digit count / last digit? The collision model
+   predicts colliding facts' values far above chance in the in-between models, and same-length facts' values in the
+   stalled ones. This tests the hypothesis directly instead of fitting aggregate recall.
+2. **Watching the code form.** Retrain the four rep1 pairs (identical but for 0.001; one of each pair learns) with
+   checkpoints every 500 steps, and run pass 12 on each. When do the twins' key codes diverge, and does the learner
+   pass through digit count → last digit → full key?
+3. **Causal test of the easy phase.** If 2-fact training rewards coarse codes, raising the easy phase's minimum load
+   (e.g. 8 facts) should cut the stall rate below sw1's 28%. A sweep cell of ~16 seeds (~11 h).
 
 **2026-11-21 — Prepared: Session A (pass 11, and the lottery's reproducibility).** Steps 1 and 2 of the plan below.
 

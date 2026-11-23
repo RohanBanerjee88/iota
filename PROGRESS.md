@@ -109,7 +109,8 @@ prediction for "digit count + last digit" (r35: 0.89 / 0.41 / 0.87, 0.54 overall
    2026-10-28; seeds 11–24 done 2026-11-12 (39 of 40 jobs; `bias0_s17` was not started, cut by the session budget).
    Result 2026-11-21: no detectable init effect (see entry). Session A done 2026-11-23 (pass 11, `rep1`,
    `bias0_s17`): deterministic-but-chaotic training, and a key-encoding account of recall (see entry). Next: Session
-   B, proposed in that entry.
+   B (prepared 2026-11-23): pass 12 on every saved checkpoint, then `traj1` (the rep1 twins with snapshots);
+   notebook `PLAN = "sessB"`, cells 9b and 9e, ~7.5 h.
 5. 30k-step pair r20/r21 (~10.5 h) and per-layer seed 2 (r22/r23): prepared, deferred behind 4
 
 Then a second model scale.
@@ -120,6 +121,7 @@ Then a second model scale.
 |---|---|---|---|---|---|
 | r33, r34 | 2026-10-19 | `09602bd` | lowlr_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 7.5e-4: bias 2 0.17 @32 (stall from 3k), bias 0 0.90 | the flip does not hold (gap −0.72); at 7.5e-4 no consistent sign, stalls 2/4 (bias 2) vs 1/4 (bias 0); bias 2 leads at 1.5k steps in all 7 runs |
 | r37, r38 | 2026-10-26 | `45e8d0d` | std_s3 ✅ (+ pass 8, 9, 10) | seed 3, lr 1.5e-3: bias 2 0.955 @32, 0.80 @64 (best GLA yet); bias 0 0.225 @32 (near-chance until 6k, then a plateau at 0.25; control drops to 0.11 at 4096 tokens) | the standard-lr result does not hold at seed 3; 9-pair gap −0.20 (t ≈ −1.2), learned 3/9 vs 7/9 (p ≈ 0.15): the init effect on final recall is not established |
+| Session B | — | `iota/attribution.py`, `train.snapshot_every`, `seed_sweep --snapshot-every` | prepared | pass 12 (whose value a wrong answer gives) on 29 runs; `traj1` = rep1's bias-0 / nudged twins on seeds 5, 8, 9, 12 with pass 12 every 500 steps | notebook `PLAN="sessB"` (cells 9b, 9e), ~7.5 h |
 | Session A | 2026-11-23 | `3249da9` | pass 11 on 29 runs ✅; rep1 (8 jobs) ✅; sw1 `bias0_s17` ✅ | exact reruns bitwise identical; a 0.001 gate-bias nudge flips the outcome on 4/4 seeds; final sweep 18/25 vs 18/25; recall is flat in position and distance but depends on the key's digits (in-between models ≈ "digit count + last digit" code) | Session B: whose value a wrong answer gives, and watching the key code form |
 | Session A (prep) | — | `iota/retrieval.py`, `configs/nudge/bias0/` | prepared | pass 11 (which facts are retrievable) on 29 runs / ~41 checkpoints; `rep1` = bias 0 rerun exactly and nudged by 0.001 on seeds 5, 8, 9, 12; sw1 `bias0_s17` | notebook `PLAN="sessA"` (cells 9b, 9e), ~9 h |
 | sw1 (seeds 11–24) | 2026-11-12 | `ccef679` | sweep sessions 2–3 ✅ (27 jobs; `bias0_s17` not started) | seeds 0–24 pooled: on track 17/24 (bias 0) vs 18/25 (bias 2), p = 1.0; early head start for bias 2 at 1.5k only | the init question is answered (no detectable effect); turn to what the stall is |
@@ -162,6 +164,34 @@ How to read a run: open `runs/<id>/SUMMARY.md` on the `kaggle-results` branch. C
 the figure is not trustworthy.
 
 ## Timeline
+
+**2026-11-23 — Prepared: Session B (does a wrong answer come from a colliding fact? how does the key code form?).**
+- **Pass 12** (`iota/attribution.py`; `--passes 12`; SUMMARY section 4j). It decodes each query's two-digit answer:
+  the first digit is teacher-forced, the second conditioned on the model's own first digit (one extra forward pass).
+  For every wrong answer it records whether the value is another fact's value (chance = distinct other values / 96).
+  If so, it records whether that fact's key shares the queried key's digit count, last digit, both, first digit, or
+  definition neighbour. Each share is reported as a lift over its baseline, the share of all other facts in that
+  relation. It runs at 8 / 32 / 64 facts, 500 prompts each, on all 29 runs with saved checkpoints (notebook cell 9b,
+  ~1.5 h). An oracle-model test checks the two-pass decode and that designed collisions are attributed
+  (`tests/test_attribution.py`).
+- **`traj1`** (cell 9e, ~6 h). It reruns rep1's twins: bias 0 and the 0.001-nudged bias, on seeds 5, 8, 9 and 12,
+  one learner and one staller per seed. It saves the weights every 500 steps (`train.snapshot_every`, which is
+  read-only on the model; a test checks that the history is unchanged) and runs pass 12 at 32 facts on each snapshot
+  (200 prompts). The result is published as `<job>_trajectory.csv` and the snapshots are deleted.
+
+Readings, fixed before the runs:
+- **Determinism check:** every traj1 held-out curve must equal its sw1/rep1 twin's to 4 decimals. A mismatch means
+  snapshots or code changes altered training, and invalidates the comparison.
+- **Pass 12, in-between models** (r11, r17, r29, r35): wrong answers are another fact's value at ≥ 2× the chance
+  rate, and the "digit count + last digit" lift is ≥ 5. Under the code hypothesis almost every confusion is such a
+  collision, and the baseline share is only ≈ 0.06 at 32 facts, so the lift would be ~15. If wrong answers are other
+  facts' values only at about chance, models are not confusing facts and the collision account is rejected.
+- **Pass 12, stalled models** (r08, r13, r32, r33, r38): wrong answers are other facts' values above chance, the
+  digit-count lift is > 1, and the digit-count + last-digit lift is lower than in the in-between models.
+- **traj1, learners:** a stage where 1-digit keys are recalled well and 2-digit keys poorly (2-digit / 1-digit
+  recall < 0.5 at some snapshot) comes before 2-digit recall catches up. Stallers stay at that coarse stage.
+  Report the first snapshot where each twin pair's 2-digit-key recall differs by > 0.1, against the held-out split
+  at 1.5k–2k.
 
 **2026-11-23 — Session A results: deterministic chaos, and recall limited by key encoding.** All three parts
 published: pass 11 on 29 runs (41 models), `rep1` (8 jobs), and sw1's `bias0_s17`.

@@ -80,6 +80,17 @@ def _save(model, cfg: Dict, history, run_name: str):
     return weights
 
 
+def _snapshot(model, run_name: str, step: int) -> None:
+    """Weights only, at `{RESULTS_DIR}/snapshots/{run_name}_{step:05d}.safetensors` (train.snapshot_every).
+    Read-only on the model, so a run with snapshots trains exactly like one without."""
+    from safetensors.torch import save_file
+
+    d = os.path.join(RESULTS_DIR, "snapshots")
+    os.makedirs(d, exist_ok=True)
+    state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    save_file(state, os.path.join(d, f"{run_name}_{step:05d}.safetensors"))
+
+
 def _save_history(history, run_name: str, status: str, best_step) -> None:
     """The COMPLETE eval history, rewritten after every eval.
 
@@ -130,6 +141,7 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
     # curriculum ramp and the eval points still follow max_steps, so a run stopped at
     # N is the first N steps of the full run (used by scripts/seed_sweep.py).
     stop_at = min(max_steps, int(tcfg.get("stop_at", max_steps)))
+    snapshot_every = int(tcfg.get("snapshot_every", 0))   # save weights at these eval steps (seed sweep trajectories)
 
     # Fixed held-out eval set at FULL difficulty (disjoint stream), built once. It is
     # the SAME for every seed, so replicate runs are scored on an identical yardstick.
@@ -192,6 +204,8 @@ def train_sweep(cfg: Dict, smoke: bool = False) -> Dict:
             if improved:
                 best_acc, best_step = acc, step + 1
             _save_history(history, run_name, "running", best_step)
+            if snapshot_every and (step + 1) % snapshot_every == 0:
+                _snapshot(model, run_name, step + 1)
             if improved:
                 bad = 0
                 if not smoke:

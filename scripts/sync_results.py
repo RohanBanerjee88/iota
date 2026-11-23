@@ -453,6 +453,30 @@ def _retrieval_section(run_dir: str) -> List[str]:
     return lines
 
 
+def _attribution_section(run_dir: str) -> List[str]:
+    rows = _read_csv(os.path.join(run_dir, "pass12_attribution.csv"))
+    if not rows:
+        return []
+    lines = ["## 4j. Whose value does a wrong answer give (Pass 12)", "",
+             "Each query's two-digit answer is decoded (second digit conditioned on the model's own first digit). "
+             "For wrong answers: how often the value is another fact's value (vs chance), and, when it is, how much "
+             "more often than chance that fact's key shares the queried key's digit count / last digit / both / "
+             "first digit, or sits next to it in the definitions (lift = 1 is chance).", ""]
+    for m in [a for a in ARCHS if any(_arch_of(r["model"]) == a for r in rows)]:
+        lines += [f"**{m}**", "", "| facts | recall | 1 / 2 / 3-digit keys | wrong = another fact's value (chance) | "
+                  "lift: len | last | len+last | first | adjacent |", "|---:|---:|---|---|---:|---:|---:|---:|---:|"]
+        for r in sorted((r for r in rows if _arch_of(r["model"]) == m), key=lambda r: int(r["n_bindings"])):
+            f = {k: float(v) for k, v in r.items() if k not in ("model",)}
+            wrong = max(1.0, f["wrong"] - f["non_digit"])
+            lift = lambda k: f"{f['rel_' + k] / f['base_' + k]:.2f}" if f["base_" + k] else "–"
+            by_len = " / ".join(f"{f[f'c_len{d}'] / f[f'q_len{d}']:.2f}" if f[f"q_len{d}"] else "–" for d in (1, 2, 3))
+            lines.append(f"| {int(f['n_bindings'])} | {f['correct'] / max(1, f['queries']):.3f} | {by_len} | "
+                         f"{f['in_prompt'] / wrong:.2f} ({f['in_prompt_chance'] / wrong:.2f}) | {lift('len')} | "
+                         f"{lift('last')} | {lift('len_last')} | {lift('first')} | {lift('adjacent')} |")
+        lines.append("")
+    return lines
+
+
 def _cost_section(run_dir: str) -> List[str]:
     rows = _read_csv(os.path.join(run_dir, "cost_profile.csv"))
     lines = ["## 5. Prefill cost (one forward pass, batch 1; mostly kernel quality)", ""]
@@ -530,6 +554,7 @@ def build_summary(run_dir: str, run_id: str) -> str:
         + _clamp_section(run_dir)
         + _replay_section(run_dir)
         + _retrieval_section(run_dir)
+        + _attribution_section(run_dir)
         + _cost_section(run_dir)
         + _decode_section(run_dir)
     )

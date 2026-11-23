@@ -17,7 +17,9 @@ Everything lands under runs/<sweep-id>/ on the kaggle-results branch: per job `<
 eval), `<job>_meta.json` (gpu, seconds, status) and `logs/<job>.log`; plus SUMMARY.md and sweep.csv, rebuilt
 on every publish from ALL jobs there (earlier sessions included). Re-running skips jobs already published, so a
 session that times out loses only the jobs in progress; --budget-h stops launching jobs that would not finish.
-Weights are not kept (not needed for the success-rate question).
+Weights are not kept (not needed for the success-rate question). With --snapshot-every N a job also saves its weights
+every N steps, runs pass 12 (iota/attribution.py) on each snapshot after training, publishes the result as
+`<job>_trajectory.csv` and deletes the snapshots.
 
     python -m scripts.seed_sweep --sweep-id sw1 --seeds 5-10 --gpus 0,1 --stop-at 9000 --budget-h 11 \\
         --cells bias0=configs/zerow0/sweep_gated_linear.yaml,bias2=configs/bias2/sweep_gated_linear.yaml
@@ -233,6 +235,13 @@ def worker(job_path: str) -> int:
     job = json.load(open(job_path))
     tr.RESULTS_DIR = job["results_dir"]
     tr.train_sweep(job["cfg"], smoke=job["smoke"])
+    traj = job.get("traj")
+    if traj:   # pass 12 on every snapshot, then drop the weights (they are not published)
+        from iota.attribution import trajectory
+        name = job["cfg"]["train"]["run_name"]
+        trajectory(job["results_dir"], job["cfg"], name, job["cfg"]["train"]["device"], n=traj["n"],
+                   facts=traj["facts"], out_csv=os.path.join(job["results_dir"], f"{name}_trajectory.csv"))
+        shutil.rmtree(os.path.join(job["results_dir"], "snapshots"), ignore_errors=True)
     return 0
 
 
@@ -255,9 +264,11 @@ def _slots(gpus: str, per_gpu: int) -> List[str]:
     return [g for g in ids for _ in range(per_gpu)]
 
 
-def _job_cfg(path: str, seed: int, stop_at: int, run_name: str, device: str) -> Dict:
+def _job_cfg(path: str, seed: int, stop_at: int, run_name: str, device: str, snapshot_every: int = 0) -> Dict:
     cfg = yaml.safe_load(open(path))
     cfg["train"] = dict(cfg.get("train", {}), seed=seed, stop_at=stop_at, run_name=run_name, device=device)
+    if snapshot_every:
+        cfg["train"]["snapshot_every"] = snapshot_every
     return cfg
 
 
@@ -304,9 +315,11 @@ def coordinate(args) -> int:
             name = job_name(cell, seed)
             work = os.path.join(root, "work", name)
             os.makedirs(work, exist_ok=True)
-            cfg = _job_cfg(cells[cell], seed, args.stop_at, name, "cpu" if dev == "cpu" else "cuda")
+            cfg = _job_cfg(cells[cell], seed, args.stop_at, name, "cpu" if dev == "cpu" else "cuda",
+                           args.snapshot_every)
             jp = os.path.join(work, "job.json")
-            json.dump({"cfg": cfg, "results_dir": work, "smoke": args.smoke}, open(jp, "w"))
+            traj = {"n": args.traj_n, "facts": args.traj_facts} if args.snapshot_every else None
+            json.dump({"cfg": cfg, "results_dir": work, "smoke": args.smoke, "traj": traj}, open(jp, "w"))
             env = dict(os.environ, CUDA_VISIBLE_DEVICES="" if dev == "cpu" else dev,
                        OMP_NUM_THREADS=str(threads), MKL_NUM_THREADS=str(threads), PYTHONUNBUFFERED="1")
             fh = open(os.path.join(pub, "logs", f"{name}.log"), "w")
@@ -323,7 +336,7 @@ def coordinate(args) -> int:
             fh.close()
             secs = round(time.time() - t0)
             work = os.path.join(root, "work", name)
-            for f in (f"{name}_history.json", f"{name}.json"):
+            for f in (f"{name}_history.json", f"{name}.json", f"{name}_trajectory.csv"):
                 if os.path.exists(os.path.join(work, f)):
                     shutil.copy2(os.path.join(work, f), os.path.join(pub, f))
             hp = os.path.join(pub, f"{name}_history.json")
@@ -365,6 +378,11 @@ def main() -> int:
     ap.add_argument("--out", default="experiments/sweep")
     ap.add_argument("--poll", type=float, default=15.0)
     ap.add_argument("--smoke", action="store_true", help="tiny jobs (60-step schedule), for tests")
+    ap.add_argument("--snapshot-every", type=int, default=0,
+                    help="save weights every N steps (a multiple of eval_every) and publish pass 12 on each "
+                         "snapshot as <job>_trajectory.csv")
+    ap.add_argument("--traj-n", type=int, default=200, help="prompts per snapshot for the trajectory")
+    ap.add_argument("--traj-facts", type=int, default=32, help="facts per prompt for the trajectory")
     ap.add_argument("--no-gh", action="store_true")
     ap.add_argument("--remote-url", default=None, help="override the push URL (tests)")
     args = ap.parse_args()

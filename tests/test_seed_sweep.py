@@ -71,7 +71,7 @@ def test_sweep_runs_jobs_in_parallel_publishes_and_resumes(tmp_path):
     cmd = [sys.executable, "-m", "scripts.seed_sweep", "--sweep-id", "swT", "--seeds", "3",
            "--cells", f"bias0={tmp_path / 'a.yaml'},bias2={tmp_path / 'b.yaml'}", "--gpus", "cpu,cpu",
            "--stop-at", "20", "--smoke", "--poll", "0.5", "--out", str(tmp_path / "out"),
-           "--remote-url", f"file://{bare}"]
+           "--remote-url", f"file://{bare}", "--snapshot-every", "20", "--traj-n", "4", "--traj-facts", "8"]
     env = {k: v for k, v in os.environ.items() if k != "GH_TOKEN"}
     out = subprocess.run(cmd, cwd=REPO_ROOT, env=env, capture_output=True, text=True, timeout=600)
     assert out.returncode == 0, out.stdout + out.stderr
@@ -83,6 +83,9 @@ def test_sweep_runs_jobs_in_parallel_publishes_and_resumes(tmp_path):
         assert meta["returncode"] == 0 and meta["seed"] == 3
         assert _git_show(bare, f"runs/swT/logs/{job}.log").returncode == 0
         assert _git_show(bare, f"runs/swT/{job}.safetensors").returncode != 0   # weights never published
+        traj = _git_show(bare, f"runs/swT/{job}_trajectory.csv").stdout.splitlines()
+        assert traj[0].startswith("step,") and len(traj) == 2 and traj[1].startswith("20,")   # one snapshot, step 20
+    assert not os.path.exists(tmp_path / "out" / "swT" / "work" / "bias0_s03" / "snapshots")   # weights dropped
     assert "| bias2 |" in _git_show(bare, "runs/swT/SUMMARY.md").stdout
     assert _git_show(bare, "runs/swT/sweep.csv").stdout.count("\n") == 3
 

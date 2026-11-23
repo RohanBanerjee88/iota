@@ -70,6 +70,7 @@ def test_sweep_writes_the_complete_history(tmp_path, monkeypatch):
     # up to the last step and say why training ended (r07's curve was cut at its best
     # step, 10.5k, although it trained to 14.5k).
     import json
+    import os
     import iota.train as tr
 
     monkeypatch.setattr(tr, "RESULTS_DIR", str(tmp_path))
@@ -91,3 +92,10 @@ def test_sweep_writes_the_complete_history(tmp_path, monkeypatch):
     s = json.load(open(tmp_path / "tiny_stopped_history.json"))
     assert s["status"] == "stopped" and s["last_step"] == 40
     assert s["eval_acc"] == h["eval_acc"][:2]
+
+    # snapshot_every (seed-sweep trajectories) saves weights at evals without changing training.
+    cfg["train"] = dict(cfg["train"], run_name="tiny_snap", stop_at=60, snapshot_every=20)
+    tr.train_sweep(cfg, smoke=True)
+    snap = json.load(open(tmp_path / "tiny_snap_history.json"))
+    assert snap["eval_acc"] == h["eval_acc"]
+    assert sorted(os.listdir(tmp_path / "snapshots")) == [f"tiny_snap_{s:05d}.safetensors" for s in (20, 40, 60)]

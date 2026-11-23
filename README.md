@@ -4,7 +4,7 @@ Written automatically by `scripts/sync_results.py`. Never merge this branch into
 
 | run | updated | last stage | device | code |
 |---|---|---|---|---|
-| [rep1](runs/rep1/SUMMARY.md) | 2026-11-23 02:12 UTC | sweep bias0_s08 stopped | Tesla T4 | `3249da9` |
+| [rep1](runs/rep1/SUMMARY.md) | 2026-11-23 02:17 UTC | sweep nudge_s08 stopped | Tesla T4 | `3249da9` |
 | [r40](runs/r40/SUMMARY.md) | 2026-11-22 23:31 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r39](runs/r39/SUMMARY.md) | 2026-11-22 23:31 UTC | eval 11 | Tesla T4 | `3249da9` |
 | [r38](runs/r38/SUMMARY.md) | 2026-11-22 23:30 UTC | eval 11 | Tesla T4 | `3249da9` |

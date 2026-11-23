@@ -1,7 +1,7 @@
 # iota seed sweep `sw1`
 
-- **updated:** 2026-11-12 16:52 UTC (last: `sweep bias2_s24 stopped`)
-- **code:** `ccef679` on `claude/wonderful-ritchie-hbm5zn` · **device:** Tesla T4
+- **updated:** 2026-11-23 06:25 UTC (last: `sweep bias0_s17 stopped`)
+- **code:** `3249da9` on `claude/wonderful-ritchie-hbm5zn` · **device:** Tesla T4
 - **on track** = held-out recall (assoc, full difficulty) ≥ 0.4 at the stop step. At 9k it matched the
   15k outcome in 23 of 24 full runs (PROGRESS.md 2026-10-27). Jobs are the full schedule stopped early.
 
@@ -9,11 +9,11 @@
 
 | cell | lr | gate bias | jobs done | failed | on track | mean @1.5k | mean @3k | mean @last | median @last, on-track runs |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| bias0 | 0.0015 | 0.0 | 19 | 0 | 13/19 | 0.055 | 0.206 | 0.591 | 0.832 |
+| bias0 | 0.0015 | 0.0 | 20 | 0 | 14/20 | 0.053 | 0.197 | 0.589 | 0.816 |
 | bias2 | 0.0015 | 2.0 | 20 | 0 | 16/20 | 0.091 | 0.205 | 0.636 | 0.762 |
 
-Fisher exact (two-sided), on track bias0 vs bias2: **p = 0.480** (13/19 vs 16/20).
-Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: p = 0.584 (n = 13 vs 16).
+Fisher exact (two-sided), on track bias0 vs bias2: **p = 0.716** (14/20 vs 16/20).
+Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: p = 0.755 (n = 14 vs 16).
 
 ## Jobs
 
@@ -43,6 +43,7 @@ Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: 
 | bias2_s15 | stopped | 9000 | 0.1161 | 0.4272 | 0.8729 | 0.9488 | 1 | 3000 | 84 | 0 |
 | bias0_s16 | stopped | 9000 | 0.1423 | 0.2891 | 0.3392 | 0.6548 | 1 | 8500 | 84 | 0 |
 | bias2_s16 | stopped | 9000 | 0.0797 | 0.1415 | 0.352 | 0.5694 | 1 | 6500 | 92 | 1 |
+| bias0_s17 | stopped | 9000 | 0.008 | 0.0148 | 0.2242 | 0.5531 | 1 | 8000 | 81 | 0 |
 | bias2_s17 | stopped | 9000 | 0.2193 | 0.4059 | 0.772 | 0.9253 | 1 | 3000 | 84 | 0 |
 | bias0_s18 | stopped | 9000 | 0.0212 | 0.3763 | 0.7451 | 0.901 | 1 | 3500 | 84 | 0 |
 | bias2_s18 | stopped | 9000 | 0.0725 | 0.1525 | 0.5615 | 0.791 | 1 | 5000 | 86 | 1 |

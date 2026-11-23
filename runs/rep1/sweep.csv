@@ -1,0 +1,2 @@
+job,cell,seed,lr,decay_bias_init,status,last_step,assoc_1500,assoc_3000,assoc_6000,assoc_last,on_track,first_step_ge_thresh,seconds,gpu
+nudge_s05,nudge,5,0.0015,0.001,stopped,9000,0.0118,0.022,0.0315,0.0376,0,,4815,0

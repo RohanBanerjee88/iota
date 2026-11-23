@@ -1,0 +1,13 @@
+{
+ "job": "nudge_s12",
+ "cell": "nudge",
+ "seed": 12,
+ "gpu": "1",
+ "seconds": 4999,
+ "returncode": 0,
+ "status": "stopped",
+ "stop_at": 9000,
+ "lr": 0.0015,
+ "decay_bias_init": 0.001,
+ "config": "configs/nudge/bias0/sweep_gated_linear.yaml"
+}

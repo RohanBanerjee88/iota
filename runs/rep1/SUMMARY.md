@@ -1,6 +1,6 @@
 # iota seed sweep `rep1`
 
-- **updated:** 2026-11-23 04:53 UTC (last: `sweep bias0_s12 stopped`)
+- **updated:** 2026-11-23 05:04 UTC (last: `sweep nudge_s12 stopped`)
 - **code:** `3249da9` on `claude/wonderful-ritchie-hbm5zn` · **device:** Tesla T4
 - **on track** = held-out recall (assoc, full difficulty) ≥ 0.4 at the stop step. At 9k it matched the
   15k outcome in 23 of 24 full runs (PROGRESS.md 2026-10-27). Jobs are the full schedule stopped early.
@@ -10,10 +10,10 @@
 | cell | lr | gate bias | jobs done | failed | on track | mean @1.5k | mean @3k | mean @last | median @last, on-track runs |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | bias0 | 0.0015 | 0.0 | 4 | 0 | 2/4 | 0.038 | 0.192 | 0.516 | 0.849 |
-| nudge | 0.0015 | 0.001 | 3 | 0 | 1/3 | 0.039 | 0.120 | 0.379 | 0.910 |
+| nudge | 0.0015 | 0.001 | 4 | 0 | 2/4 | 0.036 | 0.151 | 0.500 | 0.886 |
 
-Fisher exact (two-sided), on track bias0 vs nudge: **p = 1.000** (2/4 vs 1/3).
-Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: p = 0.540 (n = 2 vs 1).
+Fisher exact (two-sided), on track bias0 vs nudge: **p = 1.000** (2/4 vs 2/4).
+Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: p = 0.699 (n = 2 vs 2).
 
 ## Jobs
 
@@ -26,3 +26,4 @@ Mann-Whitney (two-sided), held-out recall at the stop step among on-track runs: 
 | bias0_s09 | stopped | 9000 | 0.0303 | 0.0994 | 0.162 | 0.187 | 0 |  | 83 | 1 |
 | nudge_s09 | stopped | 9000 | 0.0755 | 0.2231 | 0.747 | 0.9101 | 1 | 4000 | 80 | 0 |
 | bias0_s12 | stopped | 9000 | 0.0114 | 0.0239 | 0.1415 | 0.1772 | 0 |  | 80 | 0 |
+| nudge_s12 | stopped | 9000 | 0.0266 | 0.2428 | 0.5823 | 0.8619 | 1 | 4500 | 83 | 1 |
